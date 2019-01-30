@@ -9,6 +9,26 @@ class DoublePendulum(Dynamics):
         self._mass2 = mass2
         self._length1 = length1
         self._length2 = length2
+
+        # Compute mass matrix inverse.
+        g = 9.81
+        self._M_q_inv = lambda x : (
+            1.0 / ((self._mass1 + self._mass2) *
+                   self._length1 * self._length2 * self._mass2)) * np.array([
+                [self._mass2 * self._length2,
+                 -self._mass2 * self._length2 * np.cos(x[2] - x[0])],
+                [-self._mass2 * self._length2 * np.cos(x[2] - x[0]),
+                (self._mass1 + self._mass2) * self._length2]
+            ])
+
+        # Compute coriolis and gravity term.
+        self._f_q = lambda x : np.array([
+            [-self._mass2 * self._length2 * x[3]**2 * np.sin(
+                x[0] - x[2] - g * (self._mass1 + self._mass2))],
+            [self._mass2 * self._length1 * x[1]**2 * np.sin(
+                x[0] - x[2]) - self._mass2 * g * np.sin(x[2])]
+        ])
+
         super(DoublePendulum, self).__init__(4, 2, 2, time_step)
 
     def __call__(self, x, u):
@@ -20,23 +40,8 @@ class DoublePendulum(Dynamics):
         xdot[0] = x[1]
         xdot[2] = x[3]
 
-        g = 9.81
-        f_q = np.array([
-            [-self._mass2 * self._length2 * x[3]**2 * np.sin(
-                x[0] - x[2] - g * (self._mass1 + self._mass2))],
-            [self._mass2 * self._length1 * x[1]**2 * np.sin(
-                x[0] - x[2]) - self._mass2 * g * np.sin(x[2])]
-        ])
-
-        off_diag = -self._mass2 * self._length2 * np.cos(x[2] - x[0])
-        M_q_inv = (1.0 / (
-            (self._mass1 + self._mass2) *
-            self._length1 * self._length2 * self._mass2)) * np.array([
-                [self._mass2 * self._length2, off_diag],
-                [off_diag, (self._mass1 + self._mass2) * self._length2]
-            ])
-
-        theta_doubledot = M_q_inv @ (f_q + u)
+        theta_doubledot = self._M_q_inv(x) @ (
+            self._f_q(x) + np.reshape(u, (self.udim, 1)))
         xdot[1] = theta_doubledot[0]
         xdot[3] = theta_doubledot[1]
 
@@ -44,7 +49,7 @@ class DoublePendulum(Dynamics):
 
     def observation(self, x):
         """ Compute y from x. """
-        pass
+        return np.array([x[0], x[2]])
 
     def feedback_linearize(self):
         """
@@ -55,4 +60,4 @@ class DoublePendulum(Dynamics):
         :return: M(x) and w(x) as functions
         :rtype: np.array(np.array), np.array(np.array)
         """
-        pass
+        return self._M_q_inv, self._f_q

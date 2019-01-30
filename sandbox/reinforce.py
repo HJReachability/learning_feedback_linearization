@@ -27,6 +27,12 @@ class Reinforce(object):
         self._initial_state_sampler = initial_state_sampler
         self._feedback_linearization = feedback_linearization
 
+        # Use RMSProp as the optimizer.
+        self._optimizer = torch.optim.RMSprop([
+            self._feedback_linearization._M2.parameters(),
+            self._feedback_linearization._w2.parameters()],
+                                              lr=self._learning_rate)
+
     def run(self):
         for ii in range(self._num_iters):
             rollouts = self._collect_rollouts()
@@ -69,8 +75,33 @@ class Reinforce(object):
 
         return rollouts
 
-    def _update_feedback(self):
-        pass
+    def _update_feedback(self, rollouts):
+        """
+        Update the feedback law contained in self._feedback_linearization
+        based on the observed rollouts.
+        """
+        # (1) Construct the objective.
+        # NOTE: this could probably be done more efficiently using some fancy
+        # tensor arithmetic.
+        objective = torch.zeros(1)
+        for rollout in rollouts:
+            for x, v, u, value in zip(rollout["xs"],
+                                      rollout["vs"],
+                                      rollout["us"],
+                                      rollout["values"]):
+                objective += self._feedback_linearization.log_prob(
+                    u, x, v) * value
+
+        objective /= float(self._num_rollouts * self._num_steps_per_rollout)
+
+        print("Objective is: ", objective)
+
+        # (2) Backpropagate derivatives.
+        self._optimizer.zero_grad()
+        objective.backward()
+
+        # (3) Update all learnable parameters.
+        self._optimizer.step()
 
     def _generate_v(self):
         pass

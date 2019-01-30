@@ -27,7 +27,7 @@ class Dynamics(object):
         """
         raise NotImplementedError()
 
-    def integrate(self, x0, u, dt=0.25*self._time_step):
+    def integrate(self, x0, u, dt=None):
         """
         Integrate initial state x0 (applying constant control u)
         over a time interval of self._time_step, using a time discretization
@@ -42,6 +42,9 @@ class Dynamics(object):
         :return: state after time self._time_step
         :rtype: np.array
         """
+        if dt is None:
+            dt = 0.25 * self._time_step
+
         t = 0.0
         x = x0.copy()
         while t < self._time_step - 1e-8:

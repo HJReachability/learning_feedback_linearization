@@ -28,10 +28,10 @@ def initial_state_sampler():
     return np.random.uniform(lower, upper)
 
 # Create REINFORCE.
-num_iters = 10
+num_iters = 100
 learning_rate = 0.01
 discount_factor = 0.99
-num_rollouts = 5
+num_rollouts = 50
 num_steps_per_rollout = 10
 solver = Reinforce(num_iters,
                    learning_rate,

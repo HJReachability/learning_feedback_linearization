@@ -30,6 +30,9 @@ def create_network(num_inputs, num_outputs,
     layers.append((
         "L_final_" + str(num_hidden_units) + "_" + str(num_outputs),
             torch.nn.Linear(num_hidden_units, num_outputs)))
+    layers.append((
+        "A_final_" + str(num_outputs),
+            torch.nn.Tanh()))
 
     return torch.nn.Sequential(OrderedDict(layers))
 
@@ -69,6 +72,7 @@ class FeedbackLinearization(object):
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (self._udim, 1))
+#        print(x.T)
 
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
             self._M2(torch.from_numpy(x.flatten()).float()), (self._udim, self._udim))

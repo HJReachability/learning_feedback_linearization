@@ -1,9 +1,7 @@
-
-
-
 import torch
 import numpy as np
 from collections import deque
+import matplotlib.pyplot as plt
 
 from feedback_linearization import FeedbackLinearization
 from dynamics import Dynamics
@@ -44,6 +42,8 @@ class Reinforce(object):
     def _collect_rollouts(self):
         rollouts = []
         for ii in range(self._num_rollouts):
+#            print("===> New rollout")
+
             # (0) Sample a new initial state.
             x = self._initial_state_sampler()
 
@@ -76,6 +76,12 @@ class Reinforce(object):
             self._compute_values(rollout)
             rollouts.append(rollout)
 
+#        plt.figure()
+#        xs = rollouts[0]["xs"]
+#        theta1s = [x[0] for x in xs]
+#        theta2s = [x[2] for x in xs]
+#        plt.plot(theta1s, theta2s)
+#        plt.pause(1)
         return rollouts
 
     def _update_feedback(self, rollouts):
@@ -98,6 +104,10 @@ class Reinforce(object):
         objective /= float(self._num_rollouts * self._num_steps_per_rollout)
 
         print("Objective is: ", objective)
+
+        if torch.isnan(objective):
+            print("==========> Oops. Objective was NaN. Please come again.")
+            return
 
         # (2) Backpropagate derivatives.
         self._M2_optimizer.zero_grad()

@@ -71,15 +71,20 @@ class FeedbackLinearization(object):
         v = np.reshape(v, (self._udim, 1))
 
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
-            self._M2(torch.from_numpy(x).float()), (self._udim, self._udim))
+            self._M2(torch.from_numpy(x.flatten()).float()), (self._udim, self._udim))
         w = torch.from_numpy(self._w1(x)).float() + torch.reshape(
-            self._w2(torch.from_numpy(x).float()), (self._udim, 1))
+            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1))
+
         return torch.mm(M, w + torch.from_numpy(v).float())
 
     def noisy_feedback(self, x, v):
         """ Compute noisy version of u given x, v (np.arrays). """
         return torch.distributions.normal.Normal(
             self.feedback(x, v), self._noise_std)
+
+    def sample_noisy_feedback(self, x, v):
+        """ Compute noisy version of u given x, v (np.arrays). """
+        return self.noisy_feedback(x, v).sample().numpy()
 
     def log_prob(self, u, x, v):
         """ Compute log probability of u given x, v. """

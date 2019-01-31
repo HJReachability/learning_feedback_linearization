@@ -16,17 +16,17 @@ class DoublePendulum(Dynamics):
             1.0 / ((self._mass1 + self._mass2) *
                    self._length1 * self._length2 * self._mass2)) * np.array([
                 [self._mass2 * self._length2,
-                 -self._mass2 * self._length2 * np.cos(x[2] - x[0])],
-                [-self._mass2 * self._length2 * np.cos(x[2] - x[0]),
+                 -self._mass2 * self._length2 * np.cos(x[2, 0] - x[0, 0])],
+                [-self._mass2 * self._length2 * np.cos(x[2, 0] - x[0, 0]),
                 (self._mass1 + self._mass2) * self._length2]
             ])
 
         # Compute coriolis and gravity term.
         self._f_q = lambda x : np.array([
-            [-self._mass2 * self._length2 * x[3]**2 * np.sin(
-                x[0] - x[2] - g * (self._mass1 + self._mass2))],
-            [self._mass2 * self._length1 * x[1]**2 * np.sin(
-                x[0] - x[2]) - self._mass2 * g * np.sin(x[2])]
+            [-self._mass2 * self._length2 * x[3, 0]**2 * np.sin(
+                x[0, 0] - x[2, 0]) - g * (self._mass1 + self._mass2)],
+            [self._mass2 * self._length1 * x[1, 0]**2 * np.sin(
+                x[0, 0] - x[2, 0]) - self._mass2 * g * np.sin(x[2, 0])]
         ])
 
         super(DoublePendulum, self).__init__(4, 2, 2, time_step)
@@ -36,14 +36,14 @@ class DoublePendulum(Dynamics):
         Compute xdot from x, u.
         State x is ordered as follows: [theta1, theta1 dot, theta2, theta2 dot].
         """
-        xdot = np.zeros(self.xdim)
-        xdot[0] = x[1]
-        xdot[2] = x[3]
+        xdot = np.zeros((self.xdim, 1))
+        xdot[0, 0] = x[1, 0]
+        xdot[2, 0] = x[3, 0]
 
         theta_doubledot = self._M_q_inv(x) @ (
             self._f_q(x) + np.reshape(u, (self.udim, 1)))
-        xdot[1] = theta_doubledot[0]
-        xdot[3] = theta_doubledot[1]
+        xdot[1, 0] = theta_doubledot[0, 0]
+        xdot[3, 0] = theta_doubledot[1, 0]
 
         return xdot
 

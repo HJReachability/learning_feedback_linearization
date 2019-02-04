@@ -10,16 +10,17 @@ mass1 = 1.0
 mass2 = 1.0
 length1 = 1.0
 length2 = 1.0
-time_step = 0.05
+time_step = 0.02
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step)
+bad_dyn = DoublePendulum(0.95 * mass1, 1.05 * mass2, length1, length2, time_step)
 
 # Create a feedback linearization object.
-num_layers = 1
+num_layers = 2
 num_hidden_units = 5
 activation = torch.nn.ReLU()
 noise_std = 0.1
 fb = FeedbackLinearization(
-    dyn, num_layers, num_hidden_units, activation, noise_std)
+    bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler():
@@ -29,10 +30,10 @@ def initial_state_sampler():
 
 # Create REINFORCE.
 num_iters = 100
-learning_rate = 0.01
+learning_rate = 0.001
 discount_factor = 0.99
-num_rollouts = 50
-num_steps_per_rollout = 10
+num_rollouts = 75
+num_steps_per_rollout = 25
 solver = Reinforce(num_iters,
                    learning_rate,
                    discount_factor,
@@ -43,4 +44,4 @@ solver = Reinforce(num_iters,
                    fb)
 
 # Run this guy.
-solver.run()
+solver.run(plot=True)

@@ -76,8 +76,8 @@ class FeedbackLinearization(object):
 
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
             self._M2(torch.from_numpy(x.flatten()).float()), (self._udim, self._udim))
-        w = torch.from_numpy(self._w1(x)).float() + torch.reshape(
-            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1))
+        w = -(torch.from_numpy(self._w1(x)).float() + torch.reshape(
+            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1)))
 
         return torch.mm(M, w + torch.from_numpy(v).float())
 

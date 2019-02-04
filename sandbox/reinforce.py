@@ -33,10 +33,31 @@ class Reinforce(object):
             self._feedback_linearization._w2.parameters(),
             lr=self._learning_rate)
 
-    def run(self):
+    def run(self, plot=False):
         for ii in range(self._num_iters):
             print("---------- Iteration ", ii, " ------------")
             rollouts = self._collect_rollouts()
+
+            if plot:
+                # Plot a rollout's y vs y_desired.
+                plt.clf()
+                plt.figure(1)
+                ys = rollouts[0]["ys"]
+                y_desireds = rollouts[0]["y_desireds"]
+
+                plt.plot(ys[0][0], ys[0][1], "b*")
+                plt.plot([y[0] for y in ys], [y[1] for y in ys],
+                         "b:", label="y")
+
+                plt.plot(y_desireds[0][0], y_desireds[0][1], "r*")
+                plt.plot([y[0] for y in y_desireds], [y[1] for y in y_desireds],
+                         "r", label="y_desired")
+
+                plt.xlabel("theta0")
+                plt.ylabel("theta1")
+                plt.legend()
+                plt.pause(1)
+
             self._update_feedback(rollouts)
 
     def _collect_rollouts(self):
@@ -56,6 +77,7 @@ class Reinforce(object):
                        "us" : [],
                        "vs" : [],
                        "ys" : [],
+                       "y_desireds" : [],
                        "rs" : []}
 
             for v, y_desired in zip(vs, ys):
@@ -68,6 +90,7 @@ class Reinforce(object):
                 x = self._dynamics.integrate(x, u)
                 y = self._dynamics.observation(x)
                 rollout["ys"].append(y)
+                rollout["y_desireds"].append(y_desired)
 
                 r = self._reward(y_desired, y)
                 rollout["rs"].append(r)
@@ -93,6 +116,7 @@ class Reinforce(object):
         # NOTE: this could probably be done more efficiently using some fancy
         # tensor arithmetic.
         objective = torch.zeros(1)
+        mean_return = 0.0
         for rollout in rollouts:
             for x, v, u, value in zip(rollout["xs"],
                                       rollout["vs"],
@@ -101,12 +125,24 @@ class Reinforce(object):
                 objective -= self._feedback_linearization.log_prob(
                     u, x, v) * value
 
+            mean_return += rollout["values"][0]
+
         objective /= float(self._num_rollouts * self._num_steps_per_rollout)
+        mean_return /= float(self._num_rollouts)
 
         print("Objective is: ", objective)
+        print("Mean return is: ", mean_return)
 
-        if torch.isnan(objective):
-            print("==========> Oops. Objective was NaN. Please come again.")
+        if torch.isnan(objective) or torch.isinf(objective):
+            self._learning_rate /= 2.0
+
+            for param_group in self._M2_optimizer.param_groups:
+                param_group['lr'] = self._learning_rate
+            for param_group in self._w2_optimizer.param_groups:
+                param_group['lr'] = self._learning_rate
+
+            print("=======> Oops. Objective was NaN or Inf. Please come again.")
+            print("=======> Learning rate is now ", self._learning_rate)
             return
 
         # (2) Backpropagate derivatives.
@@ -126,9 +162,9 @@ class Reinforce(object):
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
-            v[ii, :] = np.random.uniform(
+            v[ii, :] = 5.0 * np.random.uniform(
                 size=(1, self._num_steps_per_rollout)) * np.sin(
-                2.0 * np.pi * np.random.uniform() * v[ii, :])
+                2.0 * np.pi * 4.0 * np.random.uniform() * v[ii, :]) + np.random.normal()
 
         return np.split(
             v, indices_or_sections=self._num_steps_per_rollout, axis=1)
@@ -139,17 +175,30 @@ class Reinforce(object):
                  ``` y(t) = h(x0) + \int \int v(t1) dt1 dt2 ```
         """
         initial_observation = self._dynamics.observation(x0)
-        single_integrated_v = self._dynamics._time_step * np.cumsum(
-            v, axis=1)[:, :, 0]
-        double_integrated_v = self._dynamics._time_step * np.cumsum(
-            single_integrated_v)
+#        print("init obs: ", initial_observation)
 
-        y = initial_observation + double_integrated_v
+        v_array = np.concatenate(v, axis=1)
+
+        # Append an extra 0 control at the end.
+        v_array = np.concatenate([v_array, np.zeros(v[0].shape)], axis=1)
+#        print("v", v_array)
+
+        single_integrated_v = self._dynamics._time_step * np.cumsum(
+            v_array, axis=1)
+#        double_integrated_v = np.cumsum(
+#            single_integrated_v, axis=1)
+        double_integrated_v = self._dynamics._time_step * np.cumsum(
+            single_integrated_v, axis=1)
+#        print("single_v: ", single_integrated_v)
+#        print("double_v: ", double_integrated_v)
+#        print("double_v_norm: ", np.linalg.norm(double_integrated_v, axis=0))
+
+        y = initial_observation + double_integrated_v[:, 1:]
         return np.split(
             y, indices_or_sections=self._num_steps_per_rollout, axis=1)
 
     def _reward(self, y_desired, y):
-        return np.linalg.norm(y_desired - y)**2
+        return -np.linalg.norm(y_desired - y)**2
 
     def _compute_values(self, rollout):
         """ Add a sum of future discounted rewards field to rollout dict."""

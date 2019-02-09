@@ -16,9 +16,9 @@ bad_dyn = DoublePendulum(0.95 * mass1, 1.05 * mass2, length1, length2, time_step
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 5
+num_hidden_units = 10
 activation = torch.nn.ReLU()
-noise_std = 0.1
+noise_std = 0.02
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -29,11 +29,11 @@ def initial_state_sampler():
     return np.random.uniform(lower, upper)
 
 # Create REINFORCE.
-num_iters = 100
-learning_rate = 0.001
+num_iters = 1000
+learning_rate = 1e-2
 discount_factor = 0.99
-num_rollouts = 75
-num_steps_per_rollout = 25
+num_rollouts = 50
+num_steps_per_rollout = 10
 solver = Reinforce(num_iters,
                    learning_rate,
                    discount_factor,

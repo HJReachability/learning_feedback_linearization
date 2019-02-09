@@ -36,6 +36,11 @@ def create_network(num_inputs, num_outputs,
 
     return torch.nn.Sequential(OrderedDict(layers))
 
+def init_weights(net, mean=0.0, std=0.1):
+    for l in net:
+        if type(l) in [torch.nn.Linear]:
+            torch.nn.init.normal_(l.weight.data, mean, std)
+
 class FeedbackLinearization(object):
     def __init__(self,
                  dynamics,
@@ -63,6 +68,10 @@ class FeedbackLinearization(object):
             dynamics.xdim, dynamics.udim,
             num_layers, num_hidden_units, activation)
 
+        # Initialize weights.
+        init_weights(self._M2)
+        init_weights(self._w2)
+
         self._xdim = dynamics.xdim
         self._udim = dynamics.udim
 
@@ -72,14 +81,13 @@ class FeedbackLinearization(object):
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (self._udim, 1))
-#        print(x.T)
 
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
             self._M2(torch.from_numpy(x.flatten()).float()), (self._udim, self._udim))
-        w = -(torch.from_numpy(self._w1(x)).float() + torch.reshape(
-            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1)))
+        w = torch.from_numpy(self._w1(x)).float() + torch.reshape(
+            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1))
 
-        return torch.mm(M, w + torch.from_numpy(v).float())
+        return torch.mm(M, torch.from_numpy(v).float()) + w
 
     def noisy_feedback(self, x, v):
         """ Compute noisy version of u given x, v (np.arrays). """

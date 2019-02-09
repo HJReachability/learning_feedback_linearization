@@ -21,6 +21,8 @@ class DoublePendulum(Dynamics):
                 (self._mass1 + self._mass2) * self._length2]
             ])
 
+        self._M_q = lambda x : np.linalg.inv(self._M_q_inv(x))
+
         # Compute coriolis and gravity term.
         self._f_q = lambda x : np.array([
             [-self._mass2 * self._length2 * x[3, 0]**2 * np.sin(
@@ -41,7 +43,7 @@ class DoublePendulum(Dynamics):
         xdot[2, 0] = x[3, 0]
 
         theta_doubledot = self._M_q_inv(x) @ (
-            self._f_q(x) + np.reshape(u, (self.udim, 1)))
+            -self._f_q(x) + np.reshape(u, (self.udim, 1)))
         xdot[1, 0] = theta_doubledot[0, 0]
         xdot[3, 0] = theta_doubledot[1, 0]
 
@@ -49,7 +51,7 @@ class DoublePendulum(Dynamics):
 
     def observation(self, x):
         """ Compute y from x. """
-        return np.array([x[0], x[2]])
+        return np.array([[x[0, 0]], [x[2, 0]]])
 
     def feedback_linearize(self):
         """
@@ -60,4 +62,4 @@ class DoublePendulum(Dynamics):
         :return: M(x) and w(x) as functions
         :rtype: np.array(np.array), np.array(np.array)
         """
-        return self._M_q_inv, self._f_q
+        return self._M_q, self._f_q

@@ -26,10 +26,10 @@ class Reinforce(object):
         self._feedback_linearization = feedback_linearization
 
         # Use RMSProp as the optimizer.
-        self._M2_optimizer = torch.optim.RMSprop(
+        self._M2_optimizer = torch.optim.Adam(
             self._feedback_linearization._M2.parameters(),
             lr=self._learning_rate)
-        self._w2_optimizer = torch.optim.RMSprop(
+        self._w2_optimizer = torch.optim.Adam(
             self._feedback_linearization._w2.parameters(),
             lr=self._learning_rate)
 
@@ -56,15 +56,13 @@ class Reinforce(object):
                 plt.xlabel("theta0")
                 plt.ylabel("theta1")
                 plt.legend()
-                plt.pause(1)
+                plt.pause(0.01)
 
             self._update_feedback(rollouts)
 
     def _collect_rollouts(self):
         rollouts = []
         for ii in range(self._num_rollouts):
-#            print("===> New rollout")
-
             # (0) Sample a new initial state.
             x = self._initial_state_sampler()
 
@@ -162,9 +160,10 @@ class Reinforce(object):
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
-            v[ii, :] = 5.0 * np.random.uniform(
+            v[ii, :] = 1.0 * np.random.uniform(
                 size=(1, self._num_steps_per_rollout)) * np.sin(
-                2.0 * np.pi * 4.0 * np.random.uniform() * v[ii, :]) + np.random.normal()
+                2.0 * np.pi * 0.25 * np.random.uniform() * v[ii, :]) + \
+                np.random.normal()
 
         return np.split(
             v, indices_or_sections=self._num_steps_per_rollout, axis=1)

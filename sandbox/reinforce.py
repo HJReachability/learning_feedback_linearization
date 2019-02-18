@@ -160,10 +160,10 @@ class Reinforce(object):
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
-            v[ii, :] = np.random.uniform(
+            v[ii, :] = 1.0 * np.random.uniform(
                 size=(1, self._num_steps_per_rollout)) * np.sin(
                 2.0 * np.pi * 0.25 * np.random.uniform() * v[ii, :]) + \
-                np.random.normal()
+                0.1 * np.random.normal()
 
         return np.split(
             v, indices_or_sections=self._num_steps_per_rollout, axis=1)
@@ -199,7 +199,8 @@ class Reinforce(object):
 
 
     def _reward(self, y_desired, y):
-        return -np.linalg.norm(y_desired - y)**2
+        SCALING = 10.0
+        return -SCALING * np.linalg.norm(y_desired - y, 1)
 
     def _compute_values(self, rollout):
         """ Add a sum of future discounted rewards field to rollout dict."""
@@ -210,5 +211,6 @@ class Reinforce(object):
             # ii is a reverse iteration index, i.e. we're counting backward.
             r = rs[len(rs) - ii - 1]
             values.appendleft(self._discount_factor * last_value + r)
+            last_value = values[0]
 
         rollout["values"] = list(values)

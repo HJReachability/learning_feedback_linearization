@@ -12,13 +12,14 @@ length1 = 1.0
 length2 = 1.0
 time_step = 0.02
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step)
-bad_dyn = DoublePendulum(0.95 * mass1, 1.05 * mass2, length1, length2, time_step)
+bad_dyn = DoublePendulum(
+    0.95 * mass1, 1.05 * mass2, length1, length2, time_step)
 
 # Create a feedback linearization object.
-num_layers = 2
-num_hidden_units = 10
-activation = torch.nn.ReLU()
-noise_std = 0.02
+num_layers = 5
+num_hidden_units = 25
+activation = torch.nn.Tanh()
+noise_std = 0.1
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 

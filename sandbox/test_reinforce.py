@@ -4,6 +4,7 @@ import numpy as np
 from double_pendulum import DoublePendulum
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
+from logger import Logger
 
 # Create a double pendulum.
 mass1 = 1.0
@@ -16,10 +17,10 @@ bad_dyn = DoublePendulum(
     0.95 * mass1, 1.05 * mass2, length1, length2, time_step)
 
 # Create a feedback linearization object.
-num_layers = 5
-num_hidden_units = 25
+num_layers = 3
+num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.1
+noise_std = 0.05
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -29,12 +30,19 @@ def initial_state_sampler():
     upper = -lower
     return np.random.uniform(lower, upper)
 
+
 # Create REINFORCE.
 num_iters = 1000
-learning_rate = 1e-2
+learning_rate = 1e-3
 discount_factor = 0.99
-num_rollouts = 50
-num_steps_per_rollout = 10
+num_rollouts = 10
+num_steps_per_rollout = 50
+
+# Logging.
+logger = Logger("logs/double_pendulum_%d_%d_%f_%f_%d_%d.pkl" %
+                (num_layers, num_hidden_units, noise_std, learning_rate,
+                 num_rollouts, num_steps_per_rollout))
+
 solver = Reinforce(num_iters,
                    learning_rate,
                    discount_factor,
@@ -42,7 +50,11 @@ solver = Reinforce(num_iters,
                    num_steps_per_rollout,
                    dyn,
                    initial_state_sampler,
-                   fb)
+                   fb,
+                   logger)
 
 # Run this guy.
-solver.run(plot=True)
+solver.run(plot=False)
+
+# Dump the log.
+logger.dump()

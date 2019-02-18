@@ -15,7 +15,8 @@ class Reinforce(object):
                  num_steps_per_rollout,
                  dynamics,
                  initial_state_sampler,
-                 feedback_linearization):
+                 feedback_linearization,
+                 logger):
         self._num_iters = num_iters
         self._learning_rate = learning_rate
         self._discount_factor = discount_factor
@@ -24,6 +25,7 @@ class Reinforce(object):
         self._dynamics = dynamics
         self._initial_state_sampler = initial_state_sampler
         self._feedback_linearization = feedback_linearization
+        self._logger = logger
 
         # Use RMSProp as the optimizer.
         self._M2_optimizer = torch.optim.Adam(
@@ -38,13 +40,12 @@ class Reinforce(object):
             print("---------- Iteration ", ii, " ------------")
             rollouts = self._collect_rollouts()
 
+            ys = rollouts[0]["ys"]
+            y_desireds = rollouts[0]["y_desireds"]
+
             if plot:
-                # Plot a rollout's y vs y_desired.
                 plt.clf()
                 plt.figure(1)
-                ys = rollouts[0]["ys"]
-                y_desireds = rollouts[0]["y_desireds"]
-
                 plt.plot(ys[0][0], ys[0][1], "b*")
                 plt.plot([y[0] for y in ys], [y[1] for y in ys],
                          "b:", label="y")
@@ -58,7 +59,18 @@ class Reinforce(object):
                 plt.legend()
                 plt.pause(0.01)
 
+            # Log these trajectories.
+            self._logger.log("ys", ys)
+            self._logger.log("y_desireds", ys)
+
+            # Update stuff.
             self._update_feedback(rollouts)
+
+            # Prematurely dump in case we terminate early.
+            self._logger.dump()
+
+        # Log the learned model.
+        self._logger.log("feedback_linearization", self._feedback_linearization)
 
     def _collect_rollouts(self):
         rollouts = []
@@ -95,6 +107,7 @@ class Reinforce(object):
 
             # (3) Compute values for this rollout and append to list.
             self._compute_values(rollout)
+            self._compute_advantages(rollout)
             rollouts.append(rollout)
 
 #        plt.figure()
@@ -116,12 +129,12 @@ class Reinforce(object):
         objective = torch.zeros(1)
         mean_return = 0.0
         for rollout in rollouts:
-            for x, v, u, value in zip(rollout["xs"],
+            for x, v, u, adv in zip(rollout["xs"],
                                       rollout["vs"],
                                       rollout["us"],
-                                      rollout["values"]):
+                                      rollout["advantages"]):
                 objective -= self._feedback_linearization.log_prob(
-                    u, x, v) * value
+                    u, x, v) * adv
 
             mean_return += rollout["values"][0]
 
@@ -130,6 +143,8 @@ class Reinforce(object):
 
         print("Objective is: ", objective)
         print("Mean return is: ", mean_return)
+
+        self._logger.log("mean_return", mean_return)
 
         if torch.isnan(objective) or torch.isinf(objective):
             self._learning_rate /= 2.0
@@ -157,12 +172,15 @@ class Reinforce(object):
         Use sinusoid with random frequency, amplitude, and bias:
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
         """
+        MAX_CONTINUOUS_TIME_FREQ = 2.0
+        MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
+
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
             v[ii, :] = 1.0 * np.random.uniform(
                 size=(1, self._num_steps_per_rollout)) * np.sin(
-                2.0 * np.pi * 0.25 * np.random.uniform() * v[ii, :]) + \
+                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * np.random.uniform() * v[ii, :]) + \
                 0.1 * np.random.normal()
 
         return np.split(
@@ -213,4 +231,13 @@ class Reinforce(object):
             values.appendleft(self._discount_factor * last_value + r)
             last_value = values[0]
 
-        rollout["values"] = list(values)
+        # Convert to list.
+        values = list(values)
+        rollout["values"] = values
+
+    def _compute_advantages(self, rollout):
+        """ Baseline raw values. """
+        values = rollout["values"]
+        avg = sum(values) / float(len(values))
+        baselined = [v - avg for v in values]
+        rollout["advantages"] = baselined

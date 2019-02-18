@@ -52,25 +52,25 @@ class FeedbackLinearization(object):
         Initialize from a Dynamics object.
         This will encode the following control law:
 
-             ``` u = [ M1(x) + M2(x) ] * [ (w1(x) + w2(x)) + v ] + noise ```
+             ``` u = [ M1(x) + M2(x) ] * v + [ f1(x) + f2(x) ] + noise ```
 
-        where M1(x) and w1(x) are derived from modeled dynamics, and
-        M2(x) and w2(x) are torch.Tensor objects that we will learn with policy
+        where M1(x) and f1(x) are derived from modeled dynamics, and
+        M2(x) and f2(x) are torch.Tensor objects that we will learn with policy
         gradients.
         """
-        self._M1, self._w1 = dynamics.feedback_linearize()
+        self._M1, self._f1 = dynamics.feedback_linearize()
 
         # Create some PyTorch tensors for unmodeled dynamics terms.
         self._M2 = create_network(
             dynamics.xdim, dynamics.udim**2,
             num_layers, num_hidden_units, activation)
-        self._w2 = create_network(
+        self._f2 = create_network(
             dynamics.xdim, dynamics.udim,
             num_layers, num_hidden_units, activation)
 
         # Initialize weights.
         init_weights(self._M2)
-        init_weights(self._w2)
+        init_weights(self._f2)
 
         self._xdim = dynamics.xdim
         self._udim = dynamics.udim
@@ -84,10 +84,10 @@ class FeedbackLinearization(object):
 
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
             self._M2(torch.from_numpy(x.flatten()).float()), (self._udim, self._udim))
-        w = torch.from_numpy(self._w1(x)).float() + torch.reshape(
-            self._w2(torch.from_numpy(x.flatten()).float()), (self._udim, 1))
+        f = torch.from_numpy(self._f1(x)).float() + torch.reshape(
+            self._f2(torch.from_numpy(x.flatten()).float()), (self._udim, 1))
 
-        return torch.mm(M, torch.from_numpy(v).float()) + w
+        return torch.mm(M, torch.from_numpy(v).float()) + f
 
     def noisy_feedback(self, x, v):
         """ Compute noisy version of u given x, v (np.arrays). """

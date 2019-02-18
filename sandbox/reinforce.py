@@ -29,8 +29,8 @@ class Reinforce(object):
         self._M2_optimizer = torch.optim.Adam(
             self._feedback_linearization._M2.parameters(),
             lr=self._learning_rate)
-        self._w2_optimizer = torch.optim.Adam(
-            self._feedback_linearization._w2.parameters(),
+        self._f2_optimizer = torch.optim.Adam(
+            self._feedback_linearization._f2.parameters(),
             lr=self._learning_rate)
 
     def run(self, plot=False):
@@ -136,7 +136,7 @@ class Reinforce(object):
 
             for param_group in self._M2_optimizer.param_groups:
                 param_group['lr'] = self._learning_rate
-            for param_group in self._w2_optimizer.param_groups:
+            for param_group in self._f2_optimizer.param_groups:
                 param_group['lr'] = self._learning_rate
 
             print("=======> Oops. Objective was NaN or Inf. Please come again.")
@@ -145,12 +145,12 @@ class Reinforce(object):
 
         # (2) Backpropagate derivatives.
         self._M2_optimizer.zero_grad()
-        self._w2_optimizer.zero_grad()
+        self._f2_optimizer.zero_grad()
         objective.backward()
 
         # (3) Update all learnable parameters.
         self._M2_optimizer.step()
-        self._w2_optimizer.step()
+        self._f2_optimizer.step()
 
     def _generate_v(self):
         """
@@ -160,7 +160,7 @@ class Reinforce(object):
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
-            v[ii, :] = 1.0 * np.random.uniform(
+            v[ii, :] = np.random.uniform(
                 size=(1, self._num_steps_per_rollout)) * np.sin(
                 2.0 * np.pi * 0.25 * np.random.uniform() * v[ii, :]) + \
                 np.random.normal()
@@ -174,6 +174,7 @@ class Reinforce(object):
                  ``` y(t) = h(x0) + \int \int v(t1) dt1 dt2 ```
         """
         initial_observation = self._dynamics.observation(x0)
+        derivative_initial_observation = self._dynamics.observation_dot(x0)
 #        print("init obs: ", initial_observation)
 
         v_array = np.concatenate(v, axis=1)
@@ -183,7 +184,7 @@ class Reinforce(object):
 #        print("v", v_array)
 
         single_integrated_v = self._dynamics._time_step * np.cumsum(
-            v_array, axis=1)
+            v_array, axis=1) + derivative_initial_observation
 #        double_integrated_v = np.cumsum(
 #            single_integrated_v, axis=1)
         double_integrated_v = self._dynamics._time_step * np.cumsum(
@@ -195,6 +196,7 @@ class Reinforce(object):
         y = initial_observation + double_integrated_v[:, 1:]
         return np.split(
             y, indices_or_sections=self._num_steps_per_rollout, axis=1)
+
 
     def _reward(self, y_desired, y):
         return -np.linalg.norm(y_desired - y)**2

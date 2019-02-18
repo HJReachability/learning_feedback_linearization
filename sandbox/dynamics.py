@@ -16,6 +16,10 @@ class Dynamics(object):
         """ Compute y from x. """
         raise NotImplementedError()
 
+    def observation_dot(self, x):
+        """ Compute y dot from x. """
+        raise NotImplementedError()
+
     def feedback_linearize(self):
         """
         Computes feedback linearization of this system.

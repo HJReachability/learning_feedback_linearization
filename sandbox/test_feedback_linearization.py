@@ -6,7 +6,7 @@ import numpy as np
 from feedback_linearization import FeedbackLinearization
 from double_pendulum import DoublePendulum
 
-dyn = DoublePendulum(1.0, 1.0, 1.0, 1.0)
+dyn = DoublePendulum(1.0, 1.0, 1.0, 1.0, time_step=0.01)
 fb = FeedbackLinearization(dyn, 3, 5, torch.nn.ReLU(), 0.1)
 
 u = np.array([1.0, 1.0])
@@ -35,19 +35,17 @@ v = np.array([1.0, 1.0])
 
 # Generate v, y desired and check that we can match with no model mismatch.
 from reinforce import Reinforce
-r = Reinforce(1, 1, 1, 1, 10, dyn, None, fb)
-current_x = 0.1 * np.ones((4, 1))
+r = Reinforce(1, 1, 1, 1, 100, dyn, None, fb)
+current_x = np.array([[0.1], [0.0], [0.1], [0.0]])
 vs = r._generate_v()
 y_desireds = r._generate_y(current_x, vs)
 
 ys = []
 print("current x: ", current_x)
 for v, y_desired in zip(vs, y_desireds):
-    print(current_x)
+    u = dyn._f_q(current_x) + dyn._M_q(current_x) @ v
+    current_x = dyn.integrate(current_x, u, dt=0.001)
     ys.append(dyn.observation(current_x))
-
-    u = dyn._M_q(current_x) @ dyn._f_q(current_x) + v
-    current_x = dyn.integrate(current_x, u)
 
 print("ys: ", ys)
 print("y_desireds:", y_desireds)

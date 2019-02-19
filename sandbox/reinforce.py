@@ -61,7 +61,7 @@ class Reinforce(object):
 
             # Log these trajectories.
             self._logger.log("ys", ys)
-            self._logger.log("y_desireds", ys)
+            self._logger.log("y_desireds", y_desireds)
 
             # Update stuff.
             self._update_feedback(rollouts)

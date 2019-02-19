@@ -17,7 +17,7 @@ bad_dyn = DoublePendulum(
     0.95 * mass1, 1.05 * mass2, length1, length2, time_step)
 
 # Create a feedback linearization object.
-num_layers = 3
+num_layers = 5
 num_hidden_units = 10
 activation = torch.nn.Tanh()
 noise_std = 0.05
@@ -32,11 +32,11 @@ def initial_state_sampler():
 
 
 # Create REINFORCE.
-num_iters = 1000
+num_iters = 2000
 learning_rate = 1e-3
 discount_factor = 0.99
-num_rollouts = 10
-num_steps_per_rollout = 50
+num_rollouts = 25
+num_steps_per_rollout = 25
 
 # Logging.
 logger = Logger("logs/double_pendulum_%d_%d_%f_%f_%d_%d.pkl" %

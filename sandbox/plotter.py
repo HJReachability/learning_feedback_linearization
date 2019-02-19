@@ -1,7 +1,7 @@
 """
 BSD 3-Clause License
 
-Copyright (c) 2019, HJ Reachability Group
+Copyright (c) 2018, HJ Reachability Group
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,47 +33,49 @@ Author(s): David Fridovich-Keil ( dfk@eecs.berkeley.edu )
 """
 ################################################################################
 #
-# Logging utility.
+# Plotting utility, intended to be used with Logger.
 #
 ################################################################################
 
-import numpy as np
 import dill
+import matplotlib.pyplot as plt
+import numpy as np
 
-class Logger(object):
+class Plotter(object):
     """
-    Logging utility. The log is stored as a dictionary of lists.
+    Plotting utility intended to be used with the Logger.
     """
 
     def __init__(self, filename):
         """
         Constructor.
 
-        :param filename: Where to save log.
+        :param filename: Where to load log.
         :type filename: string
         """
-        self._filename = filename
-        self._log = {}
-
-        # Make sure we can open the file!
-        fp = open(self._filename, "wb")
+        fp = open(filename, "rb")
+        self._log = dill.load(fp)
         fp.close()
 
-    def log(self, field, value):
+    def plot_scalar_fields(self, fields,
+                           title="", xlabel="", ylabel=""):
         """
-        Add the given value to the specified field.
+        Plot several scalar-valued fields over all time.
 
-        :param field: which field to add to
-        :type field: string
-        :param value: value to add
-        :type value: arbitrary
+        :param fields: list of fields to plot
+        :type fields: list of strings
         """
-        if field not in self._log:
-            self._log[field] = [value]
-        else:
-            self._log[field].append(value)
+        plt.figure()
+        for f in fields:
+            plt.plot(self._log[f], linewidth=2, markersize=12, label=f)
 
-    def dump(self):
-        fp = open(self._filename, "wb")
-        dill.dump(self._log, fp)
-        fp.close()
+        plt.legend()
+        self._set_title_and_axis_labels(title, xlabel, ylabel)
+
+    def show(self):
+        plt.show()
+
+    def _set_title_and_axis_labels(self, title, xlabel, ylabel):
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)

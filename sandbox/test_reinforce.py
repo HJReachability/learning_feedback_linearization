@@ -14,8 +14,15 @@ length2 = 1.0
 time_step = 0.02
 friction_coeff = 0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
+
+mass1_scaling = 1.05
+mass2_scaling = 0.95
+length1_scaling = 1.0
+length2_scaling = 1.0
 bad_dyn = DoublePendulum(
-    0.5 * mass1, 1.2 * mass2, 0.5 * length1, length2, time_step, friction_coeff)
+    mass1_scaling * mass1, mass2_scaling * mass2,
+    length1_scaling * length1, length2_scaling * length2,
+    time_step, friction_coeff)
 
 # Create a feedback linearization object.
 num_layers = 3
@@ -36,13 +43,15 @@ def initial_state_sampler():
 num_iters = 2000
 learning_rate = 1e-3
 discount_factor = 0.99
-num_rollouts = 25
-num_steps_per_rollout = 50
+num_rollouts = 50
+num_steps_per_rollout = 25
 
 # Logging.
-logger = Logger("logs/double_pendulum_%d_%d_%f_%f_%d_%d.pkl" %
+logger = Logger("logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f.pkl" %
                 (num_layers, num_hidden_units, noise_std, learning_rate,
-                 num_rollouts, num_steps_per_rollout))
+                 num_rollouts, num_steps_per_rollout,
+                 mass1_scaling, mass2_scaling,
+                 length1_scaling, length2_scaling))
 
 solver = Reinforce(num_iters,
                    learning_rate,

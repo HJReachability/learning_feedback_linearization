@@ -19,16 +19,17 @@ mass1_scaling = 1.05
 mass2_scaling = 0.95
 length1_scaling = 1.0
 length2_scaling = 1.0
+friction_coeff_scaling = 1.0
 bad_dyn = DoublePendulum(
     mass1_scaling * mass1, mass2_scaling * mass2,
     length1_scaling * length1, length2_scaling * length2,
-    time_step, friction_coeff)
+    time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
 num_layers = 3
 num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.1
+noise_std = 0.05
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -47,11 +48,12 @@ num_rollouts = 50
 num_steps_per_rollout = 25
 
 # Logging.
-logger = Logger("logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f.pkl" %
-                (num_layers, num_hidden_units, noise_std, learning_rate,
-                 num_rollouts, num_steps_per_rollout,
-                 mass1_scaling, mass2_scaling,
-                 length1_scaling, length2_scaling))
+logger = Logger(
+    "logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f_%f.pkl" %
+    (num_layers, num_hidden_units, noise_std, learning_rate,
+     num_rollouts, num_steps_per_rollout,
+     mass1_scaling, mass2_scaling,
+     length1_scaling, length2_scaling, friction_coeff_scaling))
 
 solver = Reinforce(num_iters,
                    learning_rate,

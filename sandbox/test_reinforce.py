@@ -35,7 +35,7 @@ fb = FeedbackLinearization(
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler():
-    lower = np.array([[-1.0], [-0.1], [-1.0], [-0.1]])
+    lower = np.array([[-np.pi - 0.5], [-0.1], [-np.pi - 0.5], [-0.1]])
     upper = -lower
     return np.random.uniform(lower, upper)
 

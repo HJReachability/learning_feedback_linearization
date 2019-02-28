@@ -1,10 +1,16 @@
 import torch
 import numpy as np
+import time
 
 from double_pendulum import DoublePendulum
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
 from logger import Logger
+
+# Seed everything.
+seed = np.random.choice(1000)
+torch.manual_seed(seed)
+np.random.seed(seed)
 
 # Create a double pendulum.
 mass1 = 1.0
@@ -49,11 +55,12 @@ num_steps_per_rollout = 25
 
 # Logging.
 logger = Logger(
-    "logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f_%f.pkl" %
+    "logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
     (num_layers, num_hidden_units, noise_std, learning_rate,
      num_rollouts, num_steps_per_rollout,
      mass1_scaling, mass2_scaling,
-     length1_scaling, length2_scaling, friction_coeff_scaling))
+     length1_scaling, length2_scaling, friction_coeff_scaling,
+     seed))
 
 solver = Reinforce(num_iters,
                    learning_rate,

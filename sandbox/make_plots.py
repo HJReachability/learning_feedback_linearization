@@ -4,32 +4,11 @@
 from plotter import Plotter
 
 # Plot everything.
-plotter1 = Plotter("./logs/double_pendulum_3_10_0.050000_0.001000_10_50.pkl")
-plotter1.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_3_10_0.050000_0.001000_10_50")
-plotter1.show()
+#filename = "./logs/double_pendulum_3x10_std0.050000_lr0.001000_kl0.100000_25_25_dyn_1.050000_0.950000_1.000000_1.000000_1.000000_seed_978.pkl"
+#filename = "./logs/double_pendulum_3_10_0.100000_0.001000_25_25_dyn_1.050000_0.950000_1.000000_1.000000.pkl"
+filename = "./logs/double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl"
+plotter = Plotter(filename)
+plotter.plot_scalar_fields(
+    ["mean_return"], title="Mean return")
 
-plotter2 = Plotter("./logs/double_pendulum_3_10_0.020000_0.001000_25_25.pkl")
-plotter2.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_3_10_0.020000_0.001000_25_25")
-plotter2.show()
-
-plotter3 = Plotter("./logs/double_pendulum_3_10_0.050000_0.001000_25_25.pkl")
-plotter3.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_3_10_0.050000_0.001000_25_25")
-plotter3.show()
-
-plotter4 = Plotter("./logs/double_pendulum_3_10_0.050000_0.010000_10_50.pkl")
-plotter4.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_3_10_0.050000_0.010000_10_50")
-plotter4.show()
-
-plotter5 = Plotter("./logs/double_pendulum_3_10_0.100000_0.001000_25_25.pkl")
-plotter5.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_3_10_0.100000_0.001000_25_25")
-plotter5.show()
-
-plotter6 = Plotter("./logs/double_pendulum_5_10_0.050000_0.001000_25_25.pkl")
-plotter6.plot_scalar_fields(
-    ["mean_return"], title="double_pendulum_5_10_0.050000_0.001000_25_25")
-plotter6.show()
+plotter.show()

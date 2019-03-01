@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-filename='./logs/double_pendulum_3_10_0.100000_0.001000_25_25.pkl'
+filename = "./logs/double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl"
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -51,7 +51,7 @@ linear_fb=1
 nominal=0
 T=1000
 to_render=1
-check_energy=1
+check_energy=0
 speed=0.001
 
 # Create a double pendulum. And a bad one
@@ -62,7 +62,7 @@ length2 = 1.0
 time_step = 0.02
 friction_coeff=0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step,friction_coeff)
-bad_dyn = DoublePendulum(0.5* mass1, 1.2 * mass2, 0.5*length1, length2, time_step,friction_coeff)
+bad_dyn = DoublePendulum(1.05* mass1, 0.95 * mass2, length1, length2, time_step,friction_coeff)
 
 # LQR Parameters and dynamics
 q=10.0
@@ -79,8 +79,8 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=np.zeros((4,T))
-reference[0,:]=2*np.pi*np.sin(np.linspace(0,T*time_step,T))
-reference[2,:]=2*np.pi*np.cos(np.linspace(0,T*time_step,T))
+reference[0,:]= np.pi #2*np.pi*np.sin(np.linspace(0,T*time_step,T))
+reference[2,:]= np.pi #2*np.pi*np.cos(np.linspace(0,T*time_step,T))
 
 learned_path=np.zeros((4,T+1))
 learned_controls_path=np.zeros((2,T))
@@ -105,7 +105,9 @@ if linear_fb:
 
         v=-1*K @ (desired_linear_system_state-ref)
 #        control= np.zeros((2,1))
-        control = fb_law.feedback(x,v).detach().numpy()
+#        control = fb_law.feedback(x,v).detach().numpy()
+        control = bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
+
         learned_controls_path[:,t]=control[:,0] #.detach().numpy()
         x=dyn.integrate(x,control) #.detach().numpy())
         learned_path[:,t+1]=(desired_linear_system_state)[:,0]

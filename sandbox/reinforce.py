@@ -10,6 +10,7 @@ class Reinforce(object):
     def __init__(self,
                  num_iters,
                  learning_rate,
+                 desired_kl,
                  discount_factor,
                  num_rollouts,
                  num_steps_per_rollout,
@@ -19,6 +20,7 @@ class Reinforce(object):
                  logger):
         self._num_iters = num_iters
         self._learning_rate = learning_rate
+        self._desired_kl = desired_kl
         self._discount_factor = discount_factor
         self._num_rollouts = num_rollouts
         self._num_steps_per_rollout = num_steps_per_rollout
@@ -34,6 +36,12 @@ class Reinforce(object):
         self._f2_optimizer = torch.optim.Adam(
             self._feedback_linearization._f2.parameters(),
             lr=self._learning_rate)
+
+        # Previous states and auxiliary controls. Used for KL update rule.
+        self._previous_xs = None
+        self._previous_vs = None
+        self._previous_means = None
+        self._previous_std = None
 
     def run(self, plot=False):
         for ii in range(self._num_iters):
@@ -130,9 +138,9 @@ class Reinforce(object):
         mean_return = 0.0
         for rollout in rollouts:
             for x, v, u, adv in zip(rollout["xs"],
-                                      rollout["vs"],
-                                      rollout["us"],
-                                      rollout["advantages"]):
+                                    rollout["vs"],
+                                    rollout["us"],
+                                    rollout["advantages"]):
                 objective -= self._feedback_linearization.log_prob(
                     u, x, v) * adv
 
@@ -147,12 +155,10 @@ class Reinforce(object):
         self._logger.log("mean_return", mean_return)
 
         if torch.isnan(objective) or torch.isinf(objective):
-            self._learning_rate /= 2.0
-
             for param_group in self._M2_optimizer.param_groups:
-                param_group['lr'] = self._learning_rate
+                param_group['lr'] /= 1.5
             for param_group in self._f2_optimizer.param_groups:
-                param_group['lr'] = self._learning_rate
+                param_group['lr'] /= 1.5
 
             print("=======> Oops. Objective was NaN or Inf. Please come again.")
             print("=======> Learning rate is now ", self._learning_rate)
@@ -166,6 +172,47 @@ class Reinforce(object):
         # (3) Update all learnable parameters.
         self._M2_optimizer.step()
         self._f2_optimizer.step()
+
+        # (4) Update learning rate according to KL divergence criterion.
+        if self._desired_kl is not None and self._previous_xs is not None:
+            kl = self._compute_kl()
+            lr_scaling = None
+            if kl > 2.0 * self._desired_kl:
+                lr_scaling = 1.0 / 1.5
+                self._learning_rate *= lr_scaling
+                print("DECREASING learning rate to ", self._learning_rate)
+            elif kl < 0.5 * self._desired_kl:
+                lr_scaling = 1.5
+                self._learning_rate *= lr_scaling
+                print("INCREASING learning rate to ", self._learning_rate)
+
+            if lr_scaling is not None:
+                for param_group in self._M2_optimizer.param_groups:
+                    param_group['lr'] *= lr_scaling
+                for param_group in self._f2_optimizer.param_groups:
+                    param_group['lr'] *= lr_scaling
+
+        # Update previous states visited and auxiliary control inputs.
+        if self._previous_xs is None:
+            self._previous_xs = np.zeros((
+                self._num_rollouts * self._num_steps_per_rollout,
+                self._dynamics.xdim))
+            self._previous_vs = np.zeros((
+                self._num_rollouts * self._num_steps_per_rollout,
+                self._dynamics.udim))
+            self._previous_means = np.zeros((
+                self._num_rollouts * self._num_steps_per_rollout,
+                self._dynamics.udim))
+
+        ii = 0
+        self._previous_std = self._feedback_linearization._noise_std
+        for r in rollouts:
+            for x, v in zip(r["xs"], r["vs"]):
+                self._previous_xs[ii, :] = x.flatten()
+                self._previous_vs[ii, :] = v.flatten()
+                u = self._feedback_linearization.feedback(x, v).detach().numpy()
+                self._previous_means[ii, :] = u.flatten()
+                ii += 1
 
     def _generate_v(self):
         """
@@ -215,7 +262,6 @@ class Reinforce(object):
         return np.split(
             y, indices_or_sections=self._num_steps_per_rollout, axis=1)
 
-
     def _reward(self, y_desired, y):
         SCALING = 10.0
         return -SCALING * np.linalg.norm(y_desired - y, 1)
@@ -241,3 +287,36 @@ class Reinforce(object):
         avg = sum(values) / float(len(values))
         baselined = [v - avg for v in values]
         rollout["advantages"] = baselined
+
+    def _compute_kl(self):
+        """
+        Compute average KL divergence between action distributions of current
+        and previous policies (averaged over states in the current experience
+        batch).
+
+        NOTE: this is KL(old || new). We've implemented it just for Gaussians,
+        the closed form for which may be found at:
+        https://en.wikipedia.org/wiki/Kullback–Leibler_divergence#Multivariate_normal_distributions
+        """
+        if self._previous_means is None:
+            return 0.0
+
+        num_states = self._num_rollouts * self._num_steps_per_rollout
+        num_dimensions = self._dynamics.udim
+        current_means = np.zeros((num_states, num_dimensions))
+        for ii in range(num_states):
+            x = np.reshape(self._previous_xs[ii, :], (self._dynamics.xdim, 1))
+            v = np.reshape(self._previous_vs[ii, :], (self._dynamics.udim, 1))
+            u = self._feedback_linearization.feedback(x, v).detach().numpy()
+            current_means[ii, :] = u.copy().flatten()
+
+        current_std = self._feedback_linearization._noise_std
+        current_cov = current_std**2 * np.ones(self._dynamics.udim)
+        previous_cov = self._previous_std**2 * np.ones(self._dynamics.udim)
+
+        means_diff = current_means - self._previous_means
+        kl = 0.5 * (np.sum(previous_cov / current_cov) - num_dimensions +
+                    np.sum(np.log(current_cov)) - np.sum(np.log(previous_cov)) +
+                    np.mean(np.sum((means_diff / current_cov) * means_diff,
+                                   axis = 1)))
+        return kl

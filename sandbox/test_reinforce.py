@@ -49,14 +49,15 @@ def initial_state_sampler():
 # Create REINFORCE.
 num_iters = 2000
 learning_rate = 1e-3
+desired_kl = 1e-1
 discount_factor = 0.99
-num_rollouts = 50
+num_rollouts = 25
 num_steps_per_rollout = 25
 
 # Logging.
 logger = Logger(
-    "logs/double_pendulum_%d_%d_%f_%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
-    (num_layers, num_hidden_units, noise_std, learning_rate,
+    "logs/double_pendulum_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
+    (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
      num_rollouts, num_steps_per_rollout,
      mass1_scaling, mass2_scaling,
      length1_scaling, length2_scaling, friction_coeff_scaling,
@@ -64,6 +65,7 @@ logger = Logger(
 
 solver = Reinforce(num_iters,
                    learning_rate,
+                   desired_kl,
                    discount_factor,
                    num_rollouts,
                    num_steps_per_rollout,

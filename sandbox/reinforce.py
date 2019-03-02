@@ -91,8 +91,8 @@ class Reinforce(object):
             x = self._initial_state_sampler()
 
             # (1) Generate a time series for v and corresponding y.
-            vs = self._generate_v()
-            ys = self._generate_y(x, vs)
+            vs = self._generate_vs()
+            ys = self._generate_ys(x, vs)
 
             # (2) Push through dynamics and get x, y time series.
             rollout = {"xs" : [],
@@ -219,7 +219,7 @@ class Reinforce(object):
                 self._previous_means[ii, :] = u.flatten()
                 ii += 1
 
-    def _generate_v(self):
+    def _generate_vs(self):
         """
         Use sinusoid with random frequency, amplitude, and bias:
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
@@ -238,34 +238,19 @@ class Reinforce(object):
         return np.split(
             v, indices_or_sections=self._num_steps_per_rollout, axis=1)
 
-    def _generate_y(self, x0, v):
+    def _generate_ys(self, x0, vs):
         """
-        Compute desired output given initial state and input sequence:
-                 ``` y(t) = h(x0) + \int \int v(t1) dt1 dt2 ```
+        Compute desired output sequence given initial state and input sequence.
+        This is computed by applying the true dynamics' feedback linearization.
         """
-        initial_observation = self._dynamics.observation(x0)
-        derivative_initial_observation = self._dynamics.observation_dot(x0)
-#        print("init obs: ", initial_observation)
+        x = x0.copy()
+        ys = []
+        for v in vs:
+            u = self._dynamics.feedback(x, v)
+            x = self._dynamics.integrate(x, u)
+            ys.append(self._dynamics.observation(x))
 
-        v_array = np.concatenate(v, axis=1)
-
-        # Append an extra 0 control at the end.
-        v_array = np.concatenate([v_array, np.zeros(v[0].shape)], axis=1)
-#        print("v", v_array)
-
-        single_integrated_v = self._dynamics._time_step * np.cumsum(
-            v_array, axis=1) + derivative_initial_observation
-#        double_integrated_v = np.cumsum(
-#            single_integrated_v, axis=1)
-        double_integrated_v = self._dynamics._time_step * np.cumsum(
-            single_integrated_v, axis=1)
-#        print("single_v: ", single_integrated_v)
-#        print("double_v: ", double_integrated_v)
-#        print("double_v_norm: ", np.linalg.norm(double_integrated_v, axis=0))
-
-        y = initial_observation + double_integrated_v[:, 1:]
-        return np.split(
-            y, indices_or_sections=self._num_steps_per_rollout, axis=1)
+        return ys
 
     def _reward(self, y_desired, y):
         SCALING = 10.0

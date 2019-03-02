@@ -14,27 +14,7 @@ class DoublePendulum(Dynamics):
         self._length2 = length2
         self.fig = None
         self.friction_coeff = friction_coeff
-
-        # Compute mass matrix inverse.
         self.g = 9.81
-        # #self._M_q_inv = lambda x : (
-        #     1.0 / ((self._mass1 + self._mass2) *
-        #            self._length1 * self._length2 * self._mass2)) * np.array([
-        #         [self._mass2 * self._length2,
-        #          -self._mass2 * self._length2 * np.cos(x[2, 0] - x[0, 0])],
-        #         [-self._mass2 * self._length2 * np.cos(x[2, 0] - x[0, 0]),
-        #         (self._mass1 + self._mass2) * self._length2]
-        #     ])
-
-        #self._M_q = lambda x : np.linalg.inv(self._M_q_inv(x))
-
-        # Compute coriolis and gravity term.
-        # self._f_q = lambda x : np.array([
-        #     [-self._mass2 * self._length2 * x[3, 0]**2 * np.sin(
-        #         x[0, 0] - x[2, 0]) - g * (self._mass1 + self._mass2)],
-        #     [self._mass2 * self._length1 * x[1, 0]**2 * np.sin(
-        #         x[0, 0] - x[2, 0]) - self._mass2 * g * np.sin(x[2, 0])]
-        # ])
 
         super(DoublePendulum, self).__init__(4, 2, 2, time_step)
 
@@ -56,17 +36,15 @@ class DoublePendulum(Dynamics):
         return xdot
 
     def _M_q(self,x):
+        """ Mass matrix. """
+        term = self._mass2 * self._length2 * self._length1 * np.cos(x[2, 0])
 
-        term=self._mass2*self._length2*self._length1*np.cos(x[2,0])
-
-        M=np.zeros((2,2))
-        M[0,0]=(self._mass1+self._mass2)*self._length1**2+self._mass2*self._length2**2+2*term
-
-        M[0,1]=self._mass2*self._length2**2+term
-
-        M[1,0]=self._mass2*self._length2**2+term
-
-        M[1,1]=self._mass2*self._length2**2
+        M = np.zeros((2, 2))
+        M[0, 0] = (self._mass1 + self._mass2) * self._length1**2 + \
+                  self._mass2 * self._length2**2 + 2.0 * term
+        M[0, 1] = self._mass2 * self._length2**2 + term
+        M[1, 0] = self._mass2 * self._length2**2 + term
+        M[1, 1] = self._mass2 * self._length2**2
 
         return M
 
@@ -74,21 +52,25 @@ class DoublePendulum(Dynamics):
          return np.linalg.inv(self._M_q(x))
 
     def _f_q(self,x):
-         term=self._mass2*self._length2*self._length1
-         F=np.zeros((2,1))
-         G=np.zeros((2,1))
+        """ Drift term. """
+        term = self._mass2 * self._length2 * self._length1
+        F = np.zeros((2, 1))
+        G = np.zeros((2, 1))
 
-         G[0,0]=self.g*((self._mass1+self._mass2)*self._length1*np.sin(x[0,0])+self._mass2*self._length2*np.sin(x[0,0]+x[2,0]))
-         G[1,0]=self.g*(self._mass2*self._length2*np.sin(x[0,0]+x[2,0]))
+        G[0, 0] = self.g * (
+            (self._mass1 + self._mass2) * self._length1 * np.sin(x[0,0]) +
+            self._mass2 * self._length2 * np.sin(x[0, 0] + x[2, 0]))
+        G[1, 0] = self.g * (
+            self._mass2 * self._length2 * np.sin(x[0, 0] + x[2, 0]))
 
-         F[0,0]=-term*(2*x[1,0]+x[3,0])*np.sin(x[2,0])*x[3,0]
-         F[1,0]=term*x[1,0]*np.sin(x[2,0])*x[1,0]
+        F[0, 0] = -term * (2.0 * x[1, 0] + x[3, 0]) * np.sin(x[2, 0]) * x[3,0]
+        F[1, 0] = term * x[1, 0] * np.sin(x[2, 0]) * x[1, 0]
 
-         friction=np.zeros((2,1))
-         friction[0,0]=self.friction_coeff*x[1,0]
-         friction[1,0]=self.friction_coeff*x[3,0]
+        friction = np.zeros((2, 1))
+        friction[0, 0] = self.friction_coeff * x[1 ,0]
+        friction[1, 0] = self.friction_coeff * x[3, 0]
 
-         return F + G + friction
+        return F + G + friction
 
     def energy(self,x):
         G=np.zeros((2,1))
@@ -113,10 +95,6 @@ class DoublePendulum(Dynamics):
     def observation(self, x):
         """ Compute y from x. """
         return np.array([[x[0, 0]], [x[2, 0]]])
-
-    def observation_dot(self, x):
-        """ Compute y dot from x. """
-        return np.array([[x[1, 0]], [x[3, 0]]])
 
     def feedback_linearize(self):
         """

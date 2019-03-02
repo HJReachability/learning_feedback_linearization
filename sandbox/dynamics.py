@@ -31,6 +31,13 @@ class Dynamics(object):
         """
         raise NotImplementedError()
 
+    def feedback(self, x, v):
+        """ Apply feedback linearization control law to compute u. """
+        M_q, f_q = self.feedback_linearize()
+
+        u = M_q(x) @ v + f_q(x)
+        return u
+
     def integrate(self, x0, u, dt=None):
         """
         Integrate initial state x0 (applying constant control u)

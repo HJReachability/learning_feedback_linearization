@@ -62,7 +62,7 @@ length2 = 1.0
 time_step = 0.02
 friction_coeff=0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step,friction_coeff)
-bad_dyn = DoublePendulum(0.9* mass1, 1.5 * mass2, length1, length2, time_step,friction_coeff)
+bad_dyn = DoublePendulum(.9* mass1, 1.5 * mass2, length1, length2, time_step,friction_coeff)
 
 # LQR Parameters and dynamics
 q=10.0

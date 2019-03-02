@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 from scipy.linalg import solve_continuous_are
-#import control
-
 
 from double_pendulum import DoublePendulum
 from reinforce import Reinforce
@@ -11,8 +9,7 @@ from logger import *
 import matplotlib.pyplot as plt
 from plotter import Plotter
 
-
-filename = "./logs/double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl"
+filename = "./logs/double_pendulum_4x20_std0.250000_lr0.001000_kl0.100000_100_10_dyn_0.900000_1.500000_1.000000_1.000000_1.000000_seed_102.pkl"
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -24,9 +21,7 @@ log = dill.load(fp)
 
 fb_law=log['feedback_linearization'][0]
 
-
 def get_Linear_System():
-
     A=np.zeros((4,4))
     A[0,1]=1
     A[2,3]=1
@@ -34,18 +29,13 @@ def get_Linear_System():
     B=np.zeros((4,2))
     B[1,0]=1
     B[3,1]=1
-
     return A,B
-
-
 
 def solve_lqr(A,B,Q,R):
     P = solve_continuous_are(A, B, Q, R)
     K = np.linalg.inv(R) @ B.T @ P
     #   K,S,E=control.lqr(A,B,Q,R)
     return K
-
-
 
 linear_fb=1
 nominal=0
@@ -92,21 +82,19 @@ x0=0.5*np.ones((4,1))
 if linear_fb:
     x=x0.copy()
     for t in range(T):
-        y=dyn.observation(x)
-        ydot=dyn.observation_dot(x)
-
-        desired_linear_system_state=np.zeros((4,1))
-        desired_linear_system_state[0,0]=y[0,0]
-        desired_linear_system_state[1,0]=ydot[0,0]
-        desired_linear_system_state[2,0]=y[1,0]
-        desired_linear_system_state[3,0]=ydot[1,0]
+#        desired_linear_system_state=np.zeros((4,1))
+#        desired_linear_system_state[0,0]=y[0,0]
+#        desired_linear_system_state[1,0]=ydot[0,0]
+#        desired_linear_system_state[2,0]=y[1,0]
+#        desired_linear_system_state[3,0]=ydot[1,0]
+        desired_linear_system_state = x.copy()
         ref=np.reshape(reference[:,t],(4,1))
         #np.concatenate([y,ydot],axis=0)
 
         v=-1*K @ (desired_linear_system_state-ref)
 #        control= np.zeros((2,1))
-#        control = fb_law.feedback(x,v).detach().numpy()
-        control = bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
+        control = fb_law.feedback(x,v).detach().numpy()
+#        control = bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
 
         learned_controls_path[:,t]=control[:,0] #.detach().numpy()
         x=dyn.integrate(x,control) #.detach().numpy())
@@ -120,14 +108,15 @@ if nominal:
 
     x=x0.copy()
     for t in range(T):
-        y=dyn.observation(x)
-        ydot=dyn.observation_dot(x)
+#        y=dyn.observation(x)
+#        ydot=dyn.observation_dot(x)
 
-        desired_linear_system_state=np.zeros((4,1))
-        desired_linear_system_state[0,0]=y[0,0]
-        desired_linear_system_state[1,0]=ydot[0,0]
-        desired_linear_system_state[2,0]=y[1,0]
-        desired_linear_system_state[3,0]=ydot[1,0]
+#        desired_linear_system_state=np.zeros((4,1))
+#        desired_linear_system_state[0,0]=y[0,0]
+#        desired_linear_system_state[1,0]=ydot[0,0]
+#        desired_linear_system_state[2,0]=y[1,0]
+#        desired_linear_system_state[3,0]=ydot[1,0]
+        desired_linear_system_state = x.copy()
         ref=np.reshape(reference[:,t],(4,1))
 
         v=-1*K @ (desired_linear_system_state-ref)

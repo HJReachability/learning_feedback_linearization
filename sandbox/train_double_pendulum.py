@@ -45,14 +45,13 @@ def initial_state_sampler():
     upper = -lower
     return np.random.uniform(lower, upper)
 
-
 # Create REINFORCE.
 num_iters = 2000
-learning_rate = 1e-3
-desired_kl = 1e-1
+learning_rate = 1e-4
+desired_kl = 1e-4
 discount_factor = 0.99
-num_rollouts = 100
-num_steps_per_rollout = 10
+num_rollouts = 50
+num_steps_per_rollout = 25
 
 # Logging.
 logger = Logger(

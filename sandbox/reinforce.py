@@ -275,7 +275,8 @@ class Reinforce(object):
         """ Baseline raw values. """
         values = rollout["values"]
         avg = sum(values) / float(len(values))
-        baselined = [v - avg for v in values]
+        std = np.std(np.array(values))
+        baselined = [(v - avg) / std for v in values]
         rollout["advantages"] = baselined
 
     def _compute_kl(self):

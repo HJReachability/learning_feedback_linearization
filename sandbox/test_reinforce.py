@@ -21,8 +21,8 @@ time_step = 0.02
 friction_coeff = 0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
 
-mass1_scaling = 1.05
-mass2_scaling = 0.95
+mass1_scaling = 0.9
+mass2_scaling = 1.5
 length1_scaling = 1.0
 length2_scaling = 1.0
 friction_coeff_scaling = 1.0
@@ -35,13 +35,13 @@ bad_dyn = DoublePendulum(
 num_layers = 3
 num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.05
+noise_std = 0.1
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler():
-    lower = np.array([[-np.pi - 0.5], [-0.1], [-np.pi - 0.5], [-0.1]])
+    lower = np.array([[-np.pi - 0.5], [-0.5], [-np.pi - 0.5], [-0.5]])
     upper = -lower
     return np.random.uniform(lower, upper)
 
@@ -51,8 +51,8 @@ num_iters = 2000
 learning_rate = 1e-3
 desired_kl = 1e-1
 discount_factor = 0.99
-num_rollouts = 25
-num_steps_per_rollout = 25
+num_rollouts = 100
+num_steps_per_rollout = 10
 
 # Logging.
 logger = Logger(

@@ -30,12 +30,16 @@ class Reinforce(object):
         self._logger = logger
 
         # Use RMSProp as the optimizer.
-        self._M2_optimizer = torch.optim.Adam(
+        self._M2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._M2.parameters(),
-            lr=self._learning_rate)
-        self._f2_optimizer = torch.optim.Adam(
+            lr=self._learning_rate,
+            momentum=0.8,
+            weight_decay=0.0001)
+        self._f2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._f2.parameters(),
-            lr=self._learning_rate)
+            lr=self._learning_rate,
+            momentum=0.8,
+            weight_decay=0.0001)
 
         # Previous states and auxiliary controls. Used for KL update rule.
         self._previous_xs = None
@@ -153,6 +157,7 @@ class Reinforce(object):
         print("Mean return is: ", mean_return)
 
         self._logger.log("mean_return", mean_return)
+        self._logger.log("learning_rate", self._learning_rate)
 
         if torch.isnan(objective) or torch.isinf(objective):
             for param_group in self._M2_optimizer.param_groups:

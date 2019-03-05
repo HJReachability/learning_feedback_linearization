@@ -110,3 +110,11 @@ class FeedbackLinearization(object):
 
         return torch.sum(self.noisy_feedback(x, v).log_prob(
             torch.from_numpy(u).float()))
+
+    def prob(self, u, x, v):
+        """ Compute probability of u given x, v. """
+        v = np.reshape(v, (self._udim, 1))
+        u = np.reshape(u, (self._udim, 1))
+
+        return torch.sum(self.noisy_feedback(x, v).prob(
+            torch.from_numpy(u).float()))

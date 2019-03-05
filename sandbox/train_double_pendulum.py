@@ -4,6 +4,7 @@ import time
 
 from double_pendulum import DoublePendulum
 from reinforce import Reinforce
+from ppo import PPO
 from feedback_linearization import FeedbackLinearization
 from logger import Logger
 
@@ -45,7 +46,7 @@ def initial_state_sampler():
     upper = -lower
     return np.random.uniform(lower, upper)
 
-# Create REINFORCE.
+# Create PPO.
 num_iters = 2000
 learning_rate = 1e-3
 desired_kl = -1.0
@@ -62,16 +63,16 @@ logger = Logger(
      length1_scaling, length2_scaling, friction_coeff_scaling,
      seed))
 
-solver = Reinforce(num_iters,
-                   learning_rate,
-                   desired_kl,
-                   discount_factor,
-                   num_rollouts,
-                   num_steps_per_rollout,
-                   dyn,
-                   initial_state_sampler,
-                   fb,
-                   logger)
+solver = PPO(num_iters,
+             learning_rate,
+             desired_kl,
+             discount_factor,
+             num_rollouts,
+             num_steps_per_rollout,
+             dyn,
+             initial_state_sampler,
+             fb,
+             logger)
 
 # Run this guy.
 solver.run(plot=False)

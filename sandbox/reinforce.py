@@ -32,14 +32,14 @@ class Reinforce(object):
         # Use RMSProp as the optimizer.
         self._M2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._M2.parameters(),
-            lr=self._learning_rate,
-            momentum=0.8,
-            weight_decay=0.0001)
+            lr=self._learning_rate)
+#            momentum=0.8,
+#            weight_decay=0.0001)
         self._f2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._f2.parameters(),
-            lr=self._learning_rate,
-            momentum=0.8,
-            weight_decay=0.0001)
+            lr=self._learning_rate)
+#            momentum=0.8,
+#            weight_decay=0.0001)
 
         # Previous states and auxiliary controls. Used for KL update rule.
         self._previous_xs = None
@@ -179,7 +179,7 @@ class Reinforce(object):
         self._f2_optimizer.step()
 
         # (4) Update learning rate according to KL divergence criterion.
-        if self._desired_kl is not None and self._previous_xs is not None:
+        if self._desired_kl > 0.0 and self._previous_xs is not None:
             kl = self._compute_kl()
             lr_scaling = None
             if kl > 2.0 * self._desired_kl:

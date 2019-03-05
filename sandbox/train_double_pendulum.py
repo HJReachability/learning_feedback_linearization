@@ -22,7 +22,7 @@ friction_coeff = 0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
 
 mass1_scaling = 0.9
-mass2_scaling = 1.5
+mass2_scaling = 1.2
 length1_scaling = 1.0
 length2_scaling = 1.0
 friction_coeff_scaling = 1.0
@@ -34,7 +34,7 @@ bad_dyn = DoublePendulum(
 # Create a feedback linearization object.
 num_layers = 3
 num_hidden_units = 10
-activation = torch.nn.Tanh()
+activation = torch.nn.ReLU()
 noise_std = 0.1
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
@@ -47,10 +47,10 @@ def initial_state_sampler():
 
 # Create REINFORCE.
 num_iters = 2000
-learning_rate = 1e-4
-desired_kl = 1e-4
+learning_rate = 1e-3
+desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 50
+num_rollouts = 75
 num_steps_per_rollout = 25
 
 # Logging.

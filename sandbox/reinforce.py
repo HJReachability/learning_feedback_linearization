@@ -254,7 +254,7 @@ class Reinforce(object):
 
     def _reward(self, y_desired, y):
         SCALING = 10.0
-        return -SCALING * np.linalg.norm(y_desired - y, 1)
+        return -SCALING * self._dynamics.observation_distance(y_desired, y)
 
     def _compute_values(self, rollout):
         """ Add a sum of future discounted rewards field to rollout dict."""

@@ -93,8 +93,8 @@ if linear_fb:
 
         v=-1*K @ (desired_linear_system_state-ref)
 #        control= np.zeros((2,1))
-        control = fb_law.feedback(x,v).detach().numpy()
-#        control = bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
+#        control = fb_law.feedback(x,v).detach().numpy()
+        control = bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
 
         learned_controls_path[:,t]=control[:,0] #.detach().numpy()
         x=dyn.integrate(x,control) #.detach().numpy())

@@ -38,6 +38,16 @@ class Dynamics(object):
         u = M_q(x) @ v + f_q(x)
         return u
 
+    def observation_distance(self, y1, y2):
+        """ Compute a distance metric on the observation space. """
+        dtheta1 = min(
+            abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi),
+            abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+        dtheta2 = min(
+            abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi),
+            abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+        return dtheta1 + dtheta2
+
     def integrate(self, x0, u, dt=None):
         """
         Integrate initial state x0 (applying constant control u)

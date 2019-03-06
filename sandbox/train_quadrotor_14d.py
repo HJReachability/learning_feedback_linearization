@@ -37,12 +37,26 @@ fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
 # Create an initial state sampler for the double pendulum.
-def initial_state_sampler():
-    lower = np.array([[-1.0, -1.0, -1.0,
-                       -np.pi - 0.5, -np.pi * 0.25, -np.pi * 0.25,
-                       -0.1, -0.1, -0.1,
-                       -1.0, # This is the thrust acceleration - g.
-                       -0.1, -0.1, -0.1, -0.1]]).T
+def initial_state_sampler(num):
+    if num < 500:
+        lower = np.array([[-0.25, -0.25, -0.25,
+                           -0.1, -0.1, -0.1,
+                           -0.1, -0.1, -0.1,
+                           -1.0, # This is the thrust acceleration - g.
+                           -0.1, -0.1, -0.1, -0.1]]).T
+    elif num < 1500:
+        lower = np.array([[-1.0, -1.0, -1.0,
+                           -0.5, -0.25, -0.25,
+                           -0.2, -0.2, -0.2,
+                           -1.5, # This is the thrust acceleration - g.
+                           -0.2, -0.2, -0.2, -0.2]]).T
+    else:
+        lower = np.array([[-2.5, -2.5, -2.5,
+                           -np.pi, -1.0, -1.0,
+                           -0.3, -0.3, -0.3,
+                           -2.0, # This is the thrust acceleration - g.
+                           -0.3, -0.3, -0.3, -0.3]]).T
+
     upper = -lower
     lower[9, 0] = (lower[9, 0] + 9.81) / mass
     upper[9, 0] = (upper[9, 0] + 9.81) / mass
@@ -52,10 +66,10 @@ def initial_state_sampler():
 # Create REINFORCE.
 num_iters = 2000
 learning_rate = 1e-3
-desired_kl = 1e-1
+desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 100
-num_steps_per_rollout = 10
+num_rollouts = 50
+num_steps_per_rollout = 25
 
 # Logging.
 logger = Logger(

@@ -32,7 +32,7 @@ bad_dyn = Quadrotor14D(
 num_layers = 3
 num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.1
+noise_std = 1.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -70,12 +70,14 @@ desired_kl = -1.0
 discount_factor = 0.99
 num_rollouts = 50
 num_steps_per_rollout = 25
+norm = 2
+SCALING = 100.0
 
 # Logging.
 logger = Logger(
-    "logs/quadrotor_14d_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+    "logs/quadrotor_14d_%dx%d_std%f_lr%f_kl%f_%d_%d_norm%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
     (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
-     num_rollouts, num_steps_per_rollout,
+     num_rollouts, num_steps_per_rollout, norm,
      mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
      seed))
 
@@ -88,7 +90,9 @@ solver = Reinforce(num_iters,
                    dyn,
                    initial_state_sampler,
                    fb,
-                   logger)
+                   logger,
+                   norm,
+                   SCALING)
 
 # Run this guy.
 solver.run(plot=False)

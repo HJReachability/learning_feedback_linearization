@@ -17,7 +17,9 @@ class Reinforce(object):
                  dynamics,
                  initial_state_sampler,
                  feedback_linearization,
-                 logger,norm):
+                 logger,
+                 norm,
+                 scaling):
         self._num_iters = num_iters
         self._learning_rate = learning_rate
         self._desired_kl = desired_kl
@@ -40,14 +42,17 @@ class Reinforce(object):
             lr=self._learning_rate)
 #            momentum=0.8,
 #            weight_decay=0.0001)
+        self._noise_std_optimizer = torch.optim.RMSprop(
+            [self._feedback_linearization._noise_std_variable],
+            lr=self._learning_rate)
 
         # Previous states and auxiliary controls. Used for KL update rule.
         self._previous_xs = None
         self._previous_vs = None
         self._previous_means = None
         self._previous_std = None
-        self._norm=norm
-        self.SCALING=10.0
+        self._norm = norm
+        self._scaling =  scaling
 
     def run(self, plot=False,show_diff=False):
         for ii in range(self._num_iters):
@@ -78,9 +83,11 @@ class Reinforce(object):
             self._logger.log("y_desireds", y_desireds)
 
             # Every 10 steps, log a deepcopy of the full feedback linearization.
-            if ii % 10:
-                self._logger.log("feedback_linearization",
-                                 copy.deepcopy(self._feedback_linearization))
+#            if ii % 10:
+#                self._logged_feedback_linearization = copy.deepcopy(
+#                    self._feedback_linearization)
+#                self._logger.log(
+#                    "feedback_linearization", self._logged_feedback_linearization)
 
             # Update stuff.
             self._update_feedback(rollouts)
@@ -100,6 +107,7 @@ class Reinforce(object):
                 oldweightsM=copy.deepcopy(newM)
                 oldweightsf=copy.deepcopy(newF)
             self._logger.dump()
+
         # Log the learned model.
         self._logger.log("feedback_linearization", self._feedback_linearization)
 
@@ -187,6 +195,8 @@ class Reinforce(object):
                 param_group['lr'] /= 1.5
             for param_group in self._f2_optimizer.param_groups:
                 param_group['lr'] /= 1.5
+            for param_group in self._feedback_linearization._noise_std_optimizer.param_groups:
+                param_group['lr'] /= 1.5
 
             print("=======> Oops. Objective was NaN or Inf. Please come again.")
             print("=======> Learning rate is now ", self._learning_rate)
@@ -195,6 +205,7 @@ class Reinforce(object):
         # (2) Backpropagate derivatives.
         self._M2_optimizer.zero_grad()
         self._f2_optimizer.zero_grad()
+        self._noise_std_optimizer.zero_grad()
         objective.backward()
 
         # (3) Update all learnable parameters.
@@ -219,6 +230,9 @@ class Reinforce(object):
                     param_group['lr'] *= lr_scaling
                 for param_group in self._f2_optimizer.param_groups:
                     param_group['lr'] *= lr_scaling
+                for param_group in self._feedback_linearization._noise_std_optimizer.param_groups:
+                    param_group['lr'] /= 1.5
+
 
         # Update previous states visited and auxiliary control inputs.
         if self._previous_xs is None:
@@ -276,8 +290,8 @@ class Reinforce(object):
         return ys
 
     def _reward(self, y_desired, y):
-
-        return -self.SCALING * self._dynamics.observation_distance(y_desired, y,self._norm)
+        return -self._scaling * self._dynamics.observation_distance(
+            y_desired, y, self._norm)
 
     def _compute_values(self, rollout):
         """ Add a sum of future discounted rewards field to rollout dict."""

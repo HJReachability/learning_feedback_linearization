@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from scipy.linalg import block_diag
 import math
 
 from dynamics import Dynamics
@@ -12,7 +13,7 @@ class Quadrotor14D(Dynamics):
         self._Iz = Iz
         super(Quadrotor14D, self).__init__(14, 4, 4, time_step)
 
-    def __call__(self, x, u):
+    def __call__(self, x0, u):
         """
         Compute xdot from x, u. Please refer to:
         https://www.kth.se/polopoly_fs/1.588039.1550155544!/Thesis%20KTH%20-%20Francesco%20Sabatino.pdf
@@ -21,33 +22,52 @@ class Quadrotor14D(Dynamics):
         ` u = [u1, u2, u3, u4] `
         ` y = [x, y, z, psi] `
         """
+        m = self._mass
+        Ix = self._Ix
+        Iy = self._Iy
+        Iz = self._Iz
+
+        # Unpack x.
+        x = x0[0, 0]
+        y = x0[1, 0]
+        z = x0[2, 0]
+        psi = x0[3, 0]
+        theta = x0[4, 0]
+        phi = x0[5, 0]
+        dx = x0[6, 0]
+        dy = x0[7, 0]
+        dz = x0[8, 0]
+        zeta = x0[9, 0]
+        xi = x0[10, 0]
+        p = x0[11, 0]
+        q = x0[12, 0]
+        r = x0[13, 0]
+
+        # Fix sines, cosines, and tangents.
+        sin = np.sin
+        cos = np.cos
+        tan = math.tan
 
         # Drift term. From pp. 33 of linked document above.
-        g17 = -(1.0 / self._mass) * (
-            np.sin(x[5, 0]) * np.sin(x[3, 0]) +
-            np.cos(x[5, 0]) * np.cos(x[3, 0]) * np.sin(x[4, 0]))
-        g18 = -(1.0 / self._mass) * (
-            np.cos(x[3, 0]) * np.sin(x[5, 0]) -
-            np.cos(x[5, 0]) * np.cos(x[3, 0]) * np.sin(x[4, 0]))
-        g19 = -(1.0 / self._mass) * (np.cos(x[5, 0]) * np.cos(x[4, 0]))
+        g17 = -(1.0 / m) * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta))
+        g18 = -(1.0 / m) * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta))
+        g19 = -(1.0 / m) * (cos(phi) * cos(theta))
 
         drift_term = np.array([
-            [x[6, 0]],
-            [x[7, 0]],
-            [x[8, 0]],
-            [x[12, 0] * (np.sin(x[5, 0]) / np.cos(x[4, 0])) +
-             x[13, 0] * (np.cos(x[5, 0]) / np.cos(x[4, 0]))],
-            [x[12, 0] * np.cos(x[5, 0]) - x[13, 0] * np.sin(x[5, 0])],
-            [x[11, 0] + x[12, 0] * (np.sin(x[5, 0]) * math.tan(x[4, 0])) +
-             x[13, 0] * np.cos(x[5, 0]) * math.tan(x[4, 0])],
-            [g17 * x[9, 0]],
-            [g18 * x[9, 0]],
-            [g19 * x[9, 0]],
-            [x[10, 0]],
+            [dx],
+            [dy],
+            [dz],
+            [q * sin(phi) / cos(theta) + r * cos(phi) / cos(theta)],
+            [q * cos(phi) - r * sin(phi)],
+            [p + q * sin(phi) * tan(theta) + r * cos(phi) * tan(theta)],
+            [g17 * zeta],
+            [g18 * zeta],
+            [g19 * zeta],
+            [xi],
             [0.0],
-            [x[12, 0] * x[13, 0] * (self._Iy - self._Iz) / self._Ix],
-            [x[11, 0] * x[13, 0] * (self._Iz - self._Ix) / self._Iy],
-            [x[11, 0] * x[12, 0] * (self._Ix - self._Iy) / self._Iz]
+            [(Iy - Iz) / Ix * q * r],
+            [(Iz - Ix) / Iy * p * r],
+            [(Ix - Iy) / Iz * p * q]
         ])
 
         # Control coefficient matrix. From pp. 34 of the linked document above.
@@ -75,7 +95,106 @@ class Quadrotor14D(Dynamics):
         """
         return self._M_q, self._f_q
 
+    def linearized_system_state(self, x0):
+        """
+        Computes linearized system state `z` from `x` (pp. 35). Please refer to
+        the file `quad_sym.m` in which we use MATLAB's symbolic toolkit to
+        derive this ungodly mess.
+        """
+        m = self._mass
+        Ix = self._Ix
+        Iy = self._Iy
+        Iz = self._Iz
+
+        # Unpack x.
+        x = x0[0, 0]
+        y = x0[1, 0]
+        z = x0[2, 0]
+        psi = x0[3, 0]
+        theta = x0[4, 0]
+        phi = x0[5, 0]
+        dx = x0[6, 0]
+        dy = x0[7, 0]
+        dz = x0[8, 0]
+        zeta = x0[9, 0]
+        xi = x0[10, 0]
+        p = x0[11, 0]
+        q = x0[12, 0]
+        r = x0[13, 0]
+
+        # Fix sines, cosines, and tangents.
+        sin = np.sin
+        cos = np.cos
+        tan = math.tan
+
+        return np.array([
+            [x],
+            [dx],
+            [-(zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/m],
+            [-(xi*sin(phi)*sin(psi) + p*zeta*cos(phi)*sin(psi) + xi*cos(phi)*cos(psi)*sin(theta) + q*zeta*cos(psi)*cos(theta) - p*zeta*cos(psi)*sin(phi)*sin(theta))/m],
+            [y],
+            [dy],
+            [-(zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/m],
+            [-(xi*cos(psi)*sin(phi) - q*zeta*cos(theta)*sin(psi) - xi*cos(phi)*sin(psi)*sin(theta) + p*zeta*cos(phi)*cos(psi) + p*zeta*sin(phi)*sin(psi)*sin(theta))/m],
+            [z],
+            [dz],
+            [-(zeta*cos(phi)*cos(theta))/m],
+            [(q*zeta*sin(theta) - xi*cos(phi)*cos(theta) + p*zeta*cos(theta)*sin(phi))/m],
+            [psi],
+            [(r*cos(phi) + q*sin(phi))/cos(theta)]
+        ])
+
+    def linearized_system(self):
+        """
+        Return A, B, C matrices of linearized system from pp. 36, i.e.
+             ```
+             \dot z = A z + B v
+             y = C z
+             ```
+        """
+        # Construct A.
+        A1 = np.zeros((4, 4))
+        A1[0, 1] = 1.0
+        A1[1, 2] = 1.0
+        A1[2, 3] = 1.0
+
+        A2 = np.zeros((2, 2))
+        A2[0, 1] = 1.0
+
+        A = block_diag(A1, A1, A1, A2)
+
+        # Construct B.
+        B1 = np.zeros((4, 4))
+        B1[3, 0] = 1.0
+
+        B2 = np.zeros((4, 4))
+        B2[3, 1] = 1.0
+
+        B3 = np.zeros((4, 4))
+        B3[3, 2] = 1.0
+
+        B4 = np.zeros((2, 4))
+
+        B = np.concatenate([B1, B2, B3, B4], axis = 0)
+
+        # Construct C.
+        C = np.zeros((4, 14))
+        C[0, 0] = 1.0
+        C[1, 4] = 1.0
+        C[2, 8] = 1.0
+        C[3, 12] = 1.0
+
+        return A, B, C
+
+    def _f_q(self, x0):
+        """ This is \alpha(x) on pp. 31. """
+        return -np.linalg.inv(self._Delta_q(x0)) @ self._b_q(x0)
+
     def _M_q(self, x0):
+        """ This is \beta(x) on pp. 31. """
+        return np.linalg.inv(self._Delta_q(x0))
+
+    def _Delta_q(self, x0):
         """
         v-coefficient matrix in feedback linearization controller. Please refer
         to the file `quad_sym.m` in which we use MATLAB's symbolic toolkit to
@@ -114,7 +233,7 @@ class Quadrotor14D(Dynamics):
             [0, 0, sin(phi)/(Iy*cos(theta)), cos(phi)/(Iz*cos(theta))]
         ])
 
-    def _f_q(self, x0):
+    def _b_q(self, x0):
         """
         Drift term in feedback linearization controller. Please refer to
         the file `quad_sym.m` in which we use MATLAB's symbolic toolkit to

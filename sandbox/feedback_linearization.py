@@ -92,6 +92,7 @@ class FeedbackLinearization(object):
             SCALING * self._f2(torch.from_numpy(x.flatten()).float()),
             (self._udim, 1))
 
+        # TODO! Make sure this is right (and consistent with dynamics.feedback).
         return torch.mm(M, torch.from_numpy(v).float()) + f
 
     def noisy_feedback(self, x, v):

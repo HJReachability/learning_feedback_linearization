@@ -77,6 +77,11 @@ class Reinforce(object):
             self._logger.log("ys", ys)
             self._logger.log("y_desireds", y_desireds)
 
+            # Every 10 steps, log a deepcopy of the full feedback linearization.
+            if ii % 10:
+                self._logger.log("feedback_linearization",
+                                 copy.deepcopy(self._feedback_linearization))
+
             # Update stuff.
             self._update_feedback(rollouts)
 
@@ -174,6 +179,8 @@ class Reinforce(object):
 
         self._logger.log("mean_return", mean_return)
         self._logger.log("learning_rate", self._learning_rate)
+        self._logger.log(
+            "stddev", self._feedback_linearization._noise_std.item())
 
         if torch.isnan(objective) or torch.isinf(objective):
             for param_group in self._M2_optimizer.param_groups:

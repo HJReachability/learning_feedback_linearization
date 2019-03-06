@@ -76,7 +76,8 @@ class FeedbackLinearization(object):
         self._udim = dynamics.udim
 
         # Set noise std.
-        self._noise_std = noise_std
+        self._noise_std = noise_std * torch.abs(
+            torch.ones((1, 1), requires_grad=True)) + 0.01
 
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """

@@ -85,7 +85,7 @@ class Reinforce(object):
                 newF=[weight.detach().numpy() for weight in list(self._feedback_linearization._f2.parameters())]
 
                 # Prematurely dump in case we terminate early.
-                
+
                 if ii>0:
                     diffM=np.sum([np.linalg.norm(old-new)**2 for old,new in zip(oldweightsM,newM)])
                     difff=np.sum([np.linalg.norm(old-new)**2 for old,new in zip(oldweightsf,newF)])
@@ -226,7 +226,7 @@ class Reinforce(object):
                 self._dynamics.udim))
 
         ii = 0
-        self._previous_std = self._feedback_linearization._noise_std
+        self._previous_std = self._feedback_linearization._noise_std.item()
         for r in rollouts:
             for x, v in zip(r["xs"], r["vs"]):
                 self._previous_xs[ii, :] = x.flatten()
@@ -242,7 +242,7 @@ class Reinforce(object):
         """
         MAX_CONTINUOUS_TIME_FREQ = 2.0
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
-        
+
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
@@ -317,7 +317,7 @@ class Reinforce(object):
             u = self._feedback_linearization.feedback(x, v).detach().numpy()
             current_means[ii, :] = u.copy().flatten()
 
-        current_std = self._feedback_linearization._noise_std
+        current_std = self._feedback_linearization._noise_std.item()
         current_cov = current_std**2 * np.ones(self._dynamics.udim)
         previous_cov = self._previous_std**2 * np.ones(self._dynamics.udim)
 

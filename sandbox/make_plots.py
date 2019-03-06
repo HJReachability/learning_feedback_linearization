@@ -1,14 +1,32 @@
 
 
-
 from plotter import Plotter
+from os import listdir
+from os.path import isfile, join
+import matplotlib.pyplot as plt
+
+
+filenames = [file for file in listdir('./logs/') if isfile(join('./logs/', file))]
 
 # Plot everything.
-filename = "./logs/double_pendulum_4x20_std0.250000_lr0.001000_kl0.100000_100_10_dyn_0.900000_1.500000_1.000000_1.000000_1.000000_seed_102.pkl"
-plotter = Plotter(filename)
-plotter.plot_scalar_fields(
-    ["mean_return"], title="Mean return")
-plotter.plot_scalar_fields(
-    ["learning_rate"], title="Learning rate")
-
-plotter.show()
+indexes=range(len(filenames))
+for file in filenames:
+	if file[:17]=='double_pendulum_P':
+		try:
+			plotter = Plotter("./logs/"+file)
+			plotter.plot_scalar_fields(["mean_return"])
+			plt.title('PPO')
+			plotter.show()
+		except EOFError:
+			print('PASSED FILE: '+file)
+			pass
+	elif file[:17]=='double_pendulum_R':
+		try:
+			print(file[16:])
+			plotter = Plotter("./logs/"+file)
+			plotter.plot_scalar_fields(["mean_return"])
+			plt.title('Reinforce')
+			plotter.show()
+		except EOFError:
+			print('PASSED FILE: '+file)
+			pass

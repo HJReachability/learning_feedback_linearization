@@ -22,8 +22,11 @@ time_step = 0.02
 friction_coeff = 0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
 
-mass1_scaling = 0.95
-mass2_scaling = 1.05
+# Bad dynamics guess or train from zero
+
+
+mass1_scaling = 1.5
+mass2_scaling = 1.5
 length1_scaling = 1.0
 length2_scaling = 1.0
 friction_coeff_scaling = 1.0
@@ -33,26 +36,43 @@ bad_dyn = DoublePendulum(
     time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
-num_layers = 4
-num_hidden_units = 20
+num_layers = 3
+num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.1
+noise_std = 2.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
+
 
 # Choose Algorithm
 do_PPO=0
 do_Reinforce=1
+
+#Algorithm Params ** Only for Reinforce:
+
+## Train for zero (no bad dynamics)
+from_zero=False
+
+# Rewards scaling - default is 10.0
+scale_rewards=100.0
+
+# norm to use
+norm=1
+
+if from_zero:
+	fb._M1= lambda x : np.zeros((2,2))
+	fb._f1= lambda x : np.zeros((2,1))
+
 
 assert do_PPO!=do_Reinforce
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
 	if num<500:
-		lower = np.array([[-1.0], [-0.1], [-1.0], [-0.1]])
+		lower = np.array([[-0.5], [-0.1], [-0.5], [-0.1]])
 		upper = -lower
 	elif num>=500 and num<1500:
-		lower = np.array([[-2.0], [-0.25], [-2.0], [-0.25]])
+		lower = np.array([[-1.5], [-0.25], [-1.5], [-0.25]])
 		upper = -lower
 	elif num>=1500:
 		lower = np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
@@ -97,9 +117,9 @@ if do_PPO:
 if do_Reinforce:
 
 	logger = Logger(
-    "./logs/double_pendulum_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
+    "./logs/double_pendulum_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_norm%f_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
     (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
-     num_rollouts, num_steps_per_rollout,
+     num_rollouts, num_steps_per_rollout,norm,
      mass1_scaling, mass2_scaling,
      length1_scaling, length2_scaling, friction_coeff_scaling,
      seed))
@@ -113,10 +133,13 @@ if do_Reinforce:
 	             dyn,
 	             initial_state_sampler,
 	             fb,
-	             logger)
+	             logger,
+	             norm)
+
+	solver.SCALING=scale_rewards
 
 # Run this guy.
-solver.run(plot=False)
+solver.run(plot=False,show_diff=False)
 
 # Dump the log.
 logger.dump()

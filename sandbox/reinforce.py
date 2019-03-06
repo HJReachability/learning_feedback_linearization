@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from collections import deque
 import matplotlib.pyplot as plt
-
+import copy
 from feedback_linearization import FeedbackLinearization
 from dynamics import Dynamics
 
@@ -17,7 +17,7 @@ class Reinforce(object):
                  dynamics,
                  initial_state_sampler,
                  feedback_linearization,
-                 logger):
+                 logger,norm):
         self._num_iters = num_iters
         self._learning_rate = learning_rate
         self._desired_kl = desired_kl
@@ -46,8 +46,10 @@ class Reinforce(object):
         self._previous_vs = None
         self._previous_means = None
         self._previous_std = None
+        self._norm=norm
+        self.SCALING=10.0
 
-    def run(self, plot=False):
+    def run(self, plot=False,show_diff=False):
         for ii in range(self._num_iters):
             print("---------- Iteration ", ii, " ------------")
             rollouts = self._collect_rollouts(ii)
@@ -78,9 +80,21 @@ class Reinforce(object):
             # Update stuff.
             self._update_feedback(rollouts)
 
-            # Prematurely dump in case we terminate early.
-            self._logger.dump()
+            if show_diff:
+                newM=[weight.detach().numpy() for weight in list(self._feedback_linearization._M2.parameters())]
+                newF=[weight.detach().numpy() for weight in list(self._feedback_linearization._f2.parameters())]
 
+                # Prematurely dump in case we terminate early.
+                
+                if ii>0:
+                    diffM=np.sum([np.linalg.norm(old-new)**2 for old,new in zip(oldweightsM,newM)])
+                    difff=np.sum([np.linalg.norm(old-new)**2 for old,new in zip(oldweightsf,newF)])
+
+                    print (diffM,difff)
+
+                oldweightsM=copy.deepcopy(newM)
+                oldweightsf=copy.deepcopy(newF)
+            self._logger.dump()
         # Log the learned model.
         self._logger.log("feedback_linearization", self._feedback_linearization)
 
@@ -228,7 +242,7 @@ class Reinforce(object):
         """
         MAX_CONTINUOUS_TIME_FREQ = 2.0
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
-
+        
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
@@ -255,8 +269,8 @@ class Reinforce(object):
         return ys
 
     def _reward(self, y_desired, y):
-        SCALING = 10.0
-        return -SCALING * self._dynamics.observation_distance(y_desired, y)
+
+        return -self.SCALING * self._dynamics.observation_distance(y_desired, y,self._norm)
 
     def _compute_values(self, rollout):
         """ Add a sum of future discounted rewards field to rollout dict."""
@@ -278,7 +292,7 @@ class Reinforce(object):
         values = rollout["values"]
         avg = sum(values) / float(len(values))
         std = np.std(np.array(values))
-        baselined = [(v - avg) / std for v in values]
+        baselined = [(v - avg)  for v in values]
         rollout["advantages"] = baselined
 
     def _compute_kl(self):

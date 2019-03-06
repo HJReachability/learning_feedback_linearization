@@ -174,6 +174,7 @@ class Quadrotor14D(Dynamics):
         B3[3, 2] = 1.0
 
         B4 = np.zeros((2, 4))
+        B4[1, 3] = 1.0
 
         B = np.concatenate([B1, B2, B3, B4], axis = 0)
 

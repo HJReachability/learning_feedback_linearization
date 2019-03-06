@@ -8,7 +8,7 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.1
+time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
 # Create an initial state sampler for the double pendulum.
@@ -27,7 +27,7 @@ def initial_state_sampler():
 
 
 x0 = initial_state_sampler()
-v = np.zeros((4, 1))
+v = 0.1 * np.ones((4, 1))
 
 # Collect output trajectory for feedback linearizing control (i.e., applying
 # v -> u -> \dot x -> x -> y).
@@ -35,7 +35,7 @@ x = x0.copy()
 xs = [x]
 ys = []
 us = []
-HORIZON = 100
+HORIZON = 1000
 for ii in range(HORIZON):
     u = dyn.feedback(x, v)
     x = dyn.integrate(x, u)
@@ -84,6 +84,7 @@ z1_lin = [z[4, 0] for z in zs_lin]
 z2_lin = [z[5, 0] for z in zs_lin]
 z3_lin = [z[6, 0] for z in zs_lin]
 z4_lin = [z[7, 0] for z in zs_lin]
+psi_dot_lin = [z[13, 0] for z in zs_lin]
 
 u1 = [u[0, 0] for u in us]
 u2 = [u[1, 0] for u in us]
@@ -94,6 +95,7 @@ y = [dyn.linearized_system_state(x)[4, 0] for x in xs]
 dy = [dyn.linearized_system_state(x)[5, 0] for x in xs]
 ddy = [dyn.linearized_system_state(x)[6, 0] for x in xs]
 dddy = [dyn.linearized_system_state(x)[7, 0] for x in xs]
+psi_dot = [dyn.linearized_system_state(x)[13, 0] for x in xs]
 
 plt.figure()
 plt.plot(np.arange(HORIZON), x_coords, '*b', label='fb_lin_controller')
@@ -139,9 +141,11 @@ plt.plot(np.arange(HORIZON + 1), z4_lin, '.k', label='z4_lin')
 plt.legend()
 plt.title("dy")
 
-
-
-
+plt.figure()
+plt.plot(np.arange(HORIZON + 1), psi_dot, '*b', label='fb_lin_controller')
+plt.plot(np.arange(HORIZON + 1), psi_dot_lin, '.r', label='linearized_system')
+plt.legend()
+plt.title("psi_dot")
 
 
 plt.show()

@@ -53,8 +53,8 @@ class PPO(object):
             self._feedback_linearization)
 
         for ii in range(self._num_iters):
-            print("---------- Iteration ", ii, " ------------")
-            rollouts = self._collect_rollouts()
+            print("---------- PPO Iteration ", ii, " ------------")
+            rollouts = self._collect_rollouts(ii)
 
             ys = rollouts[0]["ys"]
             y_desireds = rollouts[0]["y_desireds"]
@@ -90,11 +90,11 @@ class PPO(object):
         # Log the learned model.
         self._logger.log("feedback_linearization", self._feedback_linearization)
 
-    def _collect_rollouts(self):
+    def _collect_rollouts(self,time_step):
         rollouts = []
         for ii in range(self._num_rollouts):
             # (0) Sample a new initial state.
-            x = self._initial_state_sampler()
+            x = self._initial_state_sampler(time_step)
 
             # (1) Generate a time series for v and corresponding y.
             vs = self._generate_vs()

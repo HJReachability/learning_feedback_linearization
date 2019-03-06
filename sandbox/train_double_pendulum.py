@@ -22,8 +22,8 @@ time_step = 0.02
 friction_coeff = 0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
 
-mass1_scaling = 0.9
-mass2_scaling = 1.2
+mass1_scaling = 0.95
+mass2_scaling = 1.05
 length1_scaling = 1.0
 length2_scaling = 1.0
 friction_coeff_scaling = 1.0
@@ -33,46 +33,87 @@ bad_dyn = DoublePendulum(
     time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
-num_layers = 3
-num_hidden_units = 10
-activation = torch.nn.ReLU()
+num_layers = 4
+num_hidden_units = 20
+activation = torch.nn.Tanh()
 noise_std = 0.1
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
-# Create an initial state sampler for the double pendulum.
-def initial_state_sampler():
-    lower = np.array([[-np.pi - 0.5], [-0.5], [-np.pi - 0.5], [-0.5]])
-    upper = -lower
-    return np.random.uniform(lower, upper)
+# Choose Algorithm
+do_PPO=0
+do_Reinforce=1
 
-# Create PPO.
+assert do_PPO!=do_Reinforce
+
+# Create an initial state sampler for the double pendulum.
+def initial_state_sampler(num):
+	if num<500:
+		lower = np.array([[-1.0], [-0.1], [-1.0], [-0.1]])
+		upper = -lower
+	elif num>=500 and num<1500:
+		lower = np.array([[-2.0], [-0.25], [-2.0], [-0.25]])
+		upper = -lower
+	elif num>=1500:
+		lower = np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
+		upper = -lower
+
+	return np.random.uniform(lower, upper)
+
+# Create Solver.
 num_iters = 2000
 learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 75
+num_rollouts = 50
 num_steps_per_rollout = 25
 
+
 # Logging.
-logger = Logger(
-    "logs/double_pendulum_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
+
+
+if do_PPO:
+
+	logger = Logger(
+    "./logs/double_pendulum_PPO_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
     (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
      num_rollouts, num_steps_per_rollout,
      mass1_scaling, mass2_scaling,
      length1_scaling, length2_scaling, friction_coeff_scaling,
      seed))
 
-solver = PPO(num_iters,
-             learning_rate,
-             desired_kl,
-             discount_factor,
-             num_rollouts,
-             num_steps_per_rollout,
-             dyn,
-             initial_state_sampler,
-             fb,
-             logger)
+
+	solver = PPO(num_iters,
+	             learning_rate,
+	             desired_kl,
+	             discount_factor,
+	             num_rollouts,
+	             num_steps_per_rollout,
+	             dyn,
+	             initial_state_sampler,
+	             fb,
+	             logger)
+
+if do_Reinforce:
+
+	logger = Logger(
+    "./logs/double_pendulum_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
+    (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
+     num_rollouts, num_steps_per_rollout,
+     mass1_scaling, mass2_scaling,
+     length1_scaling, length2_scaling, friction_coeff_scaling,
+     seed))
+
+	solver = Reinforce(num_iters,
+	             learning_rate,
+	             desired_kl,
+	             discount_factor,
+	             num_rollouts,
+	             num_steps_per_rollout,
+	             dyn,
+	             initial_state_sampler,
+	             fb,
+	             logger)
 
 # Run this guy.
 solver.run(plot=False)

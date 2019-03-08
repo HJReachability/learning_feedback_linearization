@@ -196,7 +196,7 @@ class Reinforce(object):
                 param_group['lr'] /= 1.5
             for param_group in self._f2_optimizer.param_groups:
                 param_group['lr'] /= 1.5
-            for param_group in self._feedback_linearization._noise_std_optimizer.param_groups:
+            for param_group in self._noise_std_optimizer.param_groups:
                 param_group['lr'] /= 1.5
 
             print("=======> Oops. Objective was NaN or Inf. Please come again.")

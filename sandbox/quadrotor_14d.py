@@ -11,7 +11,7 @@ class Quadrotor14D(Dynamics):
         self._Ix = Ix
         self._Iy = Iy
         self._Iz = Iz
-        super(Quadrotor14D, self).__init__(14, 4, 4, time_step)
+        super(Quadrotor14D, self).__init__(14, 17, 4, 4, time_step)
 
     def __call__(self, x0, u):
         """
@@ -95,6 +95,25 @@ class Quadrotor14D(Dynamics):
         wrapped_x[4, 0] = theta
         wrapped_x[5, 0] = phi
         return wrapped_x
+
+    def preprocess_state(self, x):
+        """ Preprocess states for input to learned components. """
+        if isinstance(x, torch.Tensor):
+            preprocessed_x = torch.zeros(self.preprocessed_xdim)
+            cos = torch.cos
+            sin = torch.sin
+        else:
+            preprocessed_x = np.zeros(self.preprocessed_xdim)
+            cos = np.cos
+            sin = np.sin
+
+        preprocessed_x[0] = cos(x[0])
+        preprocessed_x[1] = sin(x[0])
+        preprocessed_x[2] = x[1]
+        preprocessed_x[3] = cos(x[2])
+        preprocessed_x[4] = sin(x[2])
+        preprocessed_x[5] = x[3]
+        return preprocessed_x
 
     def observation_distance(self, y1, y2, norm):
         """ Compute a distance metric on the observation space. """

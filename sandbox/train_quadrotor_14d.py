@@ -84,7 +84,7 @@ num_steps_per_rollout = 25
 from_zero=False
 
 # Rewards scaling - default is 10.0
-scale_rewards=100.0
+scale_rewards=1000.0
 
 # norm to use
 norm=2

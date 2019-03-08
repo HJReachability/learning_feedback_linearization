@@ -131,46 +131,26 @@ class DoublePendulum(Dynamics):
         plt.plot([position_joint1[0],position_joint2[0]],[position_joint1[1],position_joint2[1]],'k')
         plt.pause(speed)
 
-
     def wrap_angles(self, x):
         """ Wrap angles to [-pi, pi]. """
         theta1 = (x[0, 0] + np.pi) % (2.0 * np.pi) - np.pi
         theta2 = (x[2, 0] + np.pi) % (2.0 * np.pi) - np.pi
         return np.array([[theta1], [x[1, 0]], [theta2], [x[3, 0]]])
 
-    def integrate(self, x0, u, dt=None):
-        """
-        Integrate initial state x0 (applying constant control u)
-        over a time interval of self._time_step, using a time discretization
-        of dt.
-        NOTE: overriding the base class implementation to do angle wrapping.
-
-        :param x0: initial state
-        :type x0: np.array
-        :param u: control input
-        :type u: np.array
-        :param dt: time discretization
-        :type dt: float
-        :return: state after time self._time_step
-        :rtype: np.array
-        """
-        if dt is None:
-            dt = 0.25 * self._time_step
-
-        t = 0.0
-        x = x0.copy()
-        while t < self._time_step - 1e-8:
-            # Make sure we don't step past T.
-            step = min(dt, self._time_step - t)
-
-            # Use Runge-Kutta order 4 integration. For details please refer to
-            # https://en.wikipedia.org/wiki/Runge-Kutta_methods.
-            k1 = step * self.__call__(x, u)
-            k2 = step * self.__call__(x + 0.5 * k1, u)
-            k3 = step * self.__call__(x + 0.5 * k2, u)
-            k4 = step * self.__call__(x + k3, u)
-
-            x += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
-            t += step
-
-        return self.wrap_angles(x)
+    def observation_distance(self, y1, y2,norm):
+        """ Compute a distance metric on the observation space. """
+        if norm==1:
+            dtheta1 = min(
+                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi),
+                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+            dtheta2 = min(
+                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi),
+                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+        elif norm==2:
+            dtheta1 = min(
+                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
+                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
+            dtheta2 = min(
+                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
+                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
+        return dtheta1 + dtheta2

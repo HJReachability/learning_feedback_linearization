@@ -84,6 +84,36 @@ class Quadrotor14D(Dynamics):
         """ Compute y from x. """
         return np.array([[x[0, 0]], [x[1, 0]], [x[2, 0]], [x[3, 0]]])
 
+    def wrap_angles(self, x):
+        """ Wrap angles to [-pi, pi]. """
+        psi = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        theta = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        phi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+
+        wrapped_x = x.copy()
+        wrapped_x[3, 0] = psi
+        wrapped_x[4, 0] = theta
+        wrapped_x[5, 0] = phi
+        return wrapped_x
+
+    def observation_distance(self, y1, y2, norm):
+        """ Compute a distance metric on the observation space. """
+        if norm == 1:
+            dx = abs(y1[0, 0] - y2[0, 0])
+            dy = abs(y1[1, 0] - y2[1, 0])
+            dz = abs(y1[2, 0] - y2[2, 0])
+            dpsi = min(
+                abs((y1[3, 0] - y2[3, 0] + np.pi) % (2.0 * np.pi) - np.pi),
+                abs((y2[3, 0] - y1[3, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+        elif norm == 2:
+            dx = abs(y1[0, 0] - y2[0, 0])**2
+            dy = abs(y1[1, 0] - y2[1, 0])**2
+            dz = abs(y1[2, 0] - y2[2, 0])**2
+            dpsi = min(
+                abs((y1[3, 0] - y2[3, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
+                abs((y2[3, 0] - y1[3, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
+        return dx + dy + dz + dpsi
+
     def feedback_linearize(self):
         """
         Computes feedback linearization of this system.

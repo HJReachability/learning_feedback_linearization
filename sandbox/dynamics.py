@@ -40,21 +40,11 @@ class Dynamics(object):
 
     def observation_distance(self, y1, y2,norm):
         """ Compute a distance metric on the observation space. """
-        if norm==1:
-            dtheta1 = min(
-                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi),
-                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi))
-            dtheta2 = min(
-                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi),
-                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi))
-        elif norm==2:
-            dtheta1 = min(
-                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
-                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
-            dtheta2 = min(
-                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
-                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
-        return dtheta1 + dtheta2
+        raise NotImplementedError("observation_distance is not implemented.")
+
+    def wrap_angles(self, x):
+        """ Wrap angles to [-pi, pi]. """
+        raise NotImplementedError("wrap_angles is not implemented.")
 
     def integrate(self, x0, u, dt=None):
         """
@@ -90,4 +80,4 @@ class Dynamics(object):
             x += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
             t += step
 
-        return x
+        return self.wrap_angles(x)

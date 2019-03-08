@@ -62,7 +62,7 @@ class Quadrotor14D(Dynamics):
             [p + q * sin(phi) * tan(theta) + r * cos(phi) * tan(theta)],
             [g17 * zeta],
             [g18 * zeta],
-            [g19 * zeta],
+            [g19 * zeta - 9.81],
             [xi],
             [0.0],
             [(Iy - Iz) / Ix * q * r],
@@ -198,7 +198,7 @@ class Quadrotor14D(Dynamics):
             [-(xi*cos(psi)*sin(phi) - q*zeta*cos(theta)*sin(psi) - xi*cos(phi)*sin(psi)*sin(theta) + p*zeta*cos(phi)*cos(psi) + p*zeta*sin(phi)*sin(psi)*sin(theta))/m],
             [z],
             [dz],
-            [-(zeta*cos(phi)*cos(theta))/m],
+            [-(zeta*cos(phi)*cos(theta))/m - 9.81],
             [(q*zeta*sin(theta) - xi*cos(phi)*cos(theta) + p*zeta*cos(theta)*sin(phi))/m],
             [(psi + np.pi) % (2.0 * np.pi) - np.pi],
             [(r*cos(phi) + q*sin(phi))/cos(theta)]

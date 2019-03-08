@@ -10,17 +10,17 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-filename='./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.900000_1.100000_1.100000_1.100000_seed_70.pkl'
+#filename='./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.900000_1.100000_1.100000_1.100000_seed_70.pkl'
 
 # Plot everything.
 # plotter = Plotter(filename)
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
 
-fp =  fp = open(filename, "rb")
-log = dill.load(fp)
+#fp =  fp = open(filename, "rb")
+#log = dill.load(fp)
 
-fb_law=log['feedback_linearization'][0]
+#fb_law=log['feedback_linearization'][0]
 
 
 def solve_lqr(A,B,Q,R):
@@ -29,9 +29,9 @@ def solve_lqr(A,B,Q,R):
     #   K,S,E=control.lqr(A,B,Q,R)
     return K
 
-linear_fb=1
+linear_fb=0
 nominal=1
-T=100
+T=1000
 to_render=0
 check_energy=0
 speed=0.001
@@ -41,7 +41,7 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.005
+time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
 mass_scaling = 0.9
@@ -67,14 +67,15 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=0.0*np.ones((14,T))
-reference[0,:]=0.1*np.linspace(0,T*time_step,T)
-reference[1,:]=0.1*time_step
-reference[4,:]=0.1*np.linspace(0,T*time_step,T)
-reference[5,:]=0.1*time_step
-reference[8,:]=0.1*np.linspace(0,T*time_step,T)
-reference[9,:]=0.1*time_step
-reference[12,:]=0.1*np.linspace(0,T*time_step,T)
-reference[13,:]=0.1*time_step
+#reference[0,:]=0.1*np.linspace(0,T*time_step,T)
+#reference[1,:]=0.1*time_step
+#reference[4,:]=0.1*np.linspace(0,T*time_step,T)
+#reference[5,:]=0.1*time_step
+#reference[8,:]=0.1*np.linspace(0,T*time_step,T)
+#reference[9,:]=0.1*time_step
+#reference[12,:]=0.1*np.linspace(0,T*time_step,T)
+#reference[13,:]=0.1*time_step
+
 #reference[0,:]=np.pi*np.sin(np.linspace(0,T*time_step,T))
 #reference[1,:]=np.pi*np.cos(np.linspace(0,T*time_step,T))
 #reference[2,:]=np.pi*np.cos(np.linspace(0,T*time_step,T))
@@ -89,7 +90,7 @@ nominal_states=np.zeros((14,T+1))
 nominal_err=np.zeros((14,T+1))
 nominal_controls_path=np.zeros((4,T))
 x0=0.0*np.ones((14,1))
-x0[9, 0] = -0.1
+x0[9, 0] = 0.1
 
 if linear_fb:
     x=x0.copy()

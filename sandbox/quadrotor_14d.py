@@ -107,12 +107,23 @@ class Quadrotor14D(Dynamics):
             cos = np.cos
             sin = np.sin
 
-        preprocessed_x[0] = cos(x[0])
-        preprocessed_x[1] = sin(x[0])
-        preprocessed_x[2] = x[1]
-        preprocessed_x[3] = cos(x[2])
-        preprocessed_x[4] = sin(x[2])
-        preprocessed_x[5] = x[3]
+        preprocessed_x[0] = x[0]
+        preprocessed_x[1] = x[1]
+        preprocessed_x[2] = x[2]
+        preprocessed_x[3] = cos(x[3])
+        preprocessed_x[4] = sin(x[3])
+        preprocessed_x[5] = cos(x[4])
+        preprocessed_x[6] = sin(x[4])
+        preprocessed_x[7] = cos(x[5])
+        preprocessed_x[8] = sin(x[5])
+        preprocessed_x[9] = x[6]
+        preprocessed_x[10] = x[7]
+        preprocessed_x[11] = x[8]
+        preprocessed_x[12] = x[9]
+        preprocessed_x[13] = x[10]
+        preprocessed_x[14] = x[11]
+        preprocessed_x[15] = x[12]
+        preprocessed_x[16] = x[13]
         return preprocessed_x
 
     def observation_distance(self, y1, y2, norm):

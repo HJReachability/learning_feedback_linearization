@@ -32,17 +32,17 @@ class Reinforce(object):
         self._logger = logger
 
         # Use RMSProp as the optimizer.
-        self._M2_optimizer = torch.optim.Adam(
+        self._M2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._M2_net.parameters(),
             lr=self._learning_rate)
 #            momentum=0.8,
 #            weight_decay=0.0001)
-        self._f2_optimizer = torch.optim.Adam(
+        self._f2_optimizer = torch.optim.RMSprop(
             self._feedback_linearization._f2_net.parameters(),
             lr=self._learning_rate)
 #            momentum=0.8,
 #            weight_decay=0.0001)
-        self._noise_std_optimizer = torch.optim.Adam(
+        self._noise_std_optimizer = torch.optim.RMSprop(
             [self._feedback_linearization._noise_std_variable],
             lr=self._learning_rate*10)
 

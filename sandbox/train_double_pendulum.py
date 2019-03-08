@@ -140,7 +140,7 @@ if do_Reinforce:
 
 
 # Run this guy.
-solver.run(plot=False,show_diff=False,increase_std=False)
+solver.run(plot=False,show_diff=False)
 
 # Dump the log.
 logger.dump()

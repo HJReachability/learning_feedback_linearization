@@ -36,7 +36,7 @@ bad_dyn = DoublePendulum(
     time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
-num_layers = 3
+num_layers = 4
 num_hidden_units = 10
 activation = torch.nn.Tanh()
 noise_std = 2.0
@@ -57,7 +57,7 @@ from_zero=False
 scale_rewards=100.0
 
 # norm to use
-norm=1
+norm=2
 
 if from_zero:
 	fb._M1= lambda x : np.zeros((2,2))
@@ -68,15 +68,16 @@ assert do_PPO!=do_Reinforce
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
-	if num<500:
-		lower = np.array([[-0.5], [-0.1], [-0.5], [-0.1]])
+
+	if num<1000:
+		lower = (1.0 - num/1000.0)*np.array([[-0.5 ], [-0.5], [-0.5], [-0.5]]) + num/1000.0*np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
 		upper = -lower
-	elif num>=500 and num<1500:
-		lower = np.array([[-1.5], [-0.25], [-1.5], [-0.25]])
-		upper = -lower
-	elif num>=1500:
+	else:
 		lower = np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
 		upper = -lower
+
+	# lower = np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
+	# upper = -lower
 
 	return np.random.uniform(lower, upper)
 
@@ -134,12 +135,12 @@ if do_Reinforce:
 	             initial_state_sampler,
 	             fb,
 	             logger,
-	             norm)
+	             norm,
+	             scale_rewards)
 
-	solver.SCALING=scale_rewards
 
 # Run this guy.
-solver.run(plot=False,show_diff=False)
+solver.run(plot=False,show_diff=False,increase_std=False)
 
 # Dump the log.
 logger.dump()

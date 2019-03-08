@@ -96,6 +96,10 @@ class DoublePendulum(Dynamics):
         """ Compute y from x. """
         return np.array([[x[0, 0]], [x[2, 0]]])
 
+    def observation_dot(self, x):
+        """ Compute y from x. """
+        return np.array([[x[1, 0]], [x[3, 0]]])
+
     def feedback_linearize(self):
         """
         Computes feedback linearization of this system.

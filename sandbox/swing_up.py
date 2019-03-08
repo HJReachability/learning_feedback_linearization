@@ -12,7 +12,7 @@ from plotter import Plotter
 #'double_pendulum_3_10_0.100000_0.001000_25_25_dyn_1.050000_0.950000_1.000000_1.000000.pkl',
 #'double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl'
 
-filename='./logs/double_pendulum_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.950000_1.050000_1.000000_1.000000_1.000000_seed_249.pkl'
+filename='./logs/double_pendulum_Reinforce_4x10_std2.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_36.pkl'
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -47,10 +47,10 @@ def solve_lqr(A,B,Q,R):
 
 
 
-linear_fb=1
+linear_fb=0
 nominal=1
 T=1000
-to_render=0
+to_render=1
 check_energy=0
 speed=0.001
 
@@ -62,7 +62,7 @@ length2 = 1.0
 time_step = 0.02
 friction_coeff=0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
-bad_dyn = DoublePendulum(0.95* mass1, 1.05 * mass2, length1, length2, time_step,friction_coeff)
+bad_dyn = DoublePendulum(mass1, mass2, length1, length2, time_step,friction_coeff)
 
 # LQR Parameters and dynamics
 q=10.0
@@ -79,8 +79,8 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=np.zeros((4,T))
-reference[0,:]=np.pi *np.cos(np.linspace(0,T*time_step,T))
-reference[2,:]=np.pi *np.cos(np.linspace(0,T*time_step,T))
+reference[0,:]=np.pi*np.sin(np.linspace(0,T*time_step,T))
+reference[2,:]=np.pi #*np.cos(np.linspace(0,T*time_step,T))
 
 learned_path=np.zeros((4,T+1))
 learned_controls_path=np.zeros((2,T))
@@ -100,18 +100,45 @@ if linear_fb:
         desired_linear_system_state[1,0]=ydot[0,0]
         desired_linear_system_state[2,0]=y[1,0]
         desired_linear_system_state[3,0]=ydot[1,0]
+        #desired_linear_system_state=dyn.wrap_angles(desired_linear_system_state)
         ref=np.reshape(reference[:,t],(4,1))
         #np.concatenate([y,ydot],axis=0)
 
-        v=-1*K @ (desired_linear_system_state-ref)
+        diff=np.zeros((4,1))
+        ref1 = ref[0]
+        des1 = desired_linear_system_state[0]
+
+        ref2 = ref[2]
+        des2 = desired_linear_system_state[2]
+
+        term1=(des1 - ref1 + np.pi) % (2.0 * np.pi) - np.pi
+        term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
+        term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
+        term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
+      
+        if abs(term1)<abs(term2):
+            diff[0,0]= term1
+        else:
+            diff[0,0]= -term2
+
+        if abs(term3)<abs(term4):
+            diff[2,0]= term3
+        else:
+            diff[2,0]= -term4
+
+        diff[1,0]=desired_linear_system_state[1]-ref[1]
+        diff[3,0]=desired_linear_system_state[3]-ref[3]
+
+        v=-1*K @ (diff)
+
         control= fb_law.feedback(x,v)
         learned_controls_path[:,t]=control[:,0].detach().numpy()
         x=dyn.integrate(x,control.detach().numpy())
-        learned_path[:,t+1]=(desired_linear_system_state-ref)[:,0]
+        learned_path[:,t+1]=(diff)[:,0]
         if check_energy:
             print(dyn.total_energy(x))
         if to_render:
-            dyn.render(x,speed,path=False)
+            dyn.render(x,speed)
 
 if nominal:
 
@@ -127,13 +154,42 @@ if nominal:
         desired_linear_system_state[1,0]=ydot[0,0]
         desired_linear_system_state[2,0]=y[1,0]
         desired_linear_system_state[3,0]=ydot[1,0]
+        #desired_linear_system_state=dyn.wrap_angles(desired_linear_system_state)
         ref=np.reshape(reference[:,t],(4,1))
 
-        v=-1*K @ (desired_linear_system_state-ref)
-        control=bad_dyn._M_q(x) @v + bad_dyn._f_q(x)
+        diff=np.zeros((4,1))
+        ref1 = ref[0]
+        des1 = desired_linear_system_state[0]
+
+        ref2 = ref[2]
+        des2 = desired_linear_system_state[2]
+
+        term1=(des1 - ref1 + np.pi) % (2.0 * np.pi) - np.pi
+        term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
+        term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
+        term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
+      
+        if abs(term1)<abs(term2):
+            diff[0,0]= term1
+        else:
+            diff[0,0]= -term2
+
+        if abs(term3)<abs(term4):
+            diff[2,0]= term3
+        else:
+            diff[2,0]= -term4
+
+        diff[1,0]=desired_linear_system_state[1]-ref[1]
+        diff[3,0]=desired_linear_system_state[3]-ref[3]
+
+        v=-1*K @ (diff)
+
+
+        #v=-1*K @ (dyn.wrap_angles(desired_linear_system_state)-dyn.wrap_angles(ref))
+        control=bad_dyn._M_q(x) @ v +bad_dyn._f_q(x)
         nominal_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)
-        nominal_path[:,t+1]=(desired_linear_system_state-ref)[:,0]
+        nominal_path[:,t+1]=(desired_linear_system_state)[:,0]
         if check_energy:
             print(dyn.total_energy(x))
         if to_render:

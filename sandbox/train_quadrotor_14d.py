@@ -36,6 +36,12 @@ noise_std = 0.1
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
+
+# Choose Algorithm
+do_PPO=0
+do_Reinforce=1
+
+
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
     if num < 500:
@@ -71,27 +77,62 @@ discount_factor = 0.99
 num_rollouts = 50
 num_steps_per_rollout = 25
 
-# Logging.
-logger = Logger(
-    "logs/quadrotor_14d_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
-    (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
-     num_rollouts, num_steps_per_rollout,
-     mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
-     seed))
 
-solver = Reinforce(num_iters,
-                   learning_rate,
-                   desired_kl,
-                   discount_factor,
-                   num_rollouts,
-                   num_steps_per_rollout,
-                   dyn,
-                   initial_state_sampler,
-                   fb,
-                   logger)
+#Algorithm Params ** Only for Reinforce:
+
+## Train for zero (no bad dynamics)
+from_zero=False
+
+# Rewards scaling - default is 10.0
+scale_rewards=100.0
+
+# norm to use
+norm=2
+
+if from_zero:
+    fb._M1= lambda x : np.zeros((2,2))
+    fb._f1= lambda x : np.zeros((2,1))
+
+if do_PPO:
+    logger = Logger(
+        "logs/quadrotor_14d_PPO_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+        (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
+         num_rollouts, num_steps_per_rollout,
+         mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
+         seed))
+    solver = PPO(num_iters,
+                 learning_rate,
+                 desired_kl,
+                 discount_factor,
+                 num_rollouts,
+                 num_steps_per_rollout,
+                 dyn,
+                 initial_state_sampler,
+                 fb,
+                 logger)
+
+if do_Reinforce:
+    logger = Logger(
+        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+        (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
+         num_rollouts, num_steps_per_rollout,
+         mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
+         seed))
+    solver = Reinforce(num_iters,
+                       learning_rate,
+                       desired_kl,
+                       discount_factor,
+                       num_rollouts,
+                       num_steps_per_rollout,
+                       dyn,
+                       initial_state_sampler,
+                       fb,
+                       logger,
+                       norm,
+                       scale_rewards)
 
 # Run this guy.
-solver.run(plot=False)
+solver.run(plot=False, show_diff=False)
 
 # Dump the log.
 logger.dump()

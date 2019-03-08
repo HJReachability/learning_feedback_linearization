@@ -61,16 +61,19 @@ class FeedbackLinearization(object):
         self._M1, self._f1 = dynamics.feedback_linearize()
 
         # Create some PyTorch tensors for unmodeled dynamics terms.
-        self._M2 = create_network(
-            dynamics.xdim, dynamics.udim**2,
+        self._M2_net = create_network(
+            dynamics.preprocessed_xdim, dynamics.udim**2,
             num_layers, num_hidden_units, activation)
-        self._f2 = create_network(
-            dynamics.xdim, dynamics.udim,
+        self._f2_net = create_network(
+            dynamics.preprocessed_xdim, dynamics.udim,
             num_layers, num_hidden_units, activation)
 
+        self._M2 = lambda x: self._M2_net(dynamics.preprocess_state(x))
+        self._f2 = lambda x: self._f2_net(dynamics.preprocess_state(x))
+
         # Initialize weights.
-        init_weights(self._M2)
-        init_weights(self._f2)
+        init_weights(self._M2_net)
+        init_weights(self._f2_net)
 
         self._xdim = dynamics.xdim
         self._udim = dynamics.udim

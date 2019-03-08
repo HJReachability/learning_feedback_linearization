@@ -2,8 +2,9 @@ import torch
 import numpy as np
 
 class Dynamics(object):
-    def __init__(self, xdim, udim, ydim, time_step):
+    def __init__(self, xdim, preprocessed_xdim, udim, ydim, time_step):
         self.xdim = xdim
+        self.preprocessed_xdim = preprocessed_xdim
         self.udim = udim
         self.ydim = ydim
         self._time_step = time_step
@@ -41,6 +42,10 @@ class Dynamics(object):
     def observation_distance(self, y1, y2,norm):
         """ Compute a distance metric on the observation space. """
         raise NotImplementedError("observation_distance is not implemented.")
+
+    def preprocess_state(self, x):
+        """ Preprocess states for input to learned components. """
+        raise NotImplementedError("preprocess_state is not implemented.")
 
     def wrap_angles(self, x):
         """ Wrap angles to [-pi, pi]. """

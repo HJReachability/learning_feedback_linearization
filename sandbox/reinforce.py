@@ -33,12 +33,12 @@ class Reinforce(object):
 
         # Use RMSProp as the optimizer.
         self._M2_optimizer = torch.optim.Adam(
-            self._feedback_linearization._M2.parameters(),
+            self._feedback_linearization._M2_net.parameters(),
             lr=self._learning_rate)
 #            momentum=0.8,
 #            weight_decay=0.0001)
         self._f2_optimizer = torch.optim.Adam(
-            self._feedback_linearization._f2.parameters(),
+            self._feedback_linearization._f2_net.parameters(),
             lr=self._learning_rate)
 #            momentum=0.8,
 #            weight_decay=0.0001)
@@ -93,8 +93,8 @@ class Reinforce(object):
             self._update_feedback(rollouts)
 
             if show_diff:
-                newM=[weight.detach().numpy() for weight in list(self._feedback_linearization._M2.parameters())]
-                newF=[weight.detach().numpy() for weight in list(self._feedback_linearization._f2.parameters())]
+                newM=[weight.detach().numpy() for weight in list(self._feedback_linearization._M2_net.parameters())]
+                newF=[weight.detach().numpy() for weight in list(self._feedback_linearization._f2_net.parameters())]
 
                 # Prematurely dump in case we terminate early.
 

@@ -16,7 +16,7 @@ class DoublePendulum(Dynamics):
         self.friction_coeff = friction_coeff
         self.g = 9.81
 
-        super(DoublePendulum, self).__init__(4, 2, 2, time_step)
+        super(DoublePendulum, self).__init__(4, 6, 2, 2, time_step)
 
     def __call__(self, x, u):
         """
@@ -136,6 +136,25 @@ class DoublePendulum(Dynamics):
         theta1 = (x[0, 0] + np.pi) % (2.0 * np.pi) - np.pi
         theta2 = (x[2, 0] + np.pi) % (2.0 * np.pi) - np.pi
         return np.array([[theta1], [x[1, 0]], [theta2], [x[3, 0]]])
+
+    def preprocess_state(self, x):
+        """ Preprocess states for input to learned components. """
+        if isinstance(x, torch.Tensor):
+            preprocessed_x = torch.zeros(self.preprocessed_xdim)
+            cos = torch.cos
+            sin = torch.sin
+        else:
+            preprocessed_x = np.zeros(self.preprocessed_xdim)
+            cos = np.cos
+            sin = np.sin
+
+        preprocessed_x[0] = cos(x[0])
+        preprocessed_x[1] = sin(x[0])
+        preprocessed_x[2] = x[1]
+        preprocessed_x[3] = cos(x[2])
+        preprocessed_x[4] = sin(x[2])
+        preprocessed_x[5] = x[3]
+        return preprocessed_x
 
     def observation_distance(self, y1, y2,norm):
         """ Compute a distance metric on the observation space. """

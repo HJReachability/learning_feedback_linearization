@@ -13,7 +13,7 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Create a quadrotor.
-mass = 1.0
+`mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0

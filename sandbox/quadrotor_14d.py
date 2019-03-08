@@ -170,7 +170,7 @@ class Quadrotor14D(Dynamics):
             [dz],
             [-(zeta*cos(phi)*cos(theta))/m],
             [(q*zeta*sin(theta) - xi*cos(phi)*cos(theta) + p*zeta*cos(theta)*sin(phi))/m],
-            [psi],
+            [(psi + np.pi) % (2.0 * np.pi) - np.pi],
             [(r*cos(phi) + q*sin(phi))/cos(theta)]
         ])
 

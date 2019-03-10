@@ -16,7 +16,7 @@ class Quadrotor14D(Dynamics):
     def __call__(self, x0, u):
         """
         Compute xdot from x, u. Please refer to:
-        https://www.kth.se/polopoly_fs/1.588039.1550155544!/Thesis%20KTH%20-%20Francesco%20Sabatino.pdf
+        https://ieeexplore.ieee.org/abstract/document/5164788
         for a full derivation of the dynamics. State is laid out as follows:
         ` x = [x, y, z, psi, theta, phi, xdot, ydot, zdot, zeta, xi, p, q, r] `
         ` u = [u1, u2, u3, u4] `
@@ -48,26 +48,29 @@ class Quadrotor14D(Dynamics):
         cos = np.cos
         tan = math.tan
 
-        # Drift term. From pp. 33 of linked document above.
+        # Gravity.
+        g = 9.81
+
+        # Drift term.
         g17 = (1.0 / m) * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta))
-        g18 = (1.0 / m) * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta))
+        g18 = (1.0 / m) * (-cos(psi) * sin(phi) + cos(phi) * sin(psi) * sin(theta))
         g19 = (1.0 / m) * (cos(phi) * cos(theta))
 
         drift_term = np.array([
             [dx],
             [dy],
             [dz],
-            [q * sin(phi) / cos(theta) + r * cos(phi) / cos(theta)],
-            [q * cos(phi) - r * sin(phi)],
-            [p + q * sin(phi) * tan(theta) + r * cos(phi) * tan(theta)],
+            [p],
+            [q],
+            [r],
             [g17 * zeta],
             [g18 * zeta],
-            [g19 * zeta - 9.81],
+            [g19 * zeta - g],
             [xi],
             [0.0],
-            [(Iy - Iz) / Ix * q * r],
-            [(Iz - Ix) / Iy * p * r],
-            [(Ix - Iy) / Iz * p * q]
+            [0.0],
+            [0.0],
+            [0.0]
         ])
 
         # Control coefficient matrix. From pp. 34 of the linked document above.
@@ -182,6 +185,9 @@ class Quadrotor14D(Dynamics):
         q = x0[12, 0]
         r = x0[13, 0]
 
+        # Gravity.
+        g = 9.81
+
         # Fix sines, cosines, and tangents.
         sin = np.sin
         cos = np.cos
@@ -190,18 +196,18 @@ class Quadrotor14D(Dynamics):
         return np.array([
             [x],
             [dx],
-            [-(zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/m],
-            [-(xi*sin(phi)*sin(psi) + p*zeta*cos(phi)*sin(psi) + xi*cos(phi)*cos(psi)*sin(theta) + q*zeta*cos(psi)*cos(theta) - p*zeta*cos(psi)*sin(phi)*sin(theta))/m],
+            [(zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/m],
+            [(xi*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/m + (p*zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/m + (r*zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/m + (q*zeta*cos(phi)*cos(psi)*cos(theta))/m],
             [y],
             [dy],
             [-(zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/m],
-            [-(xi*cos(psi)*sin(phi) - q*zeta*cos(theta)*sin(psi) - xi*cos(phi)*sin(psi)*sin(theta) + p*zeta*cos(phi)*cos(psi) + p*zeta*sin(phi)*sin(psi)*sin(theta))/m],
+            [(p*zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/m - (xi*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/m - (r*zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/m + (q*zeta*cos(phi)*cos(theta)*sin(psi))/m],
             [z],
             [dz],
-            [-(zeta*cos(phi)*cos(theta))/m - 9.81],
-            [(q*zeta*sin(theta) - xi*cos(phi)*cos(theta) + p*zeta*cos(theta)*sin(phi))/m],
-            [(psi + np.pi) % (2.0 * np.pi) - np.pi],
-            [(r*cos(phi) + q*sin(phi))/cos(theta)]
+            [(zeta*cos(phi)*cos(theta))/m - g],
+            [-(q*zeta*cos(phi)*sin(theta) - xi*cos(phi)*cos(theta) + r*zeta*cos(theta)*sin(phi))/m],
+            [psi],
+            [p]
         ])
 
     def linearized_system(self):
@@ -288,10 +294,10 @@ class Quadrotor14D(Dynamics):
         tan = math.tan
 
         return np.array([
-            [-(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, -(zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Ix*m), -(zeta*cos(psi)*cos(theta))/(Iy*m), 0],
-            [-(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Ix*m),  (zeta*cos(theta)*sin(psi))/(Iy*m), 0],
-            [-(cos(phi)*cos(theta))/m, (zeta*cos(theta)*sin(phi))/(Ix*m), (zeta*sin(theta))/(Iy*m), 0],
-            [0, 0, sin(phi)/(Iy*cos(theta)), cos(phi)/(Iz*cos(theta))]
+            [  (sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, (zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(psi)*cos(theta))/(Iy*m),  (zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Iz*m)],
+            [ -(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, (zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(theta)*sin(psi))/(Iy*m), -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Iz*m)],
+            [                               (cos(phi)*cos(theta))/m,                                                                0,         -(zeta*cos(phi)*sin(theta))/(Iy*m),                                -(zeta*cos(theta)*sin(phi))/(Iz*m)],
+            [                                                     0,                                                             1/Ix,                                          0,                                                                 0],
         ])
 
     def _b_q(self, x0):
@@ -327,19 +333,23 @@ class Quadrotor14D(Dynamics):
         tan = math.tan
 
         # First term.
-        f_q1 = [(Ix*Iy*p**2*zeta*sin(phi)*sin(psi) + Ix*Iy*q**2*zeta*sin(phi)*sin(psi) + Ix**2*p*r*zeta*cos(psi)*cos(theta) - Iy**2*q*r*zeta*cos(phi)*sin(psi) - 2*Ix*Iy*q*xi*cos(psi)*cos(theta) - 2*Ix*Iy*p*xi*cos(phi)*sin(psi) + Iy**2*q*r*zeta*cos(psi)*sin(phi)*sin(theta) + Ix*Iy*q*r*zeta*cos(phi)*sin(psi) + Iy*Iz*q*r*zeta*cos(phi)*sin(psi) + 2*Ix*Iy*p*xi*cos(psi)*sin(phi)*sin(theta) + Ix*Iy*p**2*zeta*cos(phi)*cos(psi)*sin(theta) + Ix*Iy*q**2*zeta*cos(phi)*cos(psi)*sin(theta) - Ix*Iy*p*r*zeta*cos(psi)*cos(theta) - Ix*Iz*p*r*zeta*cos(psi)*cos(theta) - Ix*Iy*q*r*zeta*cos(psi)*sin(phi)*sin(theta) - Iy*Iz*q*r*zeta*cos(psi)*sin(phi)*sin(theta))/(Ix*Iy*m)
-]
+        f_q1 = [
+            -(p**2*zeta*sin(phi)*sin(psi) - 2*r*xi*cos(phi)*sin(psi) + r**2*zeta*sin(phi)*sin(psi) - 2*p*xi*cos(psi)*sin(phi) + p**2*zeta*cos(phi)*cos(psi)*sin(theta) + q**2*zeta*cos(phi)*cos(psi)*sin(theta) + r**2*zeta*cos(phi)*cos(psi)*sin(theta) - 2*p*r*zeta*cos(phi)*cos(psi) - 2*q*xi*cos(phi)*cos(psi)*cos(theta) + 2*p*xi*cos(phi)*sin(psi)*sin(theta) + 2*r*xi*cos(psi)*sin(phi)*sin(theta) + 2*p*q*zeta*cos(phi)*cos(theta)*sin(psi) + 2*q*r*zeta*cos(psi)*cos(theta)*sin(phi) - 2*p*r*zeta*sin(phi)*sin(psi)*sin(theta))/m
+        ]
 
         # Second term.
-        f_q2 = [(2*Ix*Iy*q*xi*cos(theta)*sin(psi) - Ix**2*p*r*zeta*cos(theta)*sin(psi) - 2*Ix*Iy*p*xi*cos(phi)*cos(psi) - Iy**2*q*r*zeta*cos(phi)*cos(psi) + Ix*Iy*p**2*zeta*cos(psi)*sin(phi) + Ix*Iy*q**2*zeta*cos(psi)*sin(phi) + Ix*Iy*p*r*zeta*cos(theta)*sin(psi) + Ix*Iz*p*r*zeta*cos(theta)*sin(psi) - Iy**2*q*r*zeta*sin(phi)*sin(psi)*sin(theta) - 2*Ix*Iy*p*xi*sin(phi)*sin(psi)*sin(theta) - Ix*Iy*p**2*zeta*cos(phi)*sin(psi)*sin(theta) - Ix*Iy*q**2*zeta*cos(phi)*sin(psi)*sin(theta) + Ix*Iy*q*r*zeta*cos(phi)*cos(psi) + Iy*Iz*q*r*zeta*cos(phi)*cos(psi) + Ix*Iy*q*r*zeta*sin(phi)*sin(psi)*sin(theta) + Iy*Iz*q*r*zeta*sin(phi)*sin(psi)*sin(theta))/(Ix*Iy*m)
-]
+        f_q2 = [
+            (2*p*xi*sin(phi)*sin(psi) + p**2*zeta*cos(psi)*sin(phi) + r**2*zeta*cos(psi)*sin(phi) - 2*r*xi*cos(phi)*cos(psi) - p**2*zeta*cos(phi)*sin(psi)*sin(theta) - q**2*zeta*cos(phi)*sin(psi)*sin(theta) - r**2*zeta*cos(phi)*sin(psi)*sin(theta) + 2*p*r*zeta*cos(phi)*sin(psi) + 2*p*xi*cos(phi)*cos(psi)*sin(theta) + 2*q*xi*cos(phi)*cos(theta)*sin(psi) - 2*r*xi*sin(phi)*sin(psi)*sin(theta) + 2*p*q*zeta*cos(phi)*cos(psi)*cos(theta) - 2*p*r*zeta*cos(psi)*sin(phi)*sin(theta) - 2*q*r*zeta*cos(theta)*sin(phi)*sin(psi))/m
+        ]
 
         # Third term.
-        f_q3 = [(2*Ix*Iy*q*xi*sin(theta) - Ix**2*p*r*zeta*sin(theta) + Iy**2*q*r*zeta*cos(theta)*sin(phi) + Ix*Iy*p*r*zeta*sin(theta) + Ix*Iz*p*r*zeta*sin(theta) + 2*Ix*Iy*p*xi*cos(theta)*sin(phi) + Ix*Iy*p**2*zeta*cos(phi)*cos(theta) + Ix*Iy*q**2*zeta*cos(phi)*cos(theta) - Ix*Iy*q*r*zeta*cos(theta)*sin(phi) - Iy*Iz*q*r*zeta*cos(theta)*sin(phi))/(Ix*Iy*m)
-]
+        f_q3 = [
+            -(zeta*cos(phi)*cos(theta)*q**2 - 2*zeta*sin(phi)*sin(theta)*q*r + 2*xi*cos(phi)*sin(theta)*q + zeta*cos(phi)*cos(theta)*r**2 + 2*xi*cos(theta)*sin(phi)*r)/m
+        ]
 
         # Fourth term.
-        f_q4 = [((q*cos(phi) - r*sin(phi))*(p + r*cos(phi)*tan(theta) + q*sin(phi)*tan(theta)))/cos(theta) + (sin(theta)*(r*cos(phi) + q*sin(phi))*(q*cos(phi) - r*sin(phi)))/cos(theta)**2 + (p*q*cos(phi)*(Ix - Iy))/(Iz*cos(theta)) - (p*r*sin(phi)*(Ix - Iz))/(Iy*cos(theta))
-]
+        f_q4 = [
+            0.0
+        ]
 
         return np.array([f_q1, f_q2, f_q3, f_q4])

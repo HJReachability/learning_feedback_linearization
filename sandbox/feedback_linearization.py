@@ -36,7 +36,7 @@ def create_network(num_inputs, num_outputs,
 
     return torch.nn.Sequential(OrderedDict(layers))
 
-def init_weights(net, mean=0.0, std=0.1):
+def init_weights(net, mean=0.0, std=0.01):
     for l in net:
         if type(l) in [torch.nn.Linear]:
             torch.nn.init.normal_(l.weight.data, mean, std)

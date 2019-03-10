@@ -30,7 +30,7 @@ def solve_lqr(A,B,Q,R):
     return K
 
 linear_fb=0
-nominal=0
+nominal=1
 ground_truth=1
 T=375
 to_render=0
@@ -45,7 +45,7 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.5
+mass_scaling = 1.1
 Ix_scaling = 0.5
 Iy_scaling = 0.5
 Iz_scaling = 0.5
@@ -199,8 +199,8 @@ if ground_truth:
         v=-1*K @ diff
 
         control= dyn._M_q(x) @ v + dyn._f_q(x)
-        control = np.zeros((4, 1))
-        control[0, 0] = -0.1 * (diff[8, 0])
+#        control = np.zeros((4, 1))
+#        control[0, 0] = -0.1 * (diff[8, 0])
         ground_truth_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)
         ground_truth_err[:,t+1]=(diff)[:,0]

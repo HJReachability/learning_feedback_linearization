@@ -20,7 +20,7 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.5
+mass_scaling = 1.1
 Ix_scaling = 0.5
 Iy_scaling = 0.5
 Iz_scaling = 0.5
@@ -32,7 +32,7 @@ bad_dyn = Quadrotor14D(
 num_layers = 3
 num_hidden_units = 10
 activation = torch.nn.Tanh()
-noise_std = 0.1
+noise_std = 0.5
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -71,11 +71,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 2000
-learning_rate = 1e-3
+learning_rate = 1e-4
 desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 100
-num_steps_per_rollout = 50
+num_rollouts = 50
+num_steps_per_rollout = 25
 
 
 #Algorithm Params ** Only for Reinforce:
@@ -113,7 +113,7 @@ if do_PPO:
 
 if do_Reinforce:
     logger = Logger(
-        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d_smallweights.pkl" %
         (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
          num_rollouts, num_steps_per_rollout, str(from_zero),
          mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,

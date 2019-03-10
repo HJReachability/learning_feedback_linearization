@@ -234,7 +234,7 @@ class Reinforce(object):
                 for param_group in self._f2_optimizer.param_groups:
                     param_group['lr'] *= lr_scaling
                 for param_group in self._feedback_linearization._noise_std_optimizer.param_groups:
-                    param_group['lr'] /= 1.5
+                    param_group['lr'] *= lr_scaling
 
 
         # Update previous states visited and auxiliary control inputs.

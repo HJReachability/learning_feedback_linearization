@@ -10,7 +10,10 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-filename="./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.500000_0.500000_0.500000_0.500000_seed_95.pkl"
+filename="./logs/quadrotor_14d_Reinforce_3x10_std0.500000_lr0.000100_kl-1.000000_50_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_440_smallweights.pkl"
+#filename="./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.000100_kl-1.000000_50_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_180_smallweights.pkl"
+#filename="./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.001000_kl-1.000000_100_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_204_smallweights.pkl"
+#filename="./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.001000_kl-1.000000_100_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_204_smallweights.pkl"
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -29,10 +32,10 @@ def solve_lqr(A,B,Q,R):
     #   K,S,E=control.lqr(A,B,Q,R)
     return K
 
-linear_fb=0
+linear_fb=1
 nominal=1
 ground_truth=1
-T=375
+T=335
 to_render=0
 check_energy=0
 speed=0.001
@@ -53,8 +56,11 @@ bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
+#fb_law._M1 = bad_dyn._M_q
+#fb_law._f1 = bad_dyn._f_q
+
 # LQR Parameters and dynamics
-q=10.0
+q=100.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
@@ -68,6 +74,7 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=0.0*np.ones((14,T))
+reference[12, :] = 3.1
 #reference[0,:]=0.1*np.linspace(0,T*time_step,T)
 #reference[1,:]=0.1*time_step
 #reference[4,:]=0.1*np.linspace(0,T*time_step,T)

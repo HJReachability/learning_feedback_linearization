@@ -85,4 +85,4 @@ class Dynamics(object):
             x += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
             t += step
 
-        return self.wrap_angles(x)
+        return x #self.wrap_angles(x)

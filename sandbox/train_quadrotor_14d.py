@@ -30,9 +30,9 @@ bad_dyn = Quadrotor14D(
 
 # Create a feedback linearization object.
 num_layers = 3
-num_hidden_units = 10
+num_hidden_units = 20
 activation = torch.nn.Tanh()
-noise_std = 0.5
+noise_std = 1.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -71,11 +71,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 2000
-learning_rate = 1e-4
+learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 0.99
 num_rollouts = 50
-num_steps_per_rollout = 25
+num_steps_per_rollout = 50
 
 
 #Algorithm Params ** Only for Reinforce:

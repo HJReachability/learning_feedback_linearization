@@ -20,10 +20,10 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.9
-Ix_scaling = 1.1
-Iy_scaling = 1.1
-Iz_scaling = 1.1
+mass_scaling = 0.5
+Ix_scaling = 0.5
+Iy_scaling = 0.5
+Iz_scaling = 0.5
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
@@ -74,8 +74,8 @@ num_iters = 2000
 learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 50
-num_steps_per_rollout = 25
+num_rollouts = 100
+num_steps_per_rollout = 50
 
 
 #Algorithm Params ** Only for Reinforce:
@@ -90,8 +90,8 @@ scale_rewards=1000.0
 norm=2
 
 if from_zero:
-    fb._M1= lambda x : np.zeros((2,2))
-    fb._f1= lambda x : np.zeros((2,1))
+    fb._M1= lambda x : np.zeros((4,4))
+    fb._f1= lambda x : np.zeros((4,1))
 
 if do_PPO:
     logger = Logger(
@@ -113,9 +113,9 @@ if do_PPO:
 
 if do_Reinforce:
     logger = Logger(
-        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d.pkl" %
         (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
-         num_rollouts, num_steps_per_rollout,
+         num_rollouts, num_steps_per_rollout, str(from_zero),
          mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
          seed))
     solver = Reinforce(num_iters,

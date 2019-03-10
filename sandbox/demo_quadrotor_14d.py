@@ -10,17 +10,17 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-#filename='./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.900000_1.100000_1.100000_1.100000_seed_70.pkl'
+filename="./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.500000_0.500000_0.500000_0.500000_seed_95.pkl"
 
 # Plot everything.
 # plotter = Plotter(filename)
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
 
-#fp =  fp = open(filename, "rb")
-#log = dill.load(fp)
+fp =  fp = open(filename, "rb")
+log = dill.load(fp)
 
-#fb_law=log['feedback_linearization'][0]
+fb_law=log['feedback_linearization'][0]
 
 
 def solve_lqr(A,B,Q,R):
@@ -30,8 +30,9 @@ def solve_lqr(A,B,Q,R):
     return K
 
 linear_fb=0
-nominal=1
-T=1000
+nominal=0
+ground_truth=1
+T=375
 to_render=0
 check_energy=0
 speed=0.001
@@ -41,19 +42,19 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.02
+time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.9
-Ix_scaling = 1.1
-Iy_scaling = 1.1
-Iz_scaling = 1.1
+mass_scaling = 0.5
+Ix_scaling = 0.5
+Iy_scaling = 0.5
+Iz_scaling = 0.5
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
 # LQR Parameters and dynamics
-q=100.0
+q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
@@ -82,6 +83,7 @@ reference=0.0*np.ones((14,T))
 #reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
 learned_path=np.zeros((14,T+1))
+learned_states=np.zeros((14,T+1))
 learned_err=np.zeros((14,T+1))
 learned_controls_path=np.zeros((4,T))
 
@@ -89,8 +91,17 @@ nominal_path=np.zeros((14,T+1))
 nominal_states=np.zeros((14,T+1))
 nominal_err=np.zeros((14,T+1))
 nominal_controls_path=np.zeros((4,T))
+
+ground_truth_path=np.zeros((14,T+1))
+ground_truth_states=np.zeros((14,T+1))
+ground_truth_err=np.zeros((14,T+1))
+ground_truth_controls_path=np.zeros((4,T))
+
 x0=0.0*np.ones((14,1))
-x0[9, 0] = 0.1
+x0[0, 0] = 1.0
+x0[1, 0] = 1.0
+x0[2, 0] = -1.0
+x0[9, 0] = 9.81
 
 if linear_fb:
     x=x0.copy()
@@ -107,6 +118,26 @@ if linear_fb:
         x=dyn.integrate(x,control.detach().numpy())
         learned_err[:,t+1]=(diff)[:,0]
         learned_path[:,t+1]=(desired_linear_system_state)[:,0]
+        learned_states[:,t+1]=x[:, 0]
+
+    plt.figure()
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_path[0,:], '.-r', label="x")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_path[4,:], '.-g', label="y")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_path[8,:], '.-b', label="z")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_path[12,:], '.-k', label="psi")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_states[9,:], '.-y', label="zeta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_states[4,:], '.-m', label="theta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_states[5,:], '.-c', label="phi")
+    plt.title("learned")
+    plt.legend()
+
 
 #        if check_energy:
 #            print(dyn.total_energy(x))
@@ -126,44 +157,96 @@ if nominal:
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
 
-        control= dyn._M_q(x) @ v + dyn._f_q(x)
+        control= bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
         nominal_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)
         nominal_err[:,t+1]=(diff)[:,0]
         nominal_path[:,t+1]=(desired_linear_system_state)[:,0]
         nominal_states[:,t+1]=x[:, 0]
+
+    plt.figure()
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_path[0,:], '.-r', label="x")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_path[4,:], '.-g', label="y")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_path[8,:], '.-b', label="z")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_path[12,:], '.-k', label="psi")
+    #plt.plot(np.linspace(0, T*time_step, T+1),
+    #         nominal_states[9,:], '.-y', label="zeta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_states[4,:], '.-m', label="theta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_states[5,:], '.-c', label="phi")
+    plt.title("nominal")
+    plt.legend()
+
+#        if to_render:
+#            dyn.render(x,speed)
+
+if ground_truth:
+
+    x=x0.copy()
+    dyn.fig=None
+
+    for t in range(T):
+        desired_linear_system_state=dyn.linearized_system_state(x)
+
+        ref=np.reshape(reference[:,t],(14,1))
+
+        diff = desired_linear_system_state - ref
+        v=-1*K @ diff
+
+        control= dyn._M_q(x) @ v + dyn._f_q(x)
+        control = np.zeros((4, 1))
+        control[0, 0] = -0.1 * (diff[8, 0])
+        ground_truth_controls_path[:,t]=control[:,0]
+        x=dyn.integrate(x,control)
+        ground_truth_err[:,t+1]=(diff)[:,0]
+        ground_truth_path[:,t+1]=(desired_linear_system_state)[:,0]
+        ground_truth_states[:,t+1]=x[:, 0]
+
+
+    plt.figure()
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_path[0,:], '.-r', label="x")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_path[4,:], '.-g', label="y")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_path[8,:], '.-b', label="z")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_path[12,:], '.-k', label="psi")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_states[9,:], '.-y', label="zeta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_states[4,:], '.-m', label="theta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             ground_truth_states[5,:], '.-c', label="phi")
+    plt.legend()
+    plt.title("ground truth")
+
+    plt.figure()
+    plt.plot(np.linspace(0, T*time_step, T),
+             ground_truth_controls_path[0,:], '.-r', label="u1")
+    plt.plot(np.linspace(0, T*time_step, T),
+             ground_truth_controls_path[1,:], '.-g', label="u2")
+    plt.plot(np.linspace(0, T*time_step, T),
+             ground_truth_controls_path[2,:], '.-b', label="u3")
+    plt.plot(np.linspace(0, T*time_step, T),
+             ground_truth_controls_path[3,:], '.-k', label="u4")
+    plt.title("ground truth controls")
+    plt.legend()
+
+
 #        if to_render:
 #            dyn.render(x,speed)
 
 #plt.plot(np.linalg.norm(nominal_path[:5,:], axis=0),'r')
-plt.figure()
-plt.plot(np.linspace(0, T*time_step, T+1),
-         learned_path[0,:], '.-r', label="x")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         learned_path[4,:], '.-g', label="y")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         learned_path[8,:], '.-b', label="z")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         learned_path[12,:], '.-k', label="psi")
-plt.title("learned")
-plt.legend()
-
-plt.figure()
-plt.plot(np.linspace(0, T*time_step, T+1),
-         nominal_path[0,:], '.-r', label="x")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         nominal_path[4,:], '.-g', label="y")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         nominal_path[8,:], '.-b', label="z")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         nominal_path[12,:], '.-k', label="psi")
-plt.plot(np.linspace(0, T*time_step, T+1),
-         nominal_states[9,:], '.-y', label="zeta")
 
 
 #plt.plot(np.linspace(0, T*time_step, T+1),
 #         np.linalg.norm(learned_path[[0, 4, 8, 12],:], axis=0), 'b')
 #plt.plot(reference[2,:],'b')
-plt.title("nominal")
 plt.legend()
 plt.show()

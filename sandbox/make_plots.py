@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 filenames = [file for file in listdir('./logs/') if isfile(join('./logs/', file))]
 
-plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.900000_1.100000_1.100000_1.100000_seed_70.pkl")
+#plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.900000_1.100000_1.100000_1.100000_seed_228.pkl")
+plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.500000_0.500000_0.500000_0.500000_seed_95.pkl")
 plotter.plot_scalar_fields(["mean_return"])
 plt.title('Reinforce')
 plotter.show()

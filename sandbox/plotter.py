@@ -69,6 +69,7 @@ class Plotter(object):
         for f in fields:
             plt.plot(self._log[f], linewidth=2, markersize=12, label=f)
 
+        plt.ylim(-200, 0.1)
         plt.legend()
         self._set_title_and_axis_labels(title, xlabel, ylabel)
 

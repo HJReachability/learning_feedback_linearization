@@ -49,9 +49,9 @@ class Quadrotor14D(Dynamics):
         tan = math.tan
 
         # Drift term. From pp. 33 of linked document above.
-        g17 = -(1.0 / m) * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta))
-        g18 = -(1.0 / m) * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta))
-        g19 = -(1.0 / m) * (cos(phi) * cos(theta))
+        g17 = (1.0 / m) * (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta))
+        g18 = (1.0 / m) * (cos(psi) * sin(phi) - cos(phi) * sin(psi) * sin(theta))
+        g19 = (1.0 / m) * (cos(phi) * cos(theta))
 
         drift_term = np.array([
             [dx],

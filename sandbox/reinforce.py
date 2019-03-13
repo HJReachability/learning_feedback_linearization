@@ -19,17 +19,20 @@ class Reinforce(object):
                  feedback_linearization,
                  logger,
                  norm,
-                 scaling):
+                 scaling,
+                 state_constraint=None):
         self._num_iters = num_iters
         self._learning_rate = learning_rate
         self._desired_kl = desired_kl
         self._discount_factor = discount_factor
         self._num_rollouts = num_rollouts
         self._num_steps_per_rollout = num_steps_per_rollout
+        self._num_total_time_steps = num_rollouts * num_steps_per_rollout
         self._dynamics = dynamics
         self._initial_state_sampler = initial_state_sampler
         self._feedback_linearization = feedback_linearization
         self._logger = logger
+        self._state_constraint = state_constraint
 
         # Use RMSProp as the optimizer.
         self._M2_optimizer = torch.optim.RMSprop(
@@ -113,7 +116,8 @@ class Reinforce(object):
 
     def _collect_rollouts(self,time_step):
         rollouts = []
-        for ii in range(self._num_rollouts):
+        num_total_time_steps = 0
+        while num_total_time_steps < self._num_total_time_steps:
             # (0) Sample a new initial state.
             x = self._initial_state_sampler(time_step)
 
@@ -130,19 +134,23 @@ class Reinforce(object):
                        "rs" : []}
 
             for v, y_desired in zip(vs, ys):
+                u = self._feedback_linearization.sample_noisy_feedback(x, v)
+                next_x = self._dynamics.integrate(x, u)
+                next_y = self._dynamics.observation(x)
+                r = self._reward(y_desired, next_y)
+
+                if self._state_constraint is not None and \
+                   not self._state_constraint.contains(next_x):
+                    break
+
                 rollout["xs"].append(x)
                 rollout["vs"].append(v)
-
-                u = self._feedback_linearization.sample_noisy_feedback(x, v)
                 rollout["us"].append(u)
-
-                x = self._dynamics.integrate(x, u)
-                y = self._dynamics.observation(x)
-                rollout["ys"].append(y)
+                rollout["ys"].append(next_y)
                 rollout["y_desireds"].append(y_desired)
-
-                r = self._reward(y_desired, y)
                 rollout["rs"].append(r)
+                x = next_x
+                num_total_time_steps += 1
 
             # (3) Compute values for this rollout and append to list.
             self._compute_values(rollout)
@@ -156,8 +164,6 @@ class Reinforce(object):
 #        plt.plot(theta1s, theta2s)
 #        plt.pause(1)
         return rollouts
-
-
 
     def _update_feedback(self, rollouts):
         """
@@ -179,7 +185,7 @@ class Reinforce(object):
 
             mean_return += rollout["values"][0]
 
-        objective /= float(self._num_rollouts * self._num_steps_per_rollout)
+        objective /= float(self._num_total_time_steps)
         mean_return /= float(self._num_rollouts)
 
         print("Objective is: ", objective)
@@ -240,14 +246,11 @@ class Reinforce(object):
         # Update previous states visited and auxiliary control inputs.
         if self._previous_xs is None:
             self._previous_xs = np.zeros((
-                self._num_rollouts * self._num_steps_per_rollout,
-                self._dynamics.xdim))
+                self._num_total_time_steps, self._dynamics.xdim))
             self._previous_vs = np.zeros((
-                self._num_rollouts * self._num_steps_per_rollout,
-                self._dynamics.udim))
+                self._num_total_time_steps, self._dynamics.udim))
             self._previous_means = np.zeros((
-                self._num_rollouts * self._num_steps_per_rollout,
-                self._dynamics.udim))
+                self._num_total_time_steps, self._dynamics.udim))
 
         ii = 0
         self._previous_std = self._feedback_linearization._noise_std_variable.data[0].detach().numpy()[0]
@@ -332,7 +335,7 @@ class Reinforce(object):
         if self._previous_means is None:
             return 0.0
 
-        num_states = self._num_rollouts * self._num_steps_per_rollout
+        num_states = self._num_total_time_steps
         num_dimensions = self._dynamics.udim
         current_means = np.zeros((num_states, num_dimensions))
         for ii in range(num_states):

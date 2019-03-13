@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import time
 
+from constraint import Constraint
 from quadrotor_14d import Quadrotor14D
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
@@ -77,6 +78,27 @@ discount_factor = 0.99
 num_rollouts = 50
 num_steps_per_rollout = 25
 
+# Constraint on state so that we don't go nuts.
+class Quadrotor14DConstraint(Constraint):
+    def contains(self, x):
+        BIG = 100.0
+        SMALL = 0.1
+        return abs(x[0, 0]) < BIG and \
+            abs(x[1, 0]) < BIG and \
+            abs(x[2, 0]) < BIG and \
+            abs(x[3, 0]) < BIG and \
+            abs(x[4, 0]) < np.pi / 3.0 and \
+            abs(x[5, 0]) < np.pi / 3.0 and \
+            abs(x[6, 0]) < BIG and \
+            abs(x[7, 0]) < BIG and \
+            abs(x[8, 0]) < BIG and \
+            abs(x[9, 0]) > SMALL and \
+            abs(x[10, 0]) < BIG and \
+            abs(x[11, 0]) < BIG and \
+            abs(x[12, 0]) < BIG and \
+            abs(x[13, 0]) < BIG
+
+state_constraint = Quadrotor14DConstraint()
 
 #Algorithm Params ** Only for Reinforce:
 
@@ -129,7 +151,8 @@ if do_Reinforce:
                        fb,
                        logger,
                        norm,
-                       scale_rewards)
+                       scale_rewards,
+                       state_constraint)
 
 # Run this guy.
 solver.run(plot=False, show_diff=False)

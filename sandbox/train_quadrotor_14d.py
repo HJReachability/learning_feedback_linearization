@@ -21,7 +21,7 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
+mass_scaling = 0.9
 Ix_scaling = 0.5
 Iy_scaling = 0.5
 Iz_scaling = 0.5
@@ -103,7 +103,7 @@ state_constraint = Quadrotor14DConstraint()
 #Algorithm Params ** Only for Reinforce:
 
 ## Train for zero (no bad dynamics)
-from_zero=False
+from_zero=True
 
 # Rewards scaling - default is 10.0
 scale_rewards=1000.0

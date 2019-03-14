@@ -12,9 +12,12 @@ filenames = [file for file in listdir('./logs/') if isfile(join('./logs/', file)
 #plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.100000_lr0.001000_kl-1.000000_50_25_dyn_0.500000_0.500000_0.500000_0.500000_seed_95.pkl")
 #plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.001000_kl-1.000000_100_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_204_smallweights.pkl") # swweeeet
 #plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.000100_kl-1.000000_50_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_180_smallweights.pkl") #nice!
-plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.500000_lr0.000100_kl-1.000000_50_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_440_smallweights.pkl") #nice!
+#plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std0.500000_lr0.000100_kl-1.000000_50_25_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_440_smallweights.pkl") #nice!
+#plotter = Plotter("./logs/quadrotor_14d_Reinforce_3x10_std1.000000_lr0.001000_kl-1.000000_50_25_fromzero_True_dyn_0.900000_0.500000_0.500000_0.500000_seed_279_norm_1_smallweights.pkl")
+plotter = Plotter("./logs/quadrotor_14d_Reinforce_2x10_std1.000000_lr0.000100_kl-1.000000_25_100_fromzero_False_dyn_1.100000_0.500000_0.500000_0.500000_seed_417_norm_1_smallweights.pkl")
 plotter.plot_scalar_fields(["mean_return"])
-plt.title('Reinforce')
+plotter.plot_scalar_fields(["stddev"])
+#plt.title('Reinforce')
 plotter.show()
 
 

@@ -139,6 +139,9 @@ class Reinforce(object):
                 next_y = self._dynamics.observation(x)
                 r = self._reward(y_desired, next_y)
 
+                if num_total_time_steps >= self._num_total_time_steps:
+                    break
+
                 if self._state_constraint is not None and \
                    not self._state_constraint.contains(next_x):
                     break

@@ -21,7 +21,7 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
+mass_scaling = 0.9
 Ix_scaling = 0.5
 Iy_scaling = 0.5
 Iz_scaling = 0.5
@@ -45,26 +45,21 @@ do_Reinforce=1
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
-    if num < 500:
-        lower = np.array([[-0.25, -0.25, -0.25,
-                           -0.1, -0.1, -0.1,
-                           -0.1, -0.1, -0.1,
-                           -1.0, # This is the thrust acceleration - g.
-                           -0.1, -0.1, -0.1, -0.1]]).T
-    elif num < 1500:
-        lower = np.array([[-1.0, -1.0, -1.0,
-                           -0.5, -0.25, -0.25,
-                           -0.2, -0.2, -0.2,
-                           -1.5, # This is the thrust acceleration - g.
-                           -0.2, -0.2, -0.2, -0.2]]).T
-    else:
-        lower = np.array([[-2.5, -2.5, -2.5,
-                           -np.pi, -1.0, -1.0,
-                           -0.3, -0.3, -0.3,
-                           -2.0, # This is the thrust acceleration - g.
-                           -0.3, -0.3, -0.3, -0.3]]).T
+    lower0 = np.array([[-0.25, -0.25, -0.25,
+                       -0.1, -0.1, -0.1,
+                       -0.1, -0.1, -0.1,
+                       -1.0, # This is the thrust acceleration - g.
+                       -0.1, -0.1, -0.1, -0.1]]).T
+    lower1 = np.array([[-2.5, -2.5, -2.5,
+                       -np.pi, -1.0, -1.0,
+                       -0.3, -0.3, -0.3,
+                       -2.0, # This is the thrust acceleration - g.
+                       -0.3, -0.3, -0.3, -0.3]]).T
 
+    frac = min(float(num) / 1500.0, 1.0)
+    lower = frac * lower1 + (1.0 - frac) * lower0
     upper = -lower
+
     lower[9, 0] = (lower[9, 0] + 9.81) / mass
     upper[9, 0] = (upper[9, 0] + 9.81) / mass
 
@@ -101,9 +96,8 @@ class Quadrotor14DConstraint(Constraint):
 state_constraint = Quadrotor14DConstraint()
 
 #Algorithm Params ** Only for Reinforce:
-
 ## Train for zero (no bad dynamics)
-from_zero=False
+from_zero=True
 
 # Rewards scaling - default is 10.0
 scale_rewards=1000.0

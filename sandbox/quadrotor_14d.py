@@ -138,6 +138,7 @@ class Quadrotor14D(Dynamics):
             dpsi = min(
                 abs((y1[3, 0] - y2[3, 0] + np.pi) % (2.0 * np.pi) - np.pi),
                 abs((y2[3, 0] - y1[3, 0] + np.pi) % (2.0 * np.pi) - np.pi))
+            return dx + dy + dz + dpsi
         elif norm == 2:
             dx = abs(y1[0, 0] - y2[0, 0])**2
             dy = abs(y1[1, 0] - y2[1, 0])**2
@@ -145,7 +146,10 @@ class Quadrotor14D(Dynamics):
             dpsi = min(
                 abs((y1[3, 0] - y2[3, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
                 abs((y2[3, 0] - y1[3, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
-        return dx + dy + dz + dpsi
+            return np.sqrt(dx + dy + dz + dpsi)
+
+        print("You dummy. Bad norm.")
+        return np.inf
 
     def feedback_linearize(self):
         """

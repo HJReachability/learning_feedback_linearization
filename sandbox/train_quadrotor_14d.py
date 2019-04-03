@@ -21,10 +21,10 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.9
-Ix_scaling = 0.5
-Iy_scaling = 0.5
-Iz_scaling = 0.5
+mass_scaling = 1.1
+Ix_scaling = 0.75
+Iy_scaling = 0.75
+Iz_scaling = 0.75
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
@@ -42,7 +42,6 @@ fb = FeedbackLinearization(
 do_PPO=0
 do_Reinforce=1
 
-
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
     lower0 = np.array([[-0.25, -0.25, -0.25,
@@ -51,7 +50,7 @@ def initial_state_sampler(num):
                        -1.0, # This is the thrust acceleration - g.
                        -0.1, -0.1, -0.1, -0.1]]).T
     lower1 = np.array([[-2.5, -2.5, -2.5,
-                       -np.pi, -1.0, -1.0,
+                       -np.pi, -np.pi / 4.0, -np.pi / 4.0,
                        -0.3, -0.3, -0.3,
                        -2.0, # This is the thrust acceleration - g.
                        -0.3, -0.3, -0.3, -0.3]]).T
@@ -66,8 +65,8 @@ def initial_state_sampler(num):
     return np.random.uniform(lower, upper)
 
 # Create REINFORCE.
-num_iters = 2000
-learning_rate = 1e-3
+num_iters = 2
+learning_rate = 5e-6
 desired_kl = -1.0
 discount_factor = 0.99
 num_rollouts = 50
@@ -97,7 +96,7 @@ state_constraint = Quadrotor14DConstraint()
 
 #Algorithm Params ** Only for Reinforce:
 ## Train for zero (no bad dynamics)
-from_zero=True
+from_zero=False
 
 # Rewards scaling - default is 10.0
 scale_rewards=1000.0

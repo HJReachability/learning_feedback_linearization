@@ -57,7 +57,7 @@ class Reinforce(object):
         self._norm = norm
         self._scaling =  scaling
 
-    def run(self, plot=False, show_diff=False):
+    def run(self, plot=False, show_diff=False, dump_every=500):
         for ii in range(self._num_iters):
             print("---------- Iteration ", ii, " ------------")
             rollouts = self._collect_rollouts(ii)
@@ -109,7 +109,10 @@ class Reinforce(object):
 
                 oldweightsM=copy.deepcopy(newM)
                 oldweightsf=copy.deepcopy(newF)
-            self._logger.dump()
+
+            # Dump every 'dump_every' iterations.
+            if ii % dump_every == 1:
+                self._logger.dump()
 
         # Log the learned model.
         self._logger.log("feedback_linearization", self._feedback_linearization)

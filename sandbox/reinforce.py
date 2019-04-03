@@ -1,4 +1,5 @@
 import torch
+import time
 import numpy as np
 from collections import deque
 import matplotlib.pyplot as plt
@@ -60,6 +61,7 @@ class Reinforce(object):
     def run(self, plot=False, show_diff=False, dump_every=500):
         for ii in range(self._num_iters):
             print("---------- Iteration ", ii, " ------------")
+            start_time = time.time()
             rollouts = self._collect_rollouts(ii)
 
             ys = rollouts[0]["ys"]
@@ -110,8 +112,14 @@ class Reinforce(object):
                 oldweightsM=copy.deepcopy(newM)
                 oldweightsf=copy.deepcopy(newF)
 
+            # Log elapsed time.
+            elapsed_time = time.time() - start_time
+            print("Elapsed time: ", elapsed_time)
+            self._logger.log("elapsed_time", elapsed_time)
+
             # Dump every 'dump_every' iterations.
             if ii % dump_every == 1:
+                self._logger.log("feedback_linearization", self._feedback_linearization)
                 self._logger.dump()
 
         # Log the learned model.

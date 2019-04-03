@@ -55,6 +55,9 @@ class Logger(object):
         self._filename = filename
         self._log = {}
 
+        # Number of times this log has been dumped to index dumps.
+        self._num_dumps = 0
+
         # Make sure we can open the file!
         fp = open(self._filename, "wb")
         fp.close()
@@ -74,6 +77,8 @@ class Logger(object):
             self._log[field].append(value)
 
     def dump(self):
-        fp = open(self._filename, "wb")
+        fp = open(self._filename + "_" + self._num_dumps, "wb")
         dill.dump(self._log, fp)
         fp.close()
+
+        self._num_dumps += 1

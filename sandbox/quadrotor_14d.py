@@ -151,7 +151,7 @@ class Quadrotor14D(Dynamics):
         """
         Computes feedback linearization of this system.
         Returns M matrix and w vector (both functions of state):
-                       ``` u = M(x) [ f(x) + v ] ```
+                       ``` u = M(x) v + f(x) ```
 
         :return: M(x) and f(x) as functions
         :rtype: np.array(np.array), np.array(np.array)

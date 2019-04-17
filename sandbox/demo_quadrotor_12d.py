@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from scipy.linalg import solve_continuous_are
 
-from quadrotor_14d import Quadrotor14D
+from quadrotor_12d import Quadrotor12D
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
 from logger import *
@@ -17,10 +17,10 @@ filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
 
-fp =  fp = open(filename, "rb")
-log = dill.load(fp)
+#fp =  fp = open(filename, "rb")
+#log = dill.load(fp)
 
-fb_law=log['feedback_linearization'][0]
+#fb_law=log['feedback_linearization'][0]
 
 
 def solve_lqr(A,B,Q,R):
@@ -29,10 +29,10 @@ def solve_lqr(A,B,Q,R):
     #   K,S,E=control.lqr(A,B,Q,R)
     return K
 
-linear_fb=1
-nominal=1
+linear_fb=0
+nominal=0
 ground_truth=1
-T=170
+T=100
 to_render=0
 check_energy=0
 speed=0.001
@@ -43,13 +43,13 @@ Ix = 1.0
 Iy = 1.0
 Iz = 1.0
 time_step = 0.01
-dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
+dyn = Quadrotor12D(mass, Ix, Iy, Iz, time_step)
 
 mass_scaling = 1.1
 Ix_scaling = 0.9
 Iy_scaling = 0.9
 Iz_scaling = 0.9
-bad_dyn = Quadrotor14D(
+bad_dyn = Quadrotor12D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
@@ -60,7 +60,7 @@ bad_dyn = Quadrotor14D(
 q=1.0
 r=1.0
 A, B, C = dyn.linearized_system()
-Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
 R=r*np.eye(4)
 
 #Get Linear Feedback policies
@@ -70,7 +70,7 @@ K=solve_lqr(A,B,Q,R)
 
 
 
-reference=0.0*np.ones((14,T))
+reference=0.0*np.ones((12,T))
 #reference[12, :] = 3.1
 #reference[0,:]=0.1*np.linspace(0,T*time_step,T)
 #reference[1,:]=0.1*time_step
@@ -86,33 +86,33 @@ reference=0.0*np.ones((14,T))
 #reference[2,:]=np.pi*np.cos(np.linspace(0,T*time_step,T))
 #reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
-learned_path=np.zeros((14,T+1))
-learned_states=np.zeros((14,T+1))
-learned_err=np.zeros((14,T+1))
-learned_controls_path=np.zeros((4,T))
+learned_path=np.zeros((12,T+1))
+learned_states=np.zeros((12,T+1))
+learned_err=np.zeros((12,T+1))
+learned_controls_path=np.zeros((3,T))
 
-nominal_path=np.zeros((14,T+1))
-nominal_states=np.zeros((14,T+1))
-nominal_err=np.zeros((14,T+1))
-nominal_controls_path=np.zeros((4,T))
+nominal_path=np.zeros((12,T+1))
+nominal_states=np.zeros((12,T+1))
+nominal_err=np.zeros((12,T+1))
+nominal_controls_path=np.zeros((3,T))
 
-ground_truth_path=np.zeros((14,T+1))
-ground_truth_states=np.zeros((14,T+1))
-ground_truth_err=np.zeros((14,T+1))
-ground_truth_controls_path=np.zeros((4,T))
+ground_truth_path=np.zeros((12,T+1))
+ground_truth_states=np.zeros((12,T+1))
+ground_truth_err=np.zeros((12,T+1))
+ground_truth_controls_path=np.zeros((3,T))
 
-x0=0.0*np.ones((14,1))
+x0=0.0*np.ones((12,1))
 x0[0, 0] = 0.1
 x0[1, 0] = 0.1
 x0[2, 0] = -0.1
-x0[9, 0] = 9.81
+x0[8, 0] = 9.81
 
 if linear_fb:
     x=x0.copy()
     for t in range(T):
         desired_linear_system_state=dyn.linearized_system_state(x)
 
-        ref=np.reshape(reference[:,t],(14,1))
+        ref=np.reshape(reference[:,t],(12,1))
 
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
@@ -156,7 +156,7 @@ if nominal:
     for t in range(T):
         desired_linear_system_state=dyn.linearized_system_state(x)
 
-        ref=np.reshape(reference[:,t],(14,1))
+        ref=np.reshape(reference[:,t],(12,1))
 
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
@@ -175,8 +175,6 @@ if nominal:
              nominal_path[4,:], '.-g', label="y")
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_path[8,:], '.-b', label="z")
-    plt.plot(np.linspace(0, T*time_step, T+1),
-             nominal_path[12,:], '.-k', label="psi")
     #plt.plot(np.linspace(0, T*time_step, T+1),
     #         nominal_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
@@ -197,11 +195,12 @@ if ground_truth:
     for t in range(T):
         desired_linear_system_state=dyn.linearized_system_state(x)
 
-        ref=np.reshape(reference[:,t],(14,1))
+        ref=np.reshape(reference[:,t],(12,1))
 
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
 
+        print(dyn._Delta_q(x))
         control= dyn._M_q(x) @ v + dyn._f_q(x)
 #        control = np.zeros((4, 1))
 #        control[0, 0] = -0.1 * (diff[8, 0])
@@ -220,8 +219,6 @@ if ground_truth:
     plt.plot(np.linspace(0, T*time_step, T+1),
              ground_truth_path[8,:], '.-b', label="z")
     plt.plot(np.linspace(0, T*time_step, T+1),
-             ground_truth_path[12,:], '.-k', label="psi")
-    plt.plot(np.linspace(0, T*time_step, T+1),
              ground_truth_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              ground_truth_states[4,:], '.-m', label="theta")
@@ -237,8 +234,6 @@ if ground_truth:
              ground_truth_controls_path[1,:], '.-g', label="u2")
     plt.plot(np.linspace(0, T*time_step, T),
              ground_truth_controls_path[2,:], '.-b', label="u3")
-    plt.plot(np.linspace(0, T*time_step, T),
-             ground_truth_controls_path[3,:], '.-k', label="u4")
     plt.title("ground truth controls")
     plt.legend()
 

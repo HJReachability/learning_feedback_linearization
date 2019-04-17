@@ -77,7 +77,7 @@ class Logger(object):
             self._log[field].append(value)
 
     def dump(self):
-        fp = open(self._filename + "_" + self._num_dumps, "wb")
+        fp = open(self._filename + "_" + str(self._num_dumps), "wb")
         dill.dump(self._log, fp)
         fp.close()
 

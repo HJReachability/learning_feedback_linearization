@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 from constraint import Constraint
-from quadrotor_14d import Quadrotor14D
+from quadrotor_12d import Quadrotor12D
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
 from logger import Logger
@@ -19,13 +19,13 @@ Ix = 1.0
 Iy = 1.0
 Iz = 1.0
 time_step = 0.02
-dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
+dyn = Quadrotor12D(mass, Ix, Iy, Iz, time_step)
 
 mass_scaling = 1.1
 Ix_scaling = 0.9
 Iy_scaling = 0.9
 Iz_scaling = 0.9
-bad_dyn = Quadrotor14D(
+bad_dyn = Quadrotor12D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
@@ -45,22 +45,22 @@ do_Reinforce=1
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
     lower0 = np.array([[-0.25, -0.25, -0.25,
-                       -0.1, -0.1, -0.1,
+                       -0.1, -0.1,
                        -0.1, -0.1, -0.1,
                        -1.0, # This is the thrust acceleration - g.
-                       -0.1, -0.1, -0.1, -0.1]]).T
+                       -0.1, -0.1, -0.1]]).T
     lower1 = np.array([[-2.5, -2.5, -2.5,
-                       -np.pi, -np.pi / 4.0, -np.pi / 4.0,
+                        -np.pi / 4.0, -np.pi / 4.0,
                        -0.3, -0.3, -0.3,
                        -10.0, # This is the thrust acceleration - g.
-                       -0.3, -0.3, -0.3, -0.3]]).T
+                       -0.3, -0.3, -0.3]]).T
 
     frac = min(float(num) / 1500.0, 1.0)
     lower = frac * lower1 + (1.0 - frac) * lower0
     upper = -lower
 
-    lower[9, 0] = (lower[9, 0] + 9.81) / mass
-    upper[9, 0] = (upper[9, 0] + 9.81) / mass
+    lower[8, 0] = (lower[8, 0] + 9.81) / mass
+    upper[8, 0] = (upper[8, 0] + 9.81) / mass
 
     return np.random.uniform(lower, upper)
 
@@ -73,26 +73,24 @@ num_rollouts = 50
 num_steps_per_rollout = 100
 
 # Constraint on state so that we don't go nuts.
-class Quadrotor14DConstraint(Constraint):
+class Quadrotor12DConstraint(Constraint):
     def contains(self, x):
         BIG = 100.0
         SMALL = 0.01
         return abs(x[0, 0]) < BIG and \
             abs(x[1, 0]) < BIG and \
             abs(x[2, 0]) < BIG and \
-            abs(x[3, 0]) < BIG and \
+            abs(x[3, 0]) < np.pi / 3.0 and \
             abs(x[4, 0]) < np.pi / 3.0 and \
-            abs(x[5, 0]) < np.pi / 3.0 and \
+            abs(x[5, 0]) < BIG and \
             abs(x[6, 0]) < BIG and \
             abs(x[7, 0]) < BIG and \
-            abs(x[8, 0]) < BIG and \
-            abs(x[9, 0]) > SMALL and \
+            abs(x[8, 0]) > SMALL and \
+            abs(x[9, 0]) < BIG and \
             abs(x[10, 0]) < BIG and \
-            abs(x[11, 0]) < BIG and \
-            abs(x[12, 0]) < BIG and \
-            abs(x[13, 0]) < BIG
+            abs(x[11, 0]) < BIG
 
-state_constraint = Quadrotor14DConstraint()
+state_constraint = Quadrotor12DConstraint()
 
 #Algorithm Params ** Only for Reinforce:
 ## Train for zero (no bad dynamics)
@@ -110,7 +108,7 @@ if from_zero:
 
 if do_PPO:
     logger = Logger(
-        "logs/quadrotor_14d_PPO_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
+        "logs/quadrotor_12d_PPO_%dx%d_std%f_lr%f_kl%f_%d_%d_dyn_%f_%f_%f_%f_seed_%d.pkl" %
         (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
          num_rollouts, num_steps_per_rollout,
          mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,
@@ -128,7 +126,7 @@ if do_PPO:
 
 if do_Reinforce:
     logger = Logger(
-        "logs/quadrotor_14d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d_norm_%d_smallweights_relu.pkl" %
+        "logs/quadrotor_12d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d_norm_%d_smallweights_relu.pkl" %
         (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
          num_rollouts, num_steps_per_rollout, str(from_zero),
          mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,

@@ -253,7 +253,7 @@ class Reinforce(object):
                     param_group['lr'] *= lr_scaling
                 for param_group in self._f2_optimizer.param_groups:
                     param_group['lr'] *= lr_scaling
-                for param_group in self._feedback_linearization._noise_std_optimizer.param_groups:
+                for param_group in self._noise_std_optimizer.param_groups:
                     param_group['lr'] *= lr_scaling
 
 
@@ -358,7 +358,8 @@ class Reinforce(object):
             u = self._feedback_linearization.feedback(x, v).detach().numpy()
             current_means[ii, :] = u.copy().flatten()
 
-        current_std = self._feedback_linearization._noise_std.item()
+        current_std = self._feedback_linearization._noise_scaling * \
+                      abs(self._feedback_linearization._noise_std_variable.item()) + 0.05
         current_cov = current_std**2 * np.ones(self._dynamics.udim)
         previous_cov = self._previous_std**2 * np.ones(self._dynamics.udim)
 

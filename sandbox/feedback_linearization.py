@@ -30,9 +30,9 @@ def create_network(num_inputs, num_outputs,
     layers.append((
         "L_final_" + str(num_hidden_units) + "_" + str(num_outputs),
             torch.nn.Linear(num_hidden_units, num_outputs)))
-    layers.append((
-        "A_final_" + str(num_outputs),
-            torch.nn.Tanh()))
+#    layers.append((
+#        "A_final_" + str(num_outputs),
+#            torch.nn.Tanh()))
 
     return torch.nn.Sequential(OrderedDict(layers))
 

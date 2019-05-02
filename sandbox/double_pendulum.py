@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.patches import ConnectionPatch
+from matplotlib import cm
 import matplotlib.pyplot as plt
 from dynamics import Dynamics
 
@@ -15,6 +16,8 @@ class DoublePendulum(Dynamics):
         self.fig = None
         self.friction_coeff = friction_coeff
         self.g = 9.81
+        self.A,self.B=self.linearized_system()
+        
 
         super(DoublePendulum, self).__init__(4, 6, 2, 2, time_step)
 
@@ -34,6 +37,22 @@ class DoublePendulum(Dynamics):
         xdot[3, 0] = theta_doubledot[1, 0]
 
         return xdot
+
+    def linearized_system(self):
+    
+        A=np.zeros((4,4))
+        A[0,1]=1
+        A[2,3]=1
+        
+        B=np.zeros((4,2))
+        B[1,0]=1
+        B[3,1]=1
+
+        return A,B
+
+    def linearized_system_state(self,x):
+
+         return x
 
     def _M_q(self, x):
         """ Mass matrix. """
@@ -111,12 +130,18 @@ class DoublePendulum(Dynamics):
         """
         return self._M_q, self._f_q
 
-    def render(self,x,speed=0.01):
+    def render(self,x,speed=0.01,path=0,t=1):
+
+        blues=cm.get_cmap(name='Blues', lut=None)
+        reds=cm.get_cmap(name='Reds', lut=None)
+        greys=cm.get_cmap(name='Greys', lut=None)
+
         if self.fig is None:
             self.fig=plt.figure()
             self.gca=self.fig.gca()
-
-        self.gca.cla()
+        
+        if path:
+            self.gca.cla()
 
         plt.gca().set_aspect('equal', adjustable='box')
         plt.xlim([-1.1*self._length1-1.1*self._length2,1.1*self._length1+1.1*self._length2])
@@ -124,11 +149,16 @@ class DoublePendulum(Dynamics):
 
         position_joint1=np.array([self._length1*np.sin(x[0,0]),-self._length1*np.cos(x[0,0])])
         position_joint2=np.array([self._length2*np.sin(x[2,0]),-self._length2*np.cos(x[2,0])])+position_joint1
+        
+        if not path:
+            plt.plot([0,position_joint1[0]],[0,position_joint1[1]], color=greys(t), lw=2,zorder=1)
+            plt.plot([position_joint1[0],position_joint2[0]],[position_joint1[1],position_joint2[1]],color=greys(t),lw=2,zorder=1)
 
-        self.gca.add_patch(Circle(position_joint1, 0.1*self._length1,facecolor='r',ec='k'))
-        self.gca.add_patch(Circle(position_joint2, 0.1*self._length2,facecolor='b',ec='k'))
-        plt.plot([0,position_joint1[0]],[0,position_joint1[1]],'k')
-        plt.plot([position_joint1[0],position_joint2[0]],[position_joint1[1],position_joint2[1]],'k')
+
+        self.gca.add_patch(Circle(position_joint1, 0.1*self._length1,facecolor=reds(t),ec='w',zorder=2))
+        self.gca.add_patch(Circle(position_joint2, 0.1*self._length2,facecolor=blues(t),ec='w',zorder=2))
+
+        
         plt.pause(speed)
 
     def wrap_angles(self, x):
@@ -173,3 +203,26 @@ class DoublePendulum(Dynamics):
                 abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
                 abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
         return dtheta1 + dtheta2
+
+    def observation_delta(self, y_ref, y_obs):
+        """ Compute a distance metric on the observation space. """
+
+        delta=np.zeros(y_ref.shape)
+        delta[1,:]=y_obs[1,:]-y_ref[1,:]
+        delta[3,:]=y_obs[3,:]-y_ref[3,:]
+
+        des1=y_obs[0,:]
+        des2=y_obs[2,:]
+
+        ref1=y_ref[0,:]
+        ref2=y_ref[2,:]
+
+        term1=(des1 - ref1 + np.pi) % (2.0 * np.pi) - np.pi
+        term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
+        term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
+        term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
+
+        delta[0,:]=np.multiply(np.abs(term1)<np.abs(term2),term1)-np.multiply((np.abs(term1)>=np.abs(term2)),term2)
+        delta[2,:]=np.multiply(np.abs(term3)<np.abs(term4),term3)-np.multiply(np.abs(term3)>=np.abs(term4),term4)
+
+        return delta

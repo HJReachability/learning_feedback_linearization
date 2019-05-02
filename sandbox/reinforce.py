@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import copy
 from feedback_linearization import FeedbackLinearization
 from dynamics import Dynamics
+from scipy.linalg import solve_continuous_are
 
 class Reinforce(object):
     def __init__(self,
@@ -133,8 +134,8 @@ class Reinforce(object):
             x = self._initial_state_sampler(time_step)
 
             # (1) Generate a time series for v and corresponding y.
-            vs = self._generate_vs()
-            ys = self._generate_ys(x, vs)
+            reference,K = self._generate_reference()
+            ys = self._generate_ys(x,reference,K)
 
             # (2) Push through dynamics and get x, y time series.
             rollout = {"xs" : [],
@@ -144,12 +145,15 @@ class Reinforce(object):
                        "y_desireds" : [],
                        "rs" : []}
 
-            for v, y_desired in zip(vs, ys):
+            for ref, y_desired in zip(reference, ys):
+                
+                next_y=self._dynamics.linearized_system_state(x)
+                r = self._reward(y_desired, next_y)
+                diff=self._dynamics.observation_delta(ref,next_y)
+                v=-1*K @ (diff)
                 u = self._feedback_linearization.sample_noisy_feedback(x, v)
                 next_x = self._dynamics.integrate(x, u)
-                next_y = self._dynamics.observation(x)
-                r = self._reward(y_desired, next_y)
-
+                
                 if num_total_time_steps >= self._num_total_time_steps:
                     break
 
@@ -276,7 +280,7 @@ class Reinforce(object):
                 self._previous_means[ii, :] = u.flatten()
                 ii += 1
 
-    def _generate_vs(self):
+    def _generate_reference(self):
         """
         Use sinusoid with random frequency, amplitude, and bias:
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
@@ -284,28 +288,37 @@ class Reinforce(object):
         MAX_CONTINUOUS_TIME_FREQ = 2.0
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
 
-        v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
-        for ii in range(self._dynamics.udim):
-            v[ii, :] = np.arange(self._num_steps_per_rollout)
+        linsys_xdim=self._dynamics.A.shape[0]
+        linsys_udim=self._dynamics.B.shape[1]
+        Q=10*np.random.uniform()*np.eye(linsys_xdim)
+        R=10*(np.random.uniform()+0.1)*np.eye(linsys_udim)
+
+        v = np.empty((linsys_xdim, self._num_steps_per_rollout))
+        for ii in range(linsys_xdim):
+            v[ii, :] = np.linspace(0,self._num_steps_per_rollout*self._dynamics._time_step,self._num_steps_per_rollout)
             v[ii, :] = 1.0 * np.random.uniform() * np.sin(
                 2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * np.random.uniform() * v[ii, :]) + \
                 0.1 * np.random.normal()
 
-        return np.split(
-            v, indices_or_sections=self._num_steps_per_rollout, axis=1)
+        P = solve_continuous_are(self._dynamics.A, self._dynamics.B, Q, R)
+        K = np.linalg.inv(R) @ self._dynamics.B.T @ P
+        return (np.split(v, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
 
-    def _generate_ys(self, x0, vs):
+    def _generate_ys(self, x0, refs,K):
         """
         Compute desired output sequence given initial state and input sequence.
         This is computed by applying the true dynamics' feedback linearization.
         """
         x = x0.copy()
         ys = []
-        for v in vs:
+        for r in refs:
+            y=self._dynamics.linearized_system_state(x)
+            ys.append(y.copy())
+            diff=self._dynamics.observation_delta(r,y)
+            v=-1*K @ (diff)
             u = self._dynamics.feedback(x, v)
             x = self._dynamics.integrate(x, u)
-            ys.append(self._dynamics.observation(x))
-
+            
         return ys
 
     def _reward(self, y_desired, y):

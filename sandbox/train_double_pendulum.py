@@ -25,8 +25,8 @@ dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
 # Bad dynamics guess or train from zero
 
 
-mass1_scaling = 1.5
-mass2_scaling = 1.5
+mass1_scaling = 0.66
+mass2_scaling = 0.66
 length1_scaling = 1.0
 length2_scaling = 1.0
 friction_coeff_scaling = 1.0
@@ -37,9 +37,9 @@ bad_dyn = DoublePendulum(
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 64
+num_hidden_units = 32
 activation = torch.nn.Tanh()
-noise_std = 2.0
+noise_std = 1.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -51,7 +51,7 @@ do_Reinforce=1
 #Algorithm Params ** Only for Reinforce:
 
 ## Train for zero (no bad dynamics)
-from_zero=True
+from_zero=1
 
 # Rewards scaling - default is 10.0
 scale_rewards=100.0
@@ -69,7 +69,7 @@ assert do_PPO!=do_Reinforce
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
 
-	if num<1000:
+	if num<0000:
 		lower = (1.0 - num/1000.0)*np.array([[-0.5 ], [-0.5], [-0.5], [-0.5]]) + num/1000.0*np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
 		upper = -lower
 	else:

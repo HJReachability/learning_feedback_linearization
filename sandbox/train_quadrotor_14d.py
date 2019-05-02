@@ -70,7 +70,7 @@ learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 0.99
 num_rollouts = 50
-num_steps_per_rollout = 100
+num_steps_per_rollout = 50
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor14DConstraint(Constraint):

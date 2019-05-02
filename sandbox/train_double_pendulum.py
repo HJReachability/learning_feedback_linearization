@@ -36,8 +36,8 @@ bad_dyn = DoublePendulum(
     time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
-num_layers = 4
-num_hidden_units = 10
+num_layers = 2
+num_hidden_units = 64
 activation = torch.nn.Tanh()
 noise_std = 2.0
 fb = FeedbackLinearization(
@@ -51,7 +51,7 @@ do_Reinforce=1
 #Algorithm Params ** Only for Reinforce:
 
 ## Train for zero (no bad dynamics)
-from_zero=False
+from_zero=True
 
 # Rewards scaling - default is 10.0
 scale_rewards=100.0

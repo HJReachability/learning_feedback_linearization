@@ -287,8 +287,7 @@ class Reinforce(object):
         v = np.empty((self._dynamics.udim, self._num_steps_per_rollout))
         for ii in range(self._dynamics.udim):
             v[ii, :] = np.arange(self._num_steps_per_rollout)
-            v[ii, :] = 1.0 * np.random.uniform(
-                size=(1, self._num_steps_per_rollout)) * np.sin(
+            v[ii, :] = 1.0 * np.random.uniform() * np.sin(
                 2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * np.random.uniform() * v[ii, :]) + \
                 0.1 * np.random.normal()
 

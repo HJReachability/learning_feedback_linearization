@@ -16,7 +16,6 @@ class DoublePendulum(Dynamics):
         self.fig = None
         self.friction_coeff = friction_coeff
         self.g = 9.81
-        self.A,self.B=self.linearized_system()
         
 
         super(DoublePendulum, self).__init__(4, 6, 2, 2, time_step)
@@ -48,7 +47,11 @@ class DoublePendulum(Dynamics):
         B[1,0]=1
         B[3,1]=1
 
-        return A,B
+        C=np.zeros([2,4])
+        C[0,0]=1
+        C[1,1]=1
+
+        return A,B,C
 
     def linearized_system_state(self,x):
 

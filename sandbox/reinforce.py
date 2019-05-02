@@ -58,6 +58,7 @@ class Reinforce(object):
         self._previous_std = None
         self._norm = norm
         self._scaling =  scaling
+        self.A,self.B, C=self._dynamics.linearized_system()
 
     def run(self, plot=False, show_diff=False, dump_every=500):
         for ii in range(self._num_iters):
@@ -288,8 +289,8 @@ class Reinforce(object):
         MAX_CONTINUOUS_TIME_FREQ = 2.0
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
 
-        linsys_xdim=self._dynamics.A.shape[0]
-        linsys_udim=self._dynamics.B.shape[1]
+        linsys_xdim=self.A.shape[0]
+        linsys_udim=self.B.shape[1]
         Q=10*np.random.uniform()*np.eye(linsys_xdim)
         R=10*(np.random.uniform()+0.1)*np.eye(linsys_udim)
 
@@ -300,8 +301,8 @@ class Reinforce(object):
                 2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * np.random.uniform() * v[ii, :]) + \
                 0.1 * np.random.normal()
 
-        P = solve_continuous_are(self._dynamics.A, self._dynamics.B, Q, R)
-        K = np.linalg.inv(R) @ self._dynamics.B.T @ P
+        P = solve_continuous_are(self.A, self.B, Q, R)
+        K = np.linalg.inv(R) @ self.B.T @ P
         return (np.split(v, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
 
     def _generate_ys(self, x0, refs,K):

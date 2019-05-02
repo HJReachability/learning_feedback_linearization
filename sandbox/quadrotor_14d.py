@@ -153,6 +153,25 @@ class Quadrotor14D(Dynamics):
         print("You dummy. Bad norm.")
         return np.inf
 
+    def observation_delta(self, y_ref, y_obs):
+        """ Compute a distance metric on the observation space. """
+
+        delta=np.zeros(y_ref.shape)
+        delta[0,:]=y_obs[0,:]-y_ref[0,:]
+        delta[1,:]=y_obs[1,:]-y_ref[1,:]
+        delta[2,:]=y_obs[2,:]-y_ref[2,:]
+
+        des1=y_obs[3,:]
+        ref1=y_ref[3,:]
+
+        term1=(des1 - ref1 + np.pi) % (2.0 * np.pi) - np.pi
+        term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
+
+        delta[3,:]=np.multiply(np.abs(term1)<np.abs(term2),term1)-np.multiply((np.abs(term1)>=np.abs(term2)),term2)
+
+        return delta
+
+
     def feedback_linearize(self):
         """
         Computes feedback linearization of this system.

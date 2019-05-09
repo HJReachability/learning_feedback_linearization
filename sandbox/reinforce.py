@@ -136,7 +136,7 @@ class Reinforce(object):
 
             # (1) Generate a time series for v and corresponding y.
             reference,K = self._generate_reference()
-            ys = self._generate_ys(x,reference,K)
+            ys, _ = self._generate_ys(x,reference,K)
 
             # (2) Push through dynamics and get x, y time series.
             rollout = {"xs" : [],
@@ -147,14 +147,14 @@ class Reinforce(object):
                        "rs" : []}
 
             for ref, y_desired in zip(reference, ys):
-                
+
                 next_y=self._dynamics.linearized_system_state(x)
                 r = self._reward(y_desired, next_y)
                 diff=self._dynamics.observation_delta(ref,next_y)
                 v=-1*K @ (diff)
                 u = self._feedback_linearization.sample_noisy_feedback(x, v)
                 next_x = self._dynamics.integrate(x, u)
-                
+
                 if num_total_time_steps >= self._num_total_time_steps:
                     break
 
@@ -291,19 +291,21 @@ class Reinforce(object):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        Q=10*np.random.uniform()*np.eye(linsys_xdim)
-        R=10*(np.random.uniform()+0.1)*np.eye(linsys_udim)
+        Q=10.0 * np.random.uniform()*np.eye(linsys_xdim)
+        R=1.0 * np.eye(linsys_udim) #10*(np.random.uniform()+0.1)*np.eye(linsys_udim)
 
-        v = np.empty((linsys_xdim, self._num_steps_per_rollout))
+        y = np.empty((linsys_xdim, self._num_steps_per_rollout))
         for ii in range(linsys_xdim):
-            v[ii, :] = np.linspace(0,self._num_steps_per_rollout*self._dynamics._time_step,self._num_steps_per_rollout)
-            v[ii, :] = 1.0 * np.random.uniform() * np.sin(
-                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * np.random.uniform() * v[ii, :]) + \
-                0.1 * np.random.normal()
+            y[ii, :] = np.linspace(
+                0, self._num_steps_per_rollout * self._dynamics._time_step,
+                self._num_steps_per_rollout)
+            y[ii, :] = 1.0 * np.random.uniform() * (1.0 - np.cos(
+                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
+                np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
 
         P = solve_continuous_are(self.A, self.B, Q, R)
         K = np.linalg.inv(R) @ self.B.T @ P
-        return (np.split(v, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
+        return (np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
 
     def _generate_ys(self, x0, refs,K):
         """
@@ -312,15 +314,17 @@ class Reinforce(object):
         """
         x = x0.copy()
         ys = []
+        xs = []
         for r in refs:
             y=self._dynamics.linearized_system_state(x)
             ys.append(y.copy())
-            diff=self._dynamics.observation_delta(r,y)
-            v=-1*K @ (diff)
+            xs.append(x.copy())
+            diff = self._dynamics.linear_system_state_delta(r, y)
+            v = -K @ diff
             u = self._dynamics.feedback(x, v)
             x = self._dynamics.integrate(x, u)
-            
-        return ys
+
+        return ys, xs
 
     def _reward(self, y_desired, y):
         return -self._scaling * self._dynamics.observation_distance(

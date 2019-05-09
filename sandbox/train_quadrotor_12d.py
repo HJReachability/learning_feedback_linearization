@@ -66,11 +66,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 3000
-learning_rate = 1e-3
+learning_rate = 1e-2
 desired_kl = -1.0
 discount_factor = 0.99
-num_rollouts = 50
-num_steps_per_rollout = 100
+num_rollouts = 75
+num_steps_per_rollout = 50
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor12DConstraint(Constraint):

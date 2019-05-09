@@ -103,7 +103,7 @@ class FeedbackLinearization(object):
         """ Compute noisy version of u given x, v (np.arrays). """
         return torch.distributions.normal.Normal(
             self.feedback(x, v),
-            self._noise_scaling * torch.abs(self._noise_std_variable) + 0.05)
+            self._noise_scaling * torch.abs(self._noise_std_variable) + 0.1)
 
     def sample_noisy_feedback(self, x, v):
         """ Compute noisy version of u given x, v (np.arrays). """

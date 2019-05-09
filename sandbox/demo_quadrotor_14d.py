@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
+#filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
+filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_50_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_733_norm_2_smallweights_relu.pkl_3"
 
 # Plot everything.
 # plotter = Plotter(filename)

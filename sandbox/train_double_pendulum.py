@@ -82,7 +82,7 @@ def initial_state_sampler(num):
 	return np.random.uniform(lower, upper)
 
 # Create Solver.
-num_iters = 2000
+num_iters = 3000
 learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 0.99

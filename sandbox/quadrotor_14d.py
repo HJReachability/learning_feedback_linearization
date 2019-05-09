@@ -11,7 +11,7 @@ class Quadrotor14D(Dynamics):
         self._Ix = Ix
         self._Iy = Iy
         self._Iz = Iz
-        super(Quadrotor14D, self).__init__(14, 17, 4, 4, time_step)
+        super(Quadrotor14D, self).__init__(14, 14, 4, 4, time_step)
 
     def __call__(self, x0, u):
         """
@@ -112,6 +112,24 @@ class Quadrotor14D(Dynamics):
             cos = np.cos
             sin = np.sin
 
+
+        preprocessed_x[0] = cos(x[3])
+        preprocessed_x[1] = sin(x[3])
+        preprocessed_x[2] = cos(x[4])
+        preprocessed_x[3] = sin(x[4])
+        preprocessed_x[4] = cos(x[5])
+        preprocessed_x[5] = sin(x[5])
+        preprocessed_x[6] = x[6]
+        preprocessed_x[7] = x[7]
+        preprocessed_x[8] = x[8]
+        preprocessed_x[9] = x[9]
+        preprocessed_x[10] = x[10]
+        preprocessed_x[11] = x[11]
+        preprocessed_x[12] = x[12]
+        preprocessed_x[13] = x[13]
+
+
+        """
         preprocessed_x[0] = x[0]
         preprocessed_x[1] = x[1]
         preprocessed_x[2] = x[2]
@@ -129,6 +147,8 @@ class Quadrotor14D(Dynamics):
         preprocessed_x[14] = x[11]
         preprocessed_x[15] = x[12]
         preprocessed_x[16] = x[13]
+        """
+
         return preprocessed_x
 
     def observation_distance(self, y1, y2, norm):
@@ -152,6 +172,12 @@ class Quadrotor14D(Dynamics):
 
         print("You dummy. Bad norm.")
         return np.inf
+
+    def linear_system_state_delta(self, y_ref, y_obs):
+        """ Compute a distance metric on the linear system state space. """
+        delta = y_obs - y_ref
+        delta[12, 0] = (delta[12, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        return delta
 
     def observation_delta(self, y_ref, y_obs):
         """ Compute a distance metric on the observation space. """

@@ -21,18 +21,18 @@ Iz = 1.0
 time_step = 0.02
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
-Ix_scaling = 0.9
-Iy_scaling = 0.9
-Iz_scaling = 0.9
+mass_scaling = 1.4
+Ix_scaling = 0.75
+Iy_scaling = 0.75
+Iz_scaling = 0.75
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 32
-activation = torch.nn.ReLU()
+num_hidden_units = 64
+activation = torch.nn.Tanh()
 noise_std = 1.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
@@ -52,10 +52,10 @@ def initial_state_sampler(num):
     lower1 = np.array([[-2.5, -2.5, -2.5,
                        -np.pi, -np.pi / 4.0, -np.pi / 4.0,
                        -0.3, -0.3, -0.3,
-                       -10.0, # This is the thrust acceleration - g.
+                       -5.0, # This is the thrust acceleration - g.
                        -0.3, -0.3, -0.3, -0.3]]).T
 
-    frac = min(float(num) / 1500.0, 1.0)
+    frac = 1.0 #min(float(num) / 1500.0, 1.0)
     lower = frac * lower1 + (1.0 - frac) * lower0
     upper = -lower
 
@@ -66,11 +66,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 3000
-learning_rate = 1e-3
+learning_rate = 1e-4
 desired_kl = -1.0
-discount_factor = 0.99
+discount_factor = 1.0
 num_rollouts = 50
-num_steps_per_rollout = 50
+num_steps_per_rollout = 20
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor14DConstraint(Constraint):
@@ -99,7 +99,7 @@ state_constraint = Quadrotor14DConstraint()
 from_zero=False
 
 # Rewards scaling - default is 10.0
-scale_rewards=10000.0
+scale_rewards=100.0
 
 # norm to use
 norm=2

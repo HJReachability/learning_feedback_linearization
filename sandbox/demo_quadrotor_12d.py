@@ -32,7 +32,7 @@ def solve_lqr(A,B,Q,R):
 linear_fb=0
 nominal=0
 ground_truth=1
-T=100
+T=700
 to_render=0
 check_energy=0
 speed=0.001
@@ -61,7 +61,7 @@ q=1.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-R=r*np.eye(4)
+R=r*np.eye(3)
 
 #Get Linear Feedback policies
 K=solve_lqr(A,B,Q,R)
@@ -102,10 +102,11 @@ ground_truth_err=np.zeros((12,T+1))
 ground_truth_controls_path=np.zeros((3,T))
 
 x0=0.0*np.ones((12,1))
-x0[0, 0] = 0.1
-x0[1, 0] = 0.1
+x0[0, 0] = -2.0
+x0[1, 0] = 1.0
 x0[2, 0] = -0.1
 x0[8, 0] = 9.81
+
 
 if linear_fb:
     x=x0.copy()
@@ -200,7 +201,6 @@ if ground_truth:
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
 
-        print(dyn._Delta_q(x))
         control= dyn._M_q(x) @ v + dyn._f_q(x)
 #        control = np.zeros((4, 1))
 #        control[0, 0] = -0.1 * (diff[8, 0])

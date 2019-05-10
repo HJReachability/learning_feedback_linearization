@@ -11,14 +11,14 @@ class Quadrotor12D(Dynamics):
         self._Ix = Ix
         self._Iy = Iy
         self._Iz = Iz
-        super(Quadrotor12D, self).__init__(12, 14, 3, 3, time_step)
+        super(Quadrotor12D, self).__init__(12, 11, 3, 3, time_step)
 
     def __call__(self, x0, u):
         """
         Compute xdot from x, u. Please refer to:
         https://ieeexplore.ieee.org/abstract/document/5164788
-        for a full derivation of the dynamics, though here we presume that psi
-        and its derivative are regulated to zero. State is laid out as follows:
+        for a full derivation of the dynamics. State is laid out as follows:
+               0  1  2  3      4    5     6     7     8     9   10 11
         ` x = [x, y, z, theta, phi, xdot, ydot, zdot, zeta, xi, q, r] `
         ` u = [u1, u2, u3] `
         ` y = [x, y, z] `
@@ -42,9 +42,8 @@ class Quadrotor12D(Dynamics):
         q = x0[10, 0]
         r = x0[11, 0]
 
-        # Fix psi and p to 0.0.
-        psi = 0.0
-        p = 0.0
+        # Set psi, p to zero.
+        psi = p = 0.0
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -91,8 +90,8 @@ class Quadrotor12D(Dynamics):
 
     def wrap_angles(self, x):
         """ Wrap angles to [-pi, pi]. """
-        theta = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
-        phi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        theta = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        phi = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
 
         wrapped_x = x.copy()
         wrapped_x[3, 0] = theta
@@ -110,20 +109,19 @@ class Quadrotor12D(Dynamics):
             cos = np.cos
             sin = np.sin
 
-        preprocessed_x[0] = x[0]
-        preprocessed_x[1] = x[1]
-        preprocessed_x[2] = x[2]
-        preprocessed_x[3] = cos(x[3])
-        preprocessed_x[4] = sin(x[3])
-        preprocessed_x[5] = cos(x[4])
-        preprocessed_x[6] = sin(x[4])
-        preprocessed_x[7] = x[5]
-        preprocessed_x[8] = x[6]
-        preprocessed_x[9] = x[7]
-        preprocessed_x[10] = x[8]
-        preprocessed_x[11] = x[9]
-        preprocessed_x[12] = x[10]
-        preprocessed_x[13] = x[11]
+
+        preprocessed_x[0] = cos(x[3])
+        preprocessed_x[1] = sin(x[3])
+        preprocessed_x[2] = cos(x[4])
+        preprocessed_x[3] = sin(x[4])
+        preprocessed_x[4] = x[5]
+        preprocessed_x[5] = x[6]
+        preprocessed_x[6] = x[7]
+        preprocessed_x[7] = x[8]
+        preprocessed_x[8] = x[9]
+        preprocessed_x[9] = x[10]
+        preprocessed_x[10] = x[11]
+
         return preprocessed_x
 
     def observation_distance(self, y1, y2, norm):
@@ -142,16 +140,10 @@ class Quadrotor12D(Dynamics):
         print("You dummy. Bad norm.")
         return np.inf
 
-    def observation_delta(self, y_ref, y_obs):
-        """ Compute a distance metric on the observation space. """
-
-        delta=np.zeros(y_ref.shape)
-        delta[0,:]=y_obs[0,:]-y_ref[0,:]
-        delta[1,:]=y_obs[1,:]-y_ref[1,:]
-        delta[2,:]=y_obs[2,:]-y_ref[2,:]
-
+    def linear_system_state_delta(self, y_ref, y_obs):
+        """ Compute a distance metric on the linear system state space. """
+        delta = y_obs - y_ref
         return delta
-
 
     def feedback_linearize(self):
         """
@@ -189,12 +181,11 @@ class Quadrotor12D(Dynamics):
         q = x0[10, 0]
         r = x0[11, 0]
 
+        # Set psi, p to zero.
+        psi = p = 0.0
+
         # Gravity.
         g = 9.81
-
-        # Fix psi and p to 0.0.
-        psi = 0.0
-        p = 0.0
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -233,13 +224,13 @@ class Quadrotor12D(Dynamics):
         A = block_diag(A1, A1, A1)
 
         # Construct B.
-        B1 = np.zeros((4, 4))
+        B1 = np.zeros((4, 3))
         B1[3, 0] = 1.0
 
-        B2 = np.zeros((4, 4))
+        B2 = np.zeros((4, 3))
         B2[3, 1] = 1.0
 
-        B3 = np.zeros((4, 4))
+        B3 = np.zeros((4, 3))
         B3[3, 2] = 1.0
 
         B = np.concatenate([B1, B2, B3], axis = 0)
@@ -285,9 +276,8 @@ class Quadrotor12D(Dynamics):
         q = x0[10, 0]
         r = x0[11, 0]
 
-        # Fix psi and p to 0.0.
-        psi = 0.0
-        p = 0.0
+        # Set psi, p to zero.
+        psi = p = 0.0
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -301,7 +291,8 @@ class Quadrotor12D(Dynamics):
             [                                                     0,                                                             1/Ix,                                          0,                                                                 0],
         ])
 
-        return old_delta[:3, :3]
+#        return old_delta[[0, 2, 3], :][:, :-1]
+        return old_delta[:-1, :][:, [0, 2, 3]]
 
     def _b_q(self, x0):
         """
@@ -328,9 +319,8 @@ class Quadrotor12D(Dynamics):
         q = x0[10, 0]
         r = x0[11, 0]
 
-        # Fix psi and p to 0.0.
-        psi = 0.0
-        p = 0.0
+        # Set psi, p to zero.
+        psi = p = 0.0
 
         # Fix sines, cosines, and tangents.
         sin = np.sin

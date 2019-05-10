@@ -150,7 +150,7 @@ class Reinforce(object):
 
                 next_y=self._dynamics.linearized_system_state(x)
                 r = self._reward(y_desired, next_y)
-                diff=self._dynamics.observation_delta(ref,next_y)
+                diff=self._dynamics.linear_system_state_delta(ref,next_y)
                 v=-1*K @ (diff)
                 u = self._feedback_linearization.sample_noisy_feedback(x, v)
                 next_x = self._dynamics.integrate(x, u)
@@ -239,7 +239,6 @@ class Reinforce(object):
         self._f2_optimizer.step()
         self._noise_std_optimizer.step()
 
-
         # (4) Update learning rate according to KL divergence criterion.
         if self._desired_kl > 0.0 and self._previous_xs is not None:
             kl = self._compute_kl()
@@ -291,8 +290,8 @@ class Reinforce(object):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        Q=10.0 * np.random.uniform()*np.eye(linsys_xdim)
-        R=1.0 * np.eye(linsys_udim) #10*(np.random.uniform()+0.1)*np.eye(linsys_udim)
+        Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
 
         y = np.empty((linsys_xdim, self._num_steps_per_rollout))
         for ii in range(linsys_xdim):

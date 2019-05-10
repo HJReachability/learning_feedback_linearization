@@ -11,14 +11,15 @@ from plotter import Plotter
 
 
 #filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
-filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_50_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_733_norm_2_smallweights_relu.pkl_3"
+filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_100_20_fromzero_False_dyn_1.400000_0.750000_0.750000_0.750000_seed_737_norm_2_smallweights_relu.pkl_3"
+
 
 # Plot everything.
 # plotter = Plotter(filename)
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
 
-fp =  fp = open(filename, "rb")
+fp = open(filename, "rb")
 log = dill.load(fp)
 
 fb_law=log['feedback_linearization'][0]
@@ -33,7 +34,7 @@ def solve_lqr(A,B,Q,R):
 linear_fb=1
 nominal=1
 ground_truth=1
-T=170
+T=50
 to_render=0
 check_energy=0
 speed=0.001
@@ -43,13 +44,13 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.01
+time_step = 0.001
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
-Ix_scaling = 0.9
-Iy_scaling = 0.9
-Iz_scaling = 0.9
+mass_scaling = 1.4
+Ix_scaling = 0.75
+Iy_scaling = 0.75
+Iz_scaling = 0.75
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
@@ -58,7 +59,7 @@ bad_dyn = Quadrotor14D(
 #fb_law._f1 = bad_dyn._f_q
 
 # LQR Parameters and dynamics
-q=1.0
+q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
@@ -103,9 +104,9 @@ ground_truth_err=np.zeros((14,T+1))
 ground_truth_controls_path=np.zeros((4,T))
 
 x0=0.0*np.ones((14,1))
-x0[0, 0] = 0.1
-x0[1, 0] = 0.1
-x0[2, 0] = -0.1
+x0[0, 0] = 0.0
+x0[1, 0] = 0.0
+x0[2, 0] = 0.1
 x0[9, 0] = 9.81
 
 if linear_fb:

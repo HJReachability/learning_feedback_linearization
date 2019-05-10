@@ -31,8 +31,8 @@ bad_dyn = Quadrotor12D(
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 32
-activation = torch.nn.ReLU()
+num_hidden_units = 64
+activation = torch.nn.Tanh()
 noise_std = 1.0
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
@@ -52,10 +52,10 @@ def initial_state_sampler(num):
     lower1 = np.array([[-2.5, -2.5, -2.5,
                         -np.pi / 4.0, -np.pi / 4.0,
                        -0.3, -0.3, -0.3,
-                       -10.0, # This is the thrust acceleration - g.
+                       -3.0, # This is the thrust acceleration - g.
                        -0.3, -0.3, -0.3]]).T
 
-    frac = min(float(num) / 1500.0, 1.0)
+    frac = 1.0 #min(float(num) / 1500.0, 1.0)
     lower = frac * lower1 + (1.0 - frac) * lower0
     upper = -lower
 
@@ -66,11 +66,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 3000
-learning_rate = 1e-2
+learning_rate = 1e-3
 desired_kl = -1.0
-discount_factor = 0.99
-num_rollouts = 75
-num_steps_per_rollout = 50
+discount_factor = 1.0
+num_rollouts = 50
+num_steps_per_rollout = 75
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor12DConstraint(Constraint):
@@ -97,7 +97,7 @@ state_constraint = Quadrotor12DConstraint()
 from_zero=False
 
 # Rewards scaling - default is 10.0
-scale_rewards=10000.0
+scale_rewards=100.0
 
 # norm to use
 norm=2
@@ -126,7 +126,7 @@ if do_PPO:
 
 if do_Reinforce:
     logger = Logger(
-        "logs/quadrotor_12d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d_norm_%d_smallweights_relu.pkl" %
+        "logs/quadrotor_12d_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_fromzero_%s_dyn_%f_%f_%f_%f_seed_%d_norm_%d_smallweights_tanh.pkl" %
         (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
          num_rollouts, num_steps_per_rollout, str(from_zero),
          mass_scaling, Ix_scaling, Iy_scaling, Iz_scaling,

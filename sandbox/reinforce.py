@@ -209,12 +209,14 @@ class Reinforce(object):
 
         print("Objective is: ", objective)
         print("Mean return is: ", mean_return)
-        print("Std is: ", self._feedback_linearization._noise_std_variable.data[0].detach().numpy()[0])
+
+        stddev = 0.1 + self._feedback_linearization._noise_scaling * \
+                 self._feedback_linearization._noise_std_variable.data[0].detach().numpy()[0]
+        print("Std is: ", stddev)
 
         self._logger.log("mean_return", mean_return)
         self._logger.log("learning_rate", self._learning_rate)
-        self._logger.log(
-            "stddev", self._feedback_linearization._noise_std_variable.data[0].detach().numpy()[0])
+        self._logger.log("stddev", stddev)
 
         if torch.isnan(objective) or torch.isinf(objective):
             for param_group in self._M2_optimizer.param_groups:
@@ -290,7 +292,7 @@ class Reinforce(object):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        Q=100.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
         R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
 
         y = np.empty((linsys_xdim, self._num_steps_per_rollout))
@@ -375,7 +377,7 @@ class Reinforce(object):
             current_means[ii, :] = u.copy().flatten()
 
         current_std = self._feedback_linearization._noise_scaling * \
-                      abs(self._feedback_linearization._noise_std_variable.item()) + 0.05
+                      abs(self._feedback_linearization._noise_std_variable.item()) + 0.1
         current_cov = current_std**2 * np.ones(self._dynamics.udim)
         previous_cov = self._previous_std**2 * np.ones(self._dynamics.udim)
 

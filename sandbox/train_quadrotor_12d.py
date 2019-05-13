@@ -31,9 +31,9 @@ bad_dyn = Quadrotor12D(
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 64
+num_hidden_units = 32
 activation = torch.nn.Tanh()
-noise_std = 1.0
+noise_std = 0.05
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 

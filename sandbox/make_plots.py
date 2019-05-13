@@ -27,6 +27,17 @@ for file in filenames:
         except EOFError:
             print('PASSED FILE: '+file)
             pass
+    elif file[:15]=='quadrotor_12d_R':
+        try:
+            print(file[16:])
+            plotter = Plotter("./logs/"+file)
+            plotter.plot_scalar_fields(["mean_return"])
+            plt.title('Reinforce')
+            plotter.plot_scalar_fields(["stddev"])
+            plotter.show()
+        except EOFError:
+            print('PASSED FILE: '+file)
+            pass
     elif file[:17]=='double_pendulum_P':
         try:
             plotter = Plotter("./logs/"+file)

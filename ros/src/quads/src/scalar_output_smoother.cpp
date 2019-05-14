@@ -36,83 +36,47 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// EKF to estimate 12D quadrotor state. Roughly following variable naming
-// scheme of https://en.wikipedia.org/wiki/Extended_Kalman_filter.
+// Implementation of Kalman filtering accounting for unknown inputs.
+// Please refer to: https://hal.archives-ouvertes.fr/hal-00143941/document
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_STATE_ESTIMATOR_H
-#define QUADS_STATE_ESTIMATOR_H
-
-#include <quads/quadrotor12d.h>
+#include <quads/scalar_output_smoother.h>
 #include <quads/types.h>
-#include <quads_msgs/Control.h>
-#include <quads_msgs/Output.h>
-
-#include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <Eigen/Dense>
-#include <string>
 
 namespace quads {
 
-class StateEstimator {
- public:
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+namespace {
+// Process and observation noise.
+static const Matrix4d W = 0.01 * Matrix4d::Identity();
+static const double V = 0.01;
+}  // anonymous namespace
 
- private:
-  StateEstimator()
-      : x_(Vector12d::Zero()),
-        P_(100.0 * Matrix12d::Identity()),
-        tf_listener_(tf_buffer_),
-        initialized_(false) {}
+void ScalarOutputSmoother::Update(double y, double dt) {
+  // Discretize time.
+  const Matrix4d A_dt = A_ * dt + Matrix4d::Identity();
 
-  // Load parameters and register callbacks.
-  bool LoadParameters(const ros::NodeHandle& n);
-  bool RegisterCallbacks(const ros::NodeHandle& n);
+  // Following pp. 8 (leadup to Thm. 4.1) of reference above.
+  const Matrix4d bar_P = A_dt * Px_ * A_dt.transpose() + W;
+  const Vector4d bar_x = A_dt * x_;
 
-  // Callback to process new control msgs.
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  const Matrix4d bar_P_inv = bar_P.inverse();
 
-  // Timer callback and utility to compute Jacobian.
-  void TimerCallback(const ros::TimerEvent& e);
+  Matrix5d cal_P_inv;
+  cal_P_inv.block<4, 4>(0, 0) = bar_P_inv + H_.transpose() * H_ / V;
+  cal_P_inv.block<4, 1>(0, 4) = -bar_P_inv * F_;
+  cal_P_inv.block<1, 4>(4, 0) = -F_.transpose() * bar_P_inv;
+  cal_P_inv(4, 4) = F_.transpose() * bar_P_inv * F_;
+  const Matrix5d cal_P = cal_P_inv.inverse();
 
-  // Call TF and figure out position, pitch, and roll.
-  Vector5d GetXYZPR() const;
+  Vector5d cal_H = Vector5d::Zero();
+  cal_H.head<4>() = H_.transpose() / V;
+  const Vector5d cal_X =
+      cal_P * E_.transpose() * bar_P_inv * bar_x + cal_P * cal_H * y;
 
-  // Mean and covariance estimates.
-  Vector12d x_;
-  Matrix12d P_;
-
-  // Dynamics.
-  Quadrotor12D dynamics_;
-
-  // Most recent msg and time discretization (with timer).
-  quads_msgs::Control::ConstPtr control_;
-  ros::Timer timer_;
-  double dt_;
-
-  // Publishers and subscribers.
-  ros::Subscriber output_sub_;
-  ros::Subscriber control_sub_;
-  ros::Publisher state_pub_;
-
-  std::string output_topic_;
-  std::string control_topic_;
-  std::string state_topic_;
-
-  // World frame and quad frame.
-  std::string world_frame_;
-  std::string quad_frame_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class StateEstimator
+  // Unpack cal_X and cal_P into x_ and Px_;
+  x_ = cal_X.head<4>();
+  Px_ = cal_P.block<4, 4>(0, 0);
+}
 
 }  // namespace quads
-
-#endif

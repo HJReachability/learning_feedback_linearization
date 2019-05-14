@@ -42,11 +42,14 @@
 
 #include <quads/output_smoother.h>
 
+#include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
 #include <quads_msgs/OutputDerivatives.h>
 
+#include <geometry_msgs/TransformStamped.h>
 #include <math.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_listener.h>
 #include <string>
 
 namespace quads {
@@ -71,8 +74,17 @@ bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
 
   // Topics.
-  if (!nl.getParam("topics/output", output_topic_)) return false;
   if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
+
+  // Frames of reference.
+  if (!nl.getParam("frames/world", world_frame_)) return false;
+  if (!nl.getParam("frames/quad", quad_frame_)) return false;
+
+  // Time step.
+  if (!nl.getParam("dt", dt_)) {
+    dt_ = 0.01;
+    ROS_WARN("%s: Time discretization set to %lf (s).", name_.c_str(), dt_);
+  }
 
   return true;
 }
@@ -80,28 +92,48 @@ bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
 bool OutputSmoother::RegisterCallbacks(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
 
-  // Subscriber.
-  output_sub_ = nl.subscribe(output_topic_.c_str(), 1,
-                             &OutputSmoother::OutputCallback, this);
-
   // Publisher.
   output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
       output_derivs_topic_.c_str(), 1, false);
 
+  // Timer.
+  timer_ =
+      nl.createTimer(ros::Duration(dt_), &OutputSmoother::TimerCallback, this);
+
   return true;
 }
 
-void OutputSmoother::OutputCallback(const quads_msgs::Output::ConstPtr& msg) {
-  constexpr size_t kMaxHistorySize = 10;
+void OutputSmoother::TimerCallback(const ros::TimerEvent& e) {
+  geometry_msgs::TransformStamped msg;
+  try {
+    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
+  } catch (tf2::TransformException& ex) {
+    ROS_ERROR("%s", ex.what());
+    return;
+  }
 
-  // Insert this msg into past outputs, and maybe dump an old one.
-  old_outputs_.push_back(msg);
-  if (old_outputs_.size() > kMaxHistorySize)
-    old_outputs_.pop_front();
+  // Update filters and publish msg.
+  smoother_x_.Update(msg.transform.translation.x, dt_);
+  smoother_y_.Update(msg.transform.translation.y, dt_);
+  smoother_z_.Update(msg.transform.translation.z, dt_);
 
-  // TODO!
+  quads_msgs::OutputDerivatives derivs_msg;
+  derivs_msg.x = smoother_x_.X();
+  derivs_msg.xdot1 = smoother_x_.XDot1();
+  derivs_msg.xdot2 = smoother_x_.XDot2();
+  derivs_msg.xdot3 = smoother_x_.XDot3();
+
+  derivs_msg.y = smoother_y_.X();
+  derivs_msg.ydot1 = smoother_y_.XDot1();
+  derivs_msg.ydot2 = smoother_y_.XDot2();
+  derivs_msg.ydot3 = smoother_y_.XDot3();
+
+  derivs_msg.z = smoother_z_.X();
+  derivs_msg.zdot1 = smoother_z_.XDot1();
+  derivs_msg.zdot2 = smoother_z_.XDot2();
+  derivs_msg.zdot3 = smoother_z_.XDot3();
+
+  output_derivs_pub_.publish(derivs_msg);
 }
-
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
 }  // namespace quads

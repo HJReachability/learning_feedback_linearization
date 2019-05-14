@@ -36,45 +36,56 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Differentiate and smooth the outputs.
+// Implementation of Kalman filtering accounting for unknown inputs.
+// Please refer to: https://hal.archives-ouvertes.fr/hal-00143941/document
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef QUADS_OUTPUT_SMOOTHER_H
 #define QUADS_OUTPUT_SMOOTHER_H
 
+#include <quads/scalar_output_smoother.h>
 #include <quads_msgs/Output.h>
 
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_listener.h>
 #include <string>
-#include <list>
 
 namespace quads {
 
 class OutputSmoother {
  public:
+  ~OutputSmoother() {}
+  OutputSmoother() : initialized_(false), tf_listener_(tf_buffer_) {}
+
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
 
  private:
-  OutputSmoother() : initialized_(false) {}
-
   // Load parameters and register callbacks.
   bool LoadParameters(const ros::NodeHandle& n);
   bool RegisterCallbacks(const ros::NodeHandle& n);
 
   // Callback to process new output msg.
-  void OutputCallback(const quads_msgs::Output::ConstPtr& msg);
+  void TimerCallback(const ros::TimerEvent& e);
+
+  // One filter for each output channel since all are decoupled.
+  ScalarOutputSmoother smoother_x_, smoother_y_, smoother_z_;
 
   // Publishers and subscribers.
-  ros::Subscriber output_sub_;
   ros::Publisher output_derivs_pub_;
-
-  std::string output_topic_;
   std::string output_derivs_topic_;
 
-  // Old outputs.
-  std::list<quads_msgs::Output::ConstPtr> old_outputs_;
+  // Timer and discretization.
+  ros::Timer timer_;
+  double dt_;
+
+  // World frame and quad frame.
+  std::string world_frame_;
+  std::string quad_frame_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 
   // Initialized flag and name.
   bool initialized_;

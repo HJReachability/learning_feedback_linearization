@@ -36,82 +36,27 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// EKF to estimate 12D quadrotor state. Roughly following variable naming
-// scheme of https://en.wikipedia.org/wiki/Extended_Kalman_filter.
+// 12D quadrotor dynamics.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_STATE_ESTIMATOR_H
-#define QUADS_STATE_ESTIMATOR_H
+#ifndef QUADS_TYPES_H
+#define QUADS_TYPES_H
 
-#include <quads/quadrotor12d.h>
-#include <quads/types.h>
-#include <quads_msgs/Control.h>
-#include <quads_msgs/Output.h>
-
-#include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
 #include <Eigen/Dense>
-#include <string>
 
 namespace quads {
 
-class StateEstimator {
- public:
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
-
- private:
-  StateEstimator()
-      : x_(Vector12d::Zero()),
-        P_(100.0 * Matrix12d::Identity()),
-        tf_listener_(tf_buffer_),
-        initialized_(false) {}
-
-  // Load parameters and register callbacks.
-  bool LoadParameters(const ros::NodeHandle& n);
-  bool RegisterCallbacks(const ros::NodeHandle& n);
-
-  // Callback to process new control msgs.
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
-
-  // Timer callback and utility to compute Jacobian.
-  void TimerCallback(const ros::TimerEvent& e);
-
-  // Call TF and figure out position, pitch, and roll.
-  Vector5d GetXYZPR() const;
-
-  // Mean and covariance estimates.
-  Vector12d x_;
-  Matrix12d P_;
-
-  // Dynamics.
-  Quadrotor12D dynamics_;
-
-  // Most recent msg and time discretization (with timer).
-  quads_msgs::Control::ConstPtr control_;
-  ros::Timer timer_;
-  double dt_;
-
-  // Publishers and subscribers.
-  ros::Subscriber output_sub_;
-  ros::Subscriber control_sub_;
-  ros::Publisher state_pub_;
-
-  std::string output_topic_;
-  std::string control_topic_;
-  std::string state_topic_;
-
-  // World frame and quad frame.
-  std::string world_frame_;
-  std::string quad_frame_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class StateEstimator
+using Eigen::Matrix4d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Vector5d = Eigen::Matrix<double, 5, 1>;
+using Vector12d = Eigen::Matrix<double, 12, 1>;
+using Matrix5d = Eigen::Matrix<double, 5, 5>;
+using Matrix14d = Eigen::Matrix<double, 1, 4>;
+using Matrix45d = Eigen::Matrix<double, 4, 5>;
+using Matrix512d = Eigen::Matrix<double, 5, 12>;
+using Matrix12d = Eigen::Matrix<double, 12, 12>;
 
 }  // namespace quads
 

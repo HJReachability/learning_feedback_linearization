@@ -34,64 +34,23 @@
  * Authors: David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// 12D quadrotor dynamics.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-#ifndef QUADS_QUADROTOR_12D_H
-#define QUADS_QUADROTOR_12D_H
-
-#include <quads/types.h>
+#include <quads/output_smoother.h>
 
 #include <ros/ros.h>
-#include <Eigen/Dense>
-#include <string>
 
-namespace quads {
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "output_smoother");
+  ros::NodeHandle n("~");
 
-class Quadrotor12D {
- public:
-  ~Quadrotor12D() {}
-  Quadrotor12D() : m_(1.0), Ix_(1.0), Iy_(1.0), initialized_(false) {}
+  quads::OutputSmoother smoother;
 
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+  if (!smoother.Initialize(n)) {
+    ROS_ERROR("%s: Failed to initialize output_smoother.",
+              ros::this_node::getName().c_str());
+    return EXIT_FAILURE;
+  }
 
-  // Evaluate state derivative at this state/control.
-  Vector12d operator()(const Vector12d& x, const Vector3d& u) const;
+  ros::spin();
 
-  // Jacobians.
-  Matrix12d StateJacobian(const Vector12d& x, const Vector3d& u) const;
-  Matrix512d OutputJacobian(const Vector12d& x) const;
-
-  // Static state indices.
-  static constexpr size_t kXIdx = 0;
-  static constexpr size_t kYIdx = 1;
-  static constexpr size_t kZIdx = 2;
-  static constexpr size_t kThetaIdx = 3;
-  static constexpr size_t kPhiIdx = 4;
-  static constexpr size_t kDxIdx = 5;
-  static constexpr size_t kDyIdx = 6;
-  static constexpr size_t kDzIdx = 7;
-  static constexpr size_t kZetaIdx = 8;
-  static constexpr size_t kXiIdx = 9;
-  static constexpr size_t kQIdx = 10;
-  static constexpr size_t kRIdx = 11;
-
- private:
-  // Load parameters.
-  bool LoadParameters(const ros::NodeHandle& n);
-
-  // Mass and inertia.
-  double m_, Ix_, Iy_;
-
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class OutputSmoother
-
-}  // namespace quads
-
-#endif
+  return EXIT_SUCCESS;
+}

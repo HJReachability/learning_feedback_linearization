@@ -8,6 +8,12 @@ sandbox/data
 examples/logs
 logs
 
+# ROS stuff.
+ros/devel
+ros/build
+ros/src/CMakeLists.txt
+ros/.catkin_workspace
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

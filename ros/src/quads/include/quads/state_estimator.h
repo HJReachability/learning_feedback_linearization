@@ -36,72 +36,83 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Differentiate and smooth the outputs.
+// EKF to estimate 12D quadrotor state. Roughly following variable naming
+// scheme of https://en.wikipedia.org/wiki/Extended_Kalman_filter.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <quads/output_smoother.h>
+#ifndef QUADS_STATE_ESTIMATOR_H
+#define QUADS_STATE_ESTIMATOR_H
 
 #include <quads_msgs/Output.h>
-#include <quads_msgs/OutputDerivatives.h>
 
-#include <math.h>
 #include <ros/ros.h>
+#include <Eigen/Dense>
 #include <string>
 
 namespace quads {
 
-bool OutputSmoother::Initialize(const ros::NodeHandle& n) {
-  name_ = ros::names::append(n.getNamespace(), "output_smoother");
+StateEstimator {
+ public:
+  // Initialize this class by reading parameters and loading callbacks.
+  bool Initialize(const ros::NodeHandle& n);
 
-  if (!LoadParameters(n)) {
-    ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
-    return false;
-  }
+  // Static state indices.
+  static constexpr size_t kXIdx = 0;
+  static constexpr size_t kYIdx = 1;
+  static constexpr size_t kZIdx = 2;
+  static constexpr size_t kThetaIdx = 3;
+  static constexpr size_t kPhiIdx = 4;
+  static constexpr size_t kDxIdx = 5;
+  static constexpr size_t kDyIdx = 6;
+  static constexpr size_t kDzIdx = 7;
+  static constexpr size_t kZetaIdx = 8;
+  static constexpr size_t kXiIdx = 9;
+  static constexpr size_t kQIdx = 10;
+  static constexpr size_t kRIdx = 11;
 
-  if (!RegisterCallbacks(n)) {
-    ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
-    return false;
-  }
+ private:
+  StateEstimator()
+      : x_(Vector12d::Zero()),
+        P_(100.0 * Matrix12d::Identity()),
+        initialized_(false) {}
 
-  return true;
-}
+  // Load parameters and register callbacks.
+  bool LoadParameters(const ros::NodeHandle& n);
+  bool RegisterCallbacks(const ros::NodeHandle& n);
 
-bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
-
-  // Topics.
-  if (!nl.getParam("topics/output", output_topic_)) return false;
-  if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
-
-  return true;
-}
-
-bool OutputSmoother::RegisterCallbacks(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
-
-  // Subscriber.
-  output_sub_ = nl.subscribe(output_topic_.c_str(), 1,
-                             &OutputSmoother::OutputCallback, this);
-
-  // Publisher.
-  output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
-      output_derivs_topic_.c_str(), 1, false);
-
-  return true;
-}
-
-void OutputSmoother::OutputCallback(const quads_msgs::Output::ConstPtr& msg) {
-  constexpr size_t kMaxHistorySize = 10;
-
-  // Insert this msg into past outputs, and maybe dump an old one.
-  old_outputs_.push_back(msg);
-  if (old_outputs_.size() > kMaxHistorySize)
-    old_outputs_.pop_front();
-
-  // TODO!
-}
-
+  // Callback to process new output and control msgs.
+  void OutputCallback(const quads_msgs::Output::ConstPtr& msg);
   void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
+  // Timer callback and utility to compute Jacobian.
+  void TimerCallback(const ros::TimerEvent& e);
+
+  // Mean and covariance estimates.
+  Vector12d x_;
+  Matrix12d P_;
+
+  // Dynamics.
+  Quadrotor12D dynamics_;
+
+  // Most recent msgs, and time discretization (with timer).
+  quads_msgs::Output::ConstPtr output_;
+  quads_msgs::Control::ConstPtr control_;
+  ros::Timer timer_;
+  double dt_;
+
+  // Publishers and subscribers.
+  ros::Subscriber output_sub_;
+  ros::Publisher state_pub_;
+
+  std::string output_topic_;
+  std::string state_topic_;
+
+  // Initialized flag and name.
+  bool initialized_;
+  std::string name_;
+};  //\class StateEstimator
+
 }  // namespace quads
+
+#endif

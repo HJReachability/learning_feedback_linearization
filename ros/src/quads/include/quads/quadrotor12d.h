@@ -36,72 +36,48 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Differentiate and smooth the outputs.
+// 12D quadrotor dynamics.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <quads/output_smoother.h>
+#ifndef QUADS_QUADROTOR_12D_H
+#define QUADS_QUADROTOR_12D_H
 
-#include <quads_msgs/Output.h>
-#include <quads_msgs/OutputDerivatives.h>
-
-#include <math.h>
 #include <ros/ros.h>
+#include <Eigen/Dense>
 #include <string>
 
 namespace quads {
 
-bool OutputSmoother::Initialize(const ros::NodeHandle& n) {
-  name_ = ros::names::append(n.getNamespace(), "output_smoother");
+using Eigen::Vector3d;
+using Eigen::Vector5d = Eigen::Matrix<double, 5, 1>;
+using Vector12d = Eigen::Matrix<double, 12, 1>;
+using Matrix5d = Eigen::Matrix<double, 5, 5>;
+using Matrix12d = Eigen::Matrix<double, 12, 12>;
 
-  if (!LoadParameters(n)) {
-    ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
-    return false;
-  }
+class Quadrotor12D {
+ public:
+  // Initialize this class by reading parameters and loading callbacks.
+  bool Initialize(const ros::NodeHandle& n);
 
-  if (!RegisterCallbacks(n)) {
-    ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
-    return false;
-  }
+  // Evaluate state derivative at this state/control.
+  Vector12d operator()(const Vector12d& x, const Vector3d& u) const;
 
-  return true;
-}
+  // Jacobians.
+  Matrix12d StateJacobian(const Vector12d& x, const Vector3d& u) const;
+  Matrix5d OutputJacobian(const Vector12d& x) const;
 
-bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
+ private:
+  Quadrotor12D() : initialized_(false) {}
 
-  // Topics.
-  if (!nl.getParam("topics/output", output_topic_)) return false;
-  if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
+  // Load parameters.
+  bool LoadParameters(const ros::NodeHandle& n);
 
-  return true;
-}
-
-bool OutputSmoother::RegisterCallbacks(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
-
-  // Subscriber.
-  output_sub_ = nl.subscribe(output_topic_.c_str(), 1,
-                             &OutputSmoother::OutputCallback, this);
-
-  // Publisher.
-  output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
-      output_derivs_topic_.c_str(), 1, false);
-
-  return true;
-}
-
-void OutputSmoother::OutputCallback(const quads_msgs::Output::ConstPtr& msg) {
-  constexpr size_t kMaxHistorySize = 10;
-
-  // Insert this msg into past outputs, and maybe dump an old one.
-  old_outputs_.push_back(msg);
-  if (old_outputs_.size() > kMaxHistorySize)
-    old_outputs_.pop_front();
-
-  // TODO!
-}
-
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  // Initialized flag and name.
+  bool initialized_;
+  std::string name_;
+};  //\class OutputSmoother
 
 }  // namespace quads
+
+#endif

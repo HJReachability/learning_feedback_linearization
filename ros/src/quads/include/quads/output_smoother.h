@@ -43,6 +43,8 @@
 #ifndef QUADS_OUTPUT_SMOOTHER_H
 #define QUADS_OUTPUT_SMOOTHER_H
 
+#include <quads_msgs/Output.h>
+
 #include <ros/ros.h>
 #include <string>
 #include <list>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, The Regents of the University of California (Regents).
+ * Copyright (c) 2017, The Regents of the University of California (Regents).
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,72 +36,13 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Differentiate and smooth the outputs.
+// Unit tests for the meta_planner package.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <quads/output_smoother.h>
+#include <gtest/gtest.h>
 
-#include <quads_msgs/Output.h>
-#include <quads_msgs/OutputDerivatives.h>
-
-#include <math.h>
-#include <ros/ros.h>
-#include <string>
-
-namespace quads {
-
-bool OutputSmoother::Initialize(const ros::NodeHandle& n) {
-  name_ = ros::names::append(n.getNamespace(), "output_smoother");
-
-  if (!LoadParameters(n)) {
-    ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
-    return false;
-  }
-
-  if (!RegisterCallbacks(n)) {
-    ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
-    return false;
-  }
-
-  return true;
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-
-bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
-
-  // Topics.
-  if (!nl.getParam("topics/output", output_topic_)) return false;
-  if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
-
-  return true;
-}
-
-bool OutputSmoother::RegisterCallbacks(const ros::NodeHandle& n) {
-  ros::NodeHandle nl(n);
-
-  // Subscriber.
-  output_sub_ = nl.subscribe(output_topic_.c_str(), 1,
-                             &OutputSmoother::OutputCallback, this);
-
-  // Publisher.
-  output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
-      output_derivs_topic_.c_str(), 1, false);
-
-  return true;
-}
-
-void OutputSmoother::OutputCallback(const quads_msgs::Output::ConstPtr& msg) {
-  constexpr size_t kMaxHistorySize = 10;
-
-  // Insert this msg into past outputs, and maybe dump an old one.
-  old_outputs_.push_back(msg);
-  if (old_outputs_.size() > kMaxHistorySize)
-    old_outputs_.pop_front();
-
-  // TODO!
-}
-
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
-
-}  // namespace quads

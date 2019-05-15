@@ -18,13 +18,13 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.02
+time_step = 0.01
 dyn = Quadrotor12D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
-Ix_scaling = 0.9
-Iy_scaling = 0.9
-Iz_scaling = 0.9
+mass_scaling = 0.75
+Ix_scaling = 0.5
+Iy_scaling = 0.5
+Iz_scaling = 0.5
 bad_dyn = Quadrotor12D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
@@ -33,7 +33,7 @@ bad_dyn = Quadrotor12D(
 num_layers = 2
 num_hidden_units = 32
 activation = torch.nn.Tanh()
-noise_std = 0.05
+noise_std = 0.25
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -66,11 +66,11 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 3000
-learning_rate = 1e-3
+learning_rate = 1e-4
 desired_kl = -1.0
 discount_factor = 1.0
-num_rollouts = 50
-num_steps_per_rollout = 75
+num_rollouts = 25
+num_steps_per_rollout = 100
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor12DConstraint(Constraint):
@@ -80,8 +80,8 @@ class Quadrotor12DConstraint(Constraint):
         return abs(x[0, 0]) < BIG and \
             abs(x[1, 0]) < BIG and \
             abs(x[2, 0]) < BIG and \
-            abs(x[3, 0]) < np.pi / 3.0 and \
-            abs(x[4, 0]) < np.pi / 3.0 and \
+            abs(x[3, 0]) < np.pi / 2.5 and \
+            abs(x[4, 0]) < np.pi / 2.5 and \
             abs(x[5, 0]) < BIG and \
             abs(x[6, 0]) < BIG and \
             abs(x[7, 0]) < BIG and \
@@ -97,7 +97,7 @@ state_constraint = Quadrotor12DConstraint()
 from_zero=False
 
 # Rewards scaling - default is 10.0
-scale_rewards=100.0
+scale_rewards=10.0
 
 # norm to use
 norm=2

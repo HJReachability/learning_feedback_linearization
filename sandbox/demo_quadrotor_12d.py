@@ -30,9 +30,9 @@ def solve_lqr(A,B,Q,R):
     return K
 
 linear_fb=0
-nominal=0
+nominal=1
 ground_truth=1
-T=700
+T=1500
 to_render=0
 check_energy=0
 speed=0.001
@@ -45,10 +45,10 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor12D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.1
-Ix_scaling = 0.9
-Iy_scaling = 0.9
-Iz_scaling = 0.9
+mass_scaling = 0.75
+Ix_scaling = 0.5
+Iy_scaling = 0.5
+Iz_scaling = 0.5
 bad_dyn = Quadrotor12D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
@@ -57,7 +57,7 @@ bad_dyn = Quadrotor12D(
 #fb_law._f1 = bad_dyn._f_q
 
 # LQR Parameters and dynamics
-q=1.0
+q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -81,9 +81,10 @@ reference=0.0*np.ones((12,T))
 #reference[12,:]=0.1*np.linspace(0,T*time_step,T)
 #reference[13,:]=0.1*time_step
 
-#reference[0,:]=np.pi*np.sin(np.linspace(0,T*time_step,T))
-#reference[1,:]=np.pi*np.cos(np.linspace(0,T*time_step,T))
-#reference[2,:]=np.pi*np.cos(np.linspace(0,T*time_step,T))
+freq=1.0
+reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+reference[4,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 #reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
 learned_path=np.zeros((12,T+1))
@@ -102,9 +103,9 @@ ground_truth_err=np.zeros((12,T+1))
 ground_truth_controls_path=np.zeros((3,T))
 
 x0=0.0*np.ones((12,1))
-x0[0, 0] = -2.0
-x0[1, 0] = 1.0
-x0[2, 0] = -0.1
+x0[0, 0] = 0.0
+x0[1, 0] = np.pi
+x0[2, 0] = np.pi
 x0[8, 0] = 9.81
 
 
@@ -115,7 +116,7 @@ if linear_fb:
 
         ref=np.reshape(reference[:,t],(12,1))
 
-        diff = desired_linear_system_state - ref
+        diff = dyn.linear_system_state_delta(ref, desired_linear_system_state)
         v=-1*K @ diff
 
         control= fb_law.feedback(x,v)
@@ -159,7 +160,7 @@ if nominal:
 
         ref=np.reshape(reference[:,t],(12,1))
 
-        diff = desired_linear_system_state - ref
+        diff = dyn.linear_system_state_delta(ref, desired_linear_system_state)
         v=-1*K @ diff
 
         control= bad_dyn._M_q(x) @ v + bad_dyn._f_q(x)
@@ -176,8 +177,8 @@ if nominal:
              nominal_path[4,:], '.-g', label="y")
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_path[8,:], '.-b', label="z")
-    #plt.plot(np.linspace(0, T*time_step, T+1),
-    #         nominal_states[9,:], '.-y', label="zeta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             nominal_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_states[4,:], '.-m', label="theta")
     plt.plot(np.linspace(0, T*time_step, T+1),
@@ -198,7 +199,7 @@ if ground_truth:
 
         ref=np.reshape(reference[:,t],(12,1))
 
-        diff = desired_linear_system_state - ref
+        diff = dyn.linear_system_state_delta(ref, desired_linear_system_state)
         v=-1*K @ diff
 
         control= dyn._M_q(x) @ v + dyn._f_q(x)

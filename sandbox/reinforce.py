@@ -135,7 +135,7 @@ class Reinforce(object):
             x = self._initial_state_sampler(time_step)
 
             # (1) Generate a time series for v and corresponding y.
-            reference,K = self._generate_reference()
+            reference,K = self._generate_reference(x)
             ys, _ = self._generate_ys(x,reference,K)
 
             # (2) Push through dynamics and get x, y time series.
@@ -282,7 +282,7 @@ class Reinforce(object):
                 self._previous_means[ii, :] = u.flatten()
                 ii += 1
 
-    def _generate_reference(self):
+    def _generate_reference(self, x0):
         """
         Use sinusoid with random frequency, amplitude, and bias:
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
@@ -292,17 +292,23 @@ class Reinforce(object):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        Q=100.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
         R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
+
+        # Initial y.
+        y0 = self._dynamics.linearized_system_state(x0)
 
         y = np.empty((linsys_xdim, self._num_steps_per_rollout))
         for ii in range(linsys_xdim):
             y[ii, :] = np.linspace(
                 0, self._num_steps_per_rollout * self._dynamics._time_step,
                 self._num_steps_per_rollout)
-            y[ii, :] = 1.0 * np.random.uniform() * (1.0 - np.cos(
+            y[ii, :] = y0[ii, 0] + 1.0 * np.random.uniform() * (1.0 - np.cos(
                 2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
                 np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
+
+        # Ensure that y ref starts at y0.
+        assert(np.allclose(y[:, 0].flatten(), y0.flatten(), 1e-5))
 
         P = solve_continuous_are(self.A, self.B, Q, R)
         K = np.linalg.inv(R) @ self.B.T @ P

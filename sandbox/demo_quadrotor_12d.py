@@ -10,17 +10,23 @@ import matplotlib.pyplot as plt
 from plotter import Plotter
 
 
-filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
+#filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
+#filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.250000_lr0.000100_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_16_norm_2_smallweights_tanh.pkl_6"
+#filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_637_norm_2_smallweights_tanh.pkl_6"
+#filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_5_500_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_375_norm_2_smallweights_tanh.pkl_0"
+#filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.250000_lr0.000100_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_16_norm_2_smallweights_tanh.pkl_6"
+filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_930_norm_2_smallweights_tanh.pkl_5"
+
 
 # Plot everything.
-# plotter = Plotter(filename)
-# plotter.plot_scalar_fields(["mean_return"])
-# plt.pause(0.1)
+#plotter = Plotter(filename)
+#plotter.plot_scalar_fields(["mean_return"])
+#plt.pause(0.1)
 
-#fp =  fp = open(filename, "rb")
-#log = dill.load(fp)
+fp = open(filename, "rb")
+log = dill.load(fp)
 
-#fb_law=log['feedback_linearization'][0]
+fb_law=log['feedback_linearization'][0]
 
 
 def solve_lqr(A,B,Q,R):
@@ -29,10 +35,10 @@ def solve_lqr(A,B,Q,R):
     #   K,S,E=control.lqr(A,B,Q,R)
     return K
 
-linear_fb=0
+linear_fb=1
 nominal=1
 ground_truth=1
-T=1500
+T=25
 to_render=0
 check_energy=0
 speed=0.001
@@ -83,7 +89,7 @@ reference=0.0*np.ones((12,T))
 
 freq=1.0
 reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-reference[4,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+reference[4,:]=0.5 * np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 #reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
@@ -104,7 +110,7 @@ ground_truth_controls_path=np.zeros((3,T))
 
 x0=0.0*np.ones((12,1))
 x0[0, 0] = 0.0
-x0[1, 0] = np.pi
+x0[1, 0] = 0.5 * np.pi
 x0[2, 0] = np.pi
 x0[8, 0] = 9.81
 
@@ -134,8 +140,6 @@ if linear_fb:
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_path[8,:], '.-b', label="z")
     plt.plot(np.linspace(0, T*time_step, T+1),
-             learned_path[12,:], '.-k', label="psi")
-    plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[4,:], '.-m', label="theta")
@@ -144,6 +148,15 @@ if linear_fb:
     plt.title("learned")
     plt.legend()
 
+    plt.figure()
+    plt.plot(np.linspace(0, T*time_step, T),
+             learned_controls_path[0,:], '.-r', label="u1")
+    plt.plot(np.linspace(0, T*time_step, T),
+             learned_controls_path[1,:], '.-g', label="u2")
+    plt.plot(np.linspace(0, T*time_step, T),
+             learned_controls_path[2,:], '.-b', label="u3")
+    plt.title("learned controls")
+    plt.legend()
 
 #        if check_energy:
 #            print(dyn.total_energy(x))

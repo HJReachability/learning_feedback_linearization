@@ -79,22 +79,19 @@ class FeedbackLinearization(object):
         self._udim = dynamics.udim
 
         # Set noise std.
-        self._noise_std_variable = torch.ones((1, 1), requires_grad=True)
-#        self._noise_std_variable = torch.ones((1, 1), requires_grad=False)
+#        self._noise_std_variable = torch.ones((1, 1), requires_grad=True)
+        self._noise_std_variable = torch.ones((1, 1), requires_grad=False)
         self._noise_scaling = noise_std
 
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (self._udim, 1))
 
-        # Scaling factor to scale output of tanh layers.
-        SCALING = 4.0
-
         M = torch.from_numpy(self._M1(x)).float() + torch.reshape(
-            SCALING * self._M2(torch.from_numpy(x.flatten()).float()),
+            self._M2(torch.from_numpy(x.flatten()).float()),
             (self._udim, self._udim))
         f = torch.from_numpy(self._f1(x)).float() + torch.reshape(
-            SCALING * self._f2(torch.from_numpy(x.flatten()).float()),
+            self._f2(torch.from_numpy(x.flatten()).float()),
             (self._udim, 1))
 
         # TODO! Make sure this is right (and consistent with dynamics.feedback).

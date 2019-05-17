@@ -158,18 +158,22 @@ class Reinforce(object):
                 if num_total_time_steps >= self._num_total_time_steps:
                     break
 
-                if self._state_constraint is not None and \
-                   not self._state_constraint.contains(next_x):
-                    break
-
                 rollout["xs"].append(x)
                 rollout["vs"].append(v)
                 rollout["us"].append(u)
                 rollout["ys"].append(next_y)
                 rollout["y_desireds"].append(y_desired)
                 rollout["rs"].append(r)
+
                 x = next_x
                 num_total_time_steps += 1
+
+                if self._state_constraint is not None and \
+                   not self._state_constraint.contains(next_x):
+                    rollout["rs"][-1] -= 100.0
+                    break
+
+
 
             # (3) Compute values for this rollout and append to list.
             self._compute_values(rollout)
@@ -287,7 +291,7 @@ class Reinforce(object):
         Use sinusoid with random frequency, amplitude, and bias:
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
         """
-        MAX_CONTINUOUS_TIME_FREQ = 2.0
+        MAX_CONTINUOUS_TIME_FREQ = 0.1
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
 
         linsys_xdim=self.A.shape[0]

@@ -33,7 +33,7 @@ bad_dyn = Quadrotor12D(
 num_layers = 2
 num_hidden_units = 32
 activation = torch.nn.Tanh()
-noise_std = 0.25
+noise_std = 0.15
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -66,7 +66,7 @@ def initial_state_sampler(num):
 
 # Create REINFORCE.
 num_iters = 3000
-learning_rate = 1e-4
+learning_rate = 1e-3
 desired_kl = -1.0
 discount_factor = 1.0
 num_rollouts = 25

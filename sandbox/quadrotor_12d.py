@@ -127,15 +127,10 @@ class Quadrotor12D(Dynamics):
     def observation_distance(self, y1, y2, norm):
         """ Compute a distance metric on the observation space. """
         if norm == 1:
-            dx = abs(y1[0, 0] - y2[0, 0])
-            dy = abs(y1[1, 0] - y2[1, 0])
-            dz = abs(y1[2, 0] - y2[2, 0])
-            return dx + dy + dz
+            return np.abs(self.linear_system_state_delta(y1, y2)).sum()
         elif norm == 2:
-            dx = abs(y1[0, 0] - y2[0, 0])**2
-            dy = abs(y1[1, 0] - y2[1, 0])**2
-            dz = abs(y1[2, 0] - y2[2, 0])**2
-            return np.sqrt(dx + dy + dz)
+            delta = self.linear_system_state_delta(y1, y2)
+            return np.sqrt(np.multiply(delta, delta).sum())
 
         print("You dummy. Bad norm.")
         return np.inf

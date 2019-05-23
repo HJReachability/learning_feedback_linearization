@@ -27,7 +27,7 @@ for file in filenames:
         except EOFError:
             print('PASSED FILE: '+file)
             pass
-    elif file[:15]=='quadrotor_12d_R':
+    elif file[:15]=='quadrotor_12d_R' and file[-2:] == '_6':
         try:
             print(file[16:])
             plotter = Plotter("./logs/"+file)

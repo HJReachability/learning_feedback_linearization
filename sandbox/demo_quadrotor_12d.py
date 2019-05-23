@@ -15,7 +15,7 @@ from plotter import Plotter
 #filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_637_norm_2_smallweights_tanh.pkl_6"
 #filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_5_500_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_375_norm_2_smallweights_tanh.pkl_0"
 #filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.250000_lr0.000100_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_16_norm_2_smallweights_tanh.pkl_6"
-filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.100000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_930_norm_2_smallweights_tanh.pkl_5"
+filename = "./logs/quadrotor_12d_Reinforce_2x32_std0.150000_lr0.000100_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_441_norm_2_smallweights_tanh.pkl_6"
 
 
 # Plot everything.
@@ -38,7 +38,7 @@ def solve_lqr(A,B,Q,R):
 linear_fb=1
 nominal=1
 ground_truth=1
-T=25
+T=2500
 to_render=0
 check_energy=0
 speed=0.001

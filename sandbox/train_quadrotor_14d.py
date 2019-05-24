@@ -18,22 +18,22 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.02
+time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.4
-Ix_scaling = 0.75
-Iy_scaling = 0.75
-Iz_scaling = 0.75
+mass_scaling = 0.75
+Ix_scaling = 0.5
+Iy_scaling = 0.5
+Iz_scaling = 0.5
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
 
 # Create a feedback linearization object.
 num_layers = 2
-num_hidden_units = 64
+num_hidden_units = 32
 activation = torch.nn.Tanh()
-noise_std = 1.0
+noise_std = 0.95
 fb = FeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
@@ -52,7 +52,7 @@ def initial_state_sampler(num):
     lower1 = np.array([[-2.5, -2.5, -2.5,
                        -np.pi, -np.pi / 4.0, -np.pi / 4.0,
                        -0.3, -0.3, -0.3,
-                       -5.0, # This is the thrust acceleration - g.
+                       -3.0, # This is the thrust acceleration - g.
                        -0.3, -0.3, -0.3, -0.3]]).T
 
     frac = 1.0 #min(float(num) / 1500.0, 1.0)
@@ -69,8 +69,8 @@ num_iters = 3000
 learning_rate = 1e-4
 desired_kl = -1.0
 discount_factor = 1.0
-num_rollouts = 50
-num_steps_per_rollout = 20
+num_rollouts = 25
+num_steps_per_rollout = 100
 
 # Constraint on state so that we don't go nuts.
 class Quadrotor14DConstraint(Constraint):
@@ -81,8 +81,8 @@ class Quadrotor14DConstraint(Constraint):
             abs(x[1, 0]) < BIG and \
             abs(x[2, 0]) < BIG and \
             abs(x[3, 0]) < BIG and \
-            abs(x[4, 0]) < np.pi / 3.0 and \
-            abs(x[5, 0]) < np.pi / 3.0 and \
+            abs(x[4, 0]) < np.pi / 2.5 and \
+            abs(x[5, 0]) < np.pi / 2.5 and \
             abs(x[6, 0]) < BIG and \
             abs(x[7, 0]) < BIG and \
             abs(x[8, 0]) < BIG and \
@@ -99,7 +99,7 @@ state_constraint = Quadrotor14DConstraint()
 from_zero=False
 
 # Rewards scaling - default is 10.0
-scale_rewards=100.0
+scale_rewards=10.0
 
 # norm to use
 norm=2

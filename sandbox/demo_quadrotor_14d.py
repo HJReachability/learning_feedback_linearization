@@ -11,7 +11,7 @@ from plotter import Plotter
 
 
 #filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
-filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_100_20_fromzero_False_dyn_1.400000_0.750000_0.750000_0.750000_seed_737_norm_2_smallweights_relu.pkl_3"
+filename="./logs/quadrotor_14d_Reinforce_2x32_std0.150000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_586_norm_2_smallweights_relu.pkl_6"
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -33,7 +33,7 @@ def solve_lqr(A,B,Q,R):
 linear_fb=1
 nominal=1
 ground_truth=1
-T=50
+T=2500
 to_render=0
 check_energy=0
 speed=0.001
@@ -43,7 +43,7 @@ mass = 1.0
 Ix = 1.0
 Iy = 1.0
 Iz = 1.0
-time_step = 0.001
+time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
 mass_scaling = 1.4
@@ -72,6 +72,13 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=0.0*np.ones((14,T))
+
+freq=1.0
+reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+reference[4,:]=0.5 * np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+#reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
+
 #reference[12, :] = 3.1
 #reference[0,:]=0.1*np.linspace(0,T*time_step,T)
 #reference[1,:]=0.1*time_step
@@ -104,8 +111,8 @@ ground_truth_controls_path=np.zeros((4,T))
 
 x0=0.0*np.ones((14,1))
 x0[0, 0] = 0.0
-x0[1, 0] = 0.0
-x0[2, 0] = 0.1
+x0[1, 0] = 0.5 * np.pi
+x0[2, 0] = np.pi
 x0[9, 0] = 9.81
 
 if linear_fb:

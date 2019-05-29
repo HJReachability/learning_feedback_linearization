@@ -16,7 +16,7 @@ class DoublePendulum(Dynamics):
         self.fig = None
         self.friction_coeff = friction_coeff
         self.g = 9.81
-        
+
 
         super(DoublePendulum, self).__init__(4, 6, 2, 2, time_step)
 
@@ -38,11 +38,11 @@ class DoublePendulum(Dynamics):
         return xdot
 
     def linearized_system(self):
-    
+
         A=np.zeros((4,4))
         A[0,1]=1
         A[2,3]=1
-        
+
         B=np.zeros((4,2))
         B[1,0]=1
         B[3,1]=1
@@ -142,7 +142,7 @@ class DoublePendulum(Dynamics):
         if self.fig is None:
             self.fig=plt.figure()
             self.gca=self.fig.gca()
-        
+
         if path:
             self.gca.cla()
 
@@ -152,7 +152,7 @@ class DoublePendulum(Dynamics):
 
         position_joint1=np.array([self._length1*np.sin(x[0,0]),-self._length1*np.cos(x[0,0])])
         position_joint2=np.array([self._length2*np.sin(x[2,0]),-self._length2*np.cos(x[2,0])])+position_joint1
-        
+
         if not path:
             plt.plot([0,position_joint1[0]],[0,position_joint1[1]], color=greys(t), lw=2,zorder=1)
             plt.plot([position_joint1[0],position_joint2[0]],[position_joint1[1],position_joint2[1]],color=greys(t),lw=2,zorder=1)
@@ -161,7 +161,7 @@ class DoublePendulum(Dynamics):
         self.gca.add_patch(Circle(position_joint1, 0.1*self._length1,facecolor=reds(t),ec='w',zorder=2))
         self.gca.add_patch(Circle(position_joint2, 0.1*self._length2,facecolor=blues(t),ec='w',zorder=2))
 
-        
+
         plt.pause(speed)
 
     def wrap_angles(self, x):
@@ -191,21 +191,17 @@ class DoublePendulum(Dynamics):
 
     def observation_distance(self, y1, y2,norm):
         """ Compute a distance metric on the observation space. """
-        if norm==1:
-            dtheta1 = min(
-                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi),
-                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi))
-            dtheta2 = min(
-                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi),
-                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi))
-        elif norm==2:
-            dtheta1 = min(
-                abs((y1[0, 0] - y2[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
-                abs((y2[0, 0] - y1[0, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
-            dtheta2 = min(
-                abs((y1[1, 0] - y2[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2,
-                abs((y2[1, 0] - y1[1, 0] + np.pi) % (2.0 * np.pi) - np.pi)**2)
-        return dtheta1 + dtheta2
+        if norm == 1:
+            return np.abs(self.linear_system_state_delta(y1, y2)).sum()
+        elif norm == 2:
+            delta = self.linear_system_state_delta(y1, y2)
+            return np.sqrt(np.multiply(delta, delta).sum())
+
+        print("You dummy. Bad norm.")
+        return np.inf
+
+    def linear_system_state_delta(self, y_ref, y_obs):
+        return self.observation_delta(y_ref, y_obs)
 
     def observation_delta(self, y_ref, y_obs):
         """ Compute a distance metric on the observation space. """

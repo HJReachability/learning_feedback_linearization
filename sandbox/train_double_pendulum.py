@@ -51,7 +51,7 @@ do_Reinforce=1
 #Algorithm Params ** Only for Reinforce:
 
 ## Train for zero (no bad dynamics)
-from_zero=1
+from_zero=True
 
 # Rewards scaling - default is 10.0
 scale_rewards=100.0
@@ -118,12 +118,12 @@ if do_PPO:
 if do_Reinforce:
 
 	logger = Logger(
-    "./logs/double_pendulum_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_norm%f_dyn_%f_%f_%f_%f_%f_seed_%d.pkl" %
+    "./logs/double_pendulum_Reinforce_%dx%d_std%f_lr%f_kl%f_%d_%d_norm%f_dyn_%f_%f_%f_%f_%f_seed_%d_fromzero_%r.pkl" %
     (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
      num_rollouts, num_steps_per_rollout,norm,
      mass1_scaling, mass2_scaling,
      length1_scaling, length2_scaling, friction_coeff_scaling,
-     seed))
+     seed, from_zero))
 
 	solver = Reinforce(num_iters,
 	             learning_rate,

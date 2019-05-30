@@ -1,6 +1,7 @@
 import torch
 import numpy as np
-import control 
+#import control
+from scipy.linalg import solve_continuous_are
 from double_pendulum import DoublePendulum
 from reinforce import Reinforce
 from feedback_linearization import FeedbackLinearization
@@ -12,25 +13,26 @@ from plotter import Plotter
 #'double_pendulum_3_10_0.100000_0.001000_25_25_dyn_1.050000_0.950000_1.000000_1.000000.pkl',
 #'double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl'
 
-filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_417.pkl_4'
+#filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_417.pkl_4'
+filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_689_fromzero_False.pkl_2'
 
 # Plot everything.
 # plotter = Plotter(filename)
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
 
-fp =  fp = open(filename, "rb")
+fp =  open(filename, "rb")
 log = dill.load(fp)
 
 fb_law=log['feedback_linearization'][0]
 
 
 def get_Linear_System():
-    
+
     A=np.zeros((4,4))
     A[0,1]=1
     A[2,3]=1
-    
+
     B=np.zeros((4,2))
     B[1,0]=1
     B[3,1]=1
@@ -40,8 +42,10 @@ def get_Linear_System():
 
 
 def solve_lqr(A,B,Q,R):
-    
-    K,S,E=control.lqr(A,B,Q,R)
+    P = solve_continuous_are(A, B, Q, R)
+    K = np.linalg.inv(R) @ B.T @ P
+
+#    K,S,E=control.lqr(A,B,Q,R)
 
     return K
 
@@ -121,7 +125,7 @@ if linear_fb:
         # term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
         # term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
         # term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
-      
+
         # if abs(term1)<abs(term2):
         #     diff[0,0]= term1
         # else:
@@ -174,7 +178,7 @@ if nominal:
         term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
         term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
         term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
-      
+
         if abs(term1)<abs(term2):
             diff[0,0]= term1
         else:
@@ -228,7 +232,7 @@ if truedyn:
         term2=(ref1- des1 + np.pi) % (2.0 * np.pi) - np.pi
         term3=(des2 - ref2 + np.pi) % (2.0 * np.pi) - np.pi
         term4=(ref2 - des2 + np.pi) % (2.0 * np.pi) - np.pi
-      
+
         if abs(term1)<abs(term2):
             diff[0,0]= term1
         else:
@@ -255,16 +259,8 @@ if truedyn:
         if to_render and t%2==0:
             dyn.render(x,speed,path,float(t+0.2*T)/(1.5*T))
 
-    #plt.plot(nominal_path[0,:],'r')
-    #plt.plot(nominal_path[2,:],'r')
-    #plt.plot(reference[0,:],'b')
-    #plt.plot(reference[2,:],'b')
-    #plt.show()
-
-
-
-
-
-
-
-
+#    plt.plot(nominal_path[0,:],'r')
+#    plt.plot(nominal_path[2,:],'r')
+#    plt.plot(reference[0,:],'b')
+#    plt.plot(reference[2,:],'b')
+#    plt.show()

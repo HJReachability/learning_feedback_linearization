@@ -27,18 +27,18 @@ for file in filenames:
 #        except EOFError:
 #            print('PASSED FILE: '+file)
 #            pass
-    if file[:15]=='quadrotor_12d_R' and file[-2:] == '_6':
-        try:
-            print(file[16:])
-            plotter = Plotter("./logs/"+file)
-            plotter.plot_scalar_fields(["mean_return"])
-            plt.title('Reinforce')
-            plotter.plot_scalar_fields(["stddev"])
-            plotter.show()
-        except EOFError:
-            print('PASSED FILE: '+file)
-            pass
-    elif file[:17]=='double_pendulum_P':
+#    if file[:15]=='quadrotor_12d_R' and file[-2:] == '_6':
+#        try:
+#            print(file[16:])
+#            plotter = Plotter("./logs/"+file)
+#            plotter.plot_scalar_fields(["mean_return"])
+#            plt.title('Reinforce')
+##            plotter.plot_scalar_fields(["stddev"])
+#            plotter.show()
+#        except EOFError:
+#            print('PASSED FILE: '+file)
+#            pass
+    if file[:17]=='double_pendulum_P' and file[-2:] == '_6':
         try:
             plotter = Plotter("./logs/"+file)
             plotter.plot_scalar_fields(["mean_return"])
@@ -47,7 +47,7 @@ for file in filenames:
         except EOFError:
             print('PASSED FILE: '+file)
             pass
-    elif file[:17]=='double_pendulum_R':
+    elif file[:17]=='double_pendulum_R' and file[-2:] == '_2':
         try:
             print(file[16:])
             plotter = Plotter("./logs/"+file)

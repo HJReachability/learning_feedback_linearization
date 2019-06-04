@@ -104,6 +104,7 @@ bool Quadrotor12D::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  initialized_ = true;
   return true;
 }
 

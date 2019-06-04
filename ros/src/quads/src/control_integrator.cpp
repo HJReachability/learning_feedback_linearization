@@ -36,70 +36,87 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// 12D quadrotor dynamics.
+// Integrate control to match crazyflie inputs.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <quads/tf_parser.h>
-#include <quads/types.h>
+#include <crazyflie_msgs/ControlStamped.h>
+#include <quads/control_integrator.h>
+#include <quads_msgs/Control.h>
 
-#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_ros/transform_listener.h>
-#include <Eigen/Dense>
-#include <string>
 
 namespace quads {
 
-void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
-                         double* theta, double* psi) const {
-  geometry_msgs::TransformStamped msg;
-  try {
-    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
-  } catch (tf2::TransformException& ex) {
-    ROS_ERROR("%s", ex.what());
+void ControlIntegrator::RawControlCallback(
+    const quads_msgs::Control::ConstPtr& msg) {
+  if (std::isnan(time_of_last_msg_)) {
+    time_of_last_msg_ = ros::Time::now().toSec();
+    return;
   }
 
-  *x = msg.transform.translation.x;
-  *y = msg.transform.translation.y;
-  *z = msg.transform.translation.z;
+  const double current_time = ros::Time::now().toSec();
+  const double dt = current_time - time_of_last_msg_;
+  time_of_last_msg_ = current_time;
 
-  const tf2::Quaternion q(msg.transform.rotation.x, msg.transform.rotation.y,
-                          msg.transform.rotation.z, msg.transform.rotation.w);
-  const tf2::Matrix3x3 R(q);
-  R.getRPY(*phi, *theta, *psi);
+  // Integrate stuff.
+  thrustdot_ += msg->u1 * dt;
+  thrust_ += thrustdot_ * dt;
 
-  // Catch nans.
-  if (std::isnan(*x) || std::isnan(*y) || std::isnan(*z) || std::isnan(*phi) ||
-      std::isnan(*theta) || std::isnan(*psi)) {
-    *x = 0.0;
-    *y = 0.0;
-    *z = 0.0;
-    *phi = 0.0;
-    *theta = 0.0;
-    *psi = 0.0;
-  }
+  rolldot_ += msg->u2 * dt;
+  roll_ += rolldot_ * dt;
+
+  pitchdot_ += msg->u3 * dt;
+  pitch_ += pitchdot_ * dt;
+
+  yawdot_ += msg->u4 * dt;
+
+  // Publish this guy.
+  crazyflie_msgs::ControlStamped integrated_msg;
+  integrated_msg.control.thrust = thrust_ ;
+  integrated_msg.control.roll = roll_;
+  integrated_msg.control.pitch = pitch_;
+  integrated_msg.control.yaw_dot = yawdot_;
+  crazyflie_control_pub_.publish(integrated_msg);
 }
 
-bool TfParser::Initialize(const ros::NodeHandle& n) {
-  name_ = ros::names::append(n.getNamespace(), "tf_parser");
+bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
+  name_ = ros::names::append(n.getNamespace(), "control_integrator");
 
   if (!LoadParameters(n)) {
     ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
     return false;
   }
 
+  if (!RegisterCallbacks(n)) {
+    ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
+    return false;
+  }
+
   return true;
 }
 
-bool TfParser::LoadParameters(const ros::NodeHandle& n) {
+bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
 
-  // Frames of reference.
-  if (!nl.getParam("frames/world", world_frame_)) return false;
-  if (!nl.getParam("frames/quad", quad_frame_)) return false;
+  // Topics.
+  if (!nl.getParam("topics/raw_control", raw_control_topic_)) return false;
+  if (!nl.getParam("topics/crazyflie_control", crazyflie_control_topic_))
+    return false;
+
+  return true;
+}
+
+bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
+  ros::NodeHandle nl(n);
+
+  // Subscribers.
+  raw_control_sub_ = nl.subscribe(raw_control_topic_.c_str(), 1,
+                                  &ControlIntegrator::RawControlCallback, this);
+
+  // Publisher.
+  crazyflie_control_pub_ = nl.advertise<crazyflie_msgs::ControlStamped>(
+      crazyflie_control_topic_.c_str(), 1, false);
 
   return true;
 }

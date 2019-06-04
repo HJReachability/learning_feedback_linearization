@@ -36,34 +36,33 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// EKF to estimate 12D quadrotor state. Roughly following variable naming
-// scheme of https://en.wikipedia.org/wiki/Extended_Kalman_filter.
+// Integrate control to match crazyflie inputs.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_STATE_ESTIMATOR_H
-#define QUADS_STATE_ESTIMATOR_H
+#ifndef QUADS_CONTROL_INTEGRATOR_H
+#define QUADS_CONTROL_INTEGRATOR_H
 
-#include <quads/quadrotor14d.h>
-#include <quads/tf_parser.h>
-#include <quads/types.h>
+#include <crazyflie_msgs/ControlStamped.h>
 #include <quads_msgs/Control.h>
-#include <quads_msgs/Output.h>
 
 #include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <Eigen/Dense>
-#include <string>
 
 namespace quads {
 
-class StateEstimator {
+class ControlIntegrator {
  public:
-  ~StateEstimator() {}
-  StateEstimator()
-    : x_(Vector14d::Zero()),
-      P_(100.0 * Matrix14x14d::Identity()),
-      initialized_(false) {}
+  ~ControlIntegrator() {}
+  ControlIntegrator()
+      : thrust_(9.81),
+        thrustdot_(0.0),
+        roll_(0.0),
+        rolldot_(0.0),
+        pitch_(0.0),
+        pitchdot_(0.0),
+        yawdot_(0.0),
+        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
+        initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -73,43 +72,27 @@ class StateEstimator {
   bool LoadParameters(const ros::NodeHandle& n);
   bool RegisterCallbacks(const ros::NodeHandle& n);
 
-  // Callback to process new control msgs.
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  // Callback to process new control msg.
+  void RawControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
-  // Timer callback and utility to compute Jacobian.
-  void TimerCallback(const ros::TimerEvent& e);
-
-  // Call TF and figure out position, pitch, and roll.
-  Vector5d GetXYZPR() const;
-
-  // Mean and covariance estimates.
-  Vector14d x_;
-  Matrix14x14d P_;
-
-  // Dynamics.
-  Quadrotor14D dynamics_;
-
-  // Most recent msg and time discretization (with timer).
-  quads_msgs::Control::ConstPtr control_;
-  ros::Timer timer_;
-  double dt_;
+  // Keep track of integral(s) of raw control inputs.
+  double thrust_, thrustdot_;
+  double roll_, rolldot_;
+  double pitch_, pitchdot_;
+  double yawdot_;
+  double time_of_last_msg_;
 
   // Publishers and subscribers.
-  ros::Subscriber output_sub_;
-  ros::Subscriber control_sub_;
-  ros::Publisher state_pub_;
+  ros::Subscriber raw_control_sub_;
+  ros::Publisher crazyflie_control_pub_;
 
-  std::string output_topic_;
-  std::string control_topic_;
-  std::string state_topic_;
-
-  // Tf parser.
-  TfParser tf_parser_;
+  std::string raw_control_topic_;
+  std::string crazyflie_control_topic_;
 
   // Initialized flag and name.
   bool initialized_;
   std::string name_;
-};  //\class StateEstimator
+};  //\class ControlIntegrator
 
 }  // namespace quads
 

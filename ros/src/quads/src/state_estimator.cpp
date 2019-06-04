@@ -41,8 +41,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <quads/state_estimator.h>
 #include <quads/quadrotor14d.h>
+#include <quads/state_estimator.h>
 
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>

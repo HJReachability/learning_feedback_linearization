@@ -23,6 +23,12 @@
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
 
+  <!-- System ID params. -->
+  <arg name="mass" default="1.0" />
+  <arg name="Ix" default="1.0" />
+  <arg name="Iy" default="1.0" />
+  <arg name="Iz" default="1.0" />
+
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
   <arg name="robot_frame" default="crazyflie" />
@@ -144,20 +150,24 @@
 
   <!-- State estimator. -->
   <node name="state_estimator"
-        pkg="crazyflie_state_estimator"
-        type="position_velocity_yaw_state_estimator_node"
+        pkg="quads"
+        type="state_estimator_node"
         output="screen">
 
-    <param name="x_dim" value="$(arg x_dim)" />
-    <param name="time_step" value="$(arg estimator_dt)" />
+    <param name="dt" value="$(arg estimator_dt)" />
 
-    <param name="frames/fixed" value="$(arg fixed_frame)" />
-    <param name="frames/robot" value="$(arg robot_frame)" />
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
 
     <param name="topics/state" value="$(arg state_topic)" />
+
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
 
-  <!-- LQR controller. -->
+  <!-- LQR controller.
   <node name="lqr_controller"
         pkg="crazyflie_lqr"
         type="position_velocity_yaw_state_lift_lqr_node"
@@ -174,6 +184,7 @@
     <param name="topics/control" value="$(arg lqr_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
+  -->
 
   <!-- Launch RViz with the proper config file robot descriptor. -->
   <node name="rviz"

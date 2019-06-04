@@ -11,9 +11,9 @@ int main(void) {
   ScalarOutputSmoother smoother;
 
   // Feed in a sinusoid.
-  const double dt = 0.01; // s
+  const double dt = 0.002; // s
 
-  for (double t = 0.0; t < 10.0*dt; t += dt) {
+  for (double t = 0.0; t < 1000.0*dt; t += dt) {
     const double y = std::sin(t);
     smoother.Update(y, dt);
 

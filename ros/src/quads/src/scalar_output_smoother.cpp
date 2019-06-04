@@ -51,23 +51,17 @@
 
 namespace quads {
 
-namespace {
-// Process and observation noise.
-static const Matrix4d W = 0.001 * Matrix4d::Identity();
-static const double V = 0.0005;
-}  // anonymous namespace
-
 void ScalarOutputSmoother::Update(double y, double dt) {
   // Discretize time.
   const Matrix4d A_dt = (A_ * dt).exp();
 
   // Predict step.
   const Vector4d x_predict = A_dt * x_;
-  const Matrix4d Px_predict = A_dt * Px_ * A_dt.transpose() + W;
+  const Matrix4d Px_predict = A_dt * Px_ * A_dt.transpose() + W_ * dt;
 
   // Update step.
   const double innovation = y - H_ * x_predict;
-  const double S = V + H_ * Px_predict * H_.transpose();
+  const double S = V_ + H_ * Px_predict * H_.transpose();
   const Vector4d K = Px_predict * H_.transpose() / S;
 
   x_ = x_predict + K * innovation;

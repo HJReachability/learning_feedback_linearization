@@ -80,6 +80,7 @@ class ScalarOutputSmoother {
   double XDot1() const { return x_(1); }
   double XDot2() const { return x_(2); }
   double XDot3() const { return x_(3); }
+  const Matrix4d& Cov() const { return Px_; }
 
  private:
   // Mean and covariance estimates for this output channel.

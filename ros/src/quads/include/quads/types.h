@@ -51,12 +51,19 @@ using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Vector5d = Eigen::Matrix<double, 5, 1>;
+using Vector6d = Eigen::Matrix<double, 6, 1>;
 using Vector12d = Eigen::Matrix<double, 12, 1>;
-using Matrix5d = Eigen::Matrix<double, 5, 5>;
-using Matrix14d = Eigen::Matrix<double, 1, 4>;
-using Matrix45d = Eigen::Matrix<double, 4, 5>;
-using Matrix512d = Eigen::Matrix<double, 5, 12>;
-using Matrix12d = Eigen::Matrix<double, 12, 12>;
+using Vector14d = Eigen::Matrix<double, 14, 1>;
+using Matrix5x5d = Eigen::Matrix<double, 5, 5>;
+using Matrix6x6d = Eigen::Matrix<double, 6, 6>;
+using Matrix1x4d = Eigen::Matrix<double, 1, 4>;
+using Matrix4x5d = Eigen::Matrix<double, 4, 5>;
+using Matrix4x4d = Eigen::Matrix<double, 4, 4>;
+using Matrix5x12d = Eigen::Matrix<double, 5, 12>;
+using Matrix12x12d = Eigen::Matrix<double, 12, 12>;
+using Matrix14x14d = Eigen::Matrix<double, 14, 14>;
+using Matrix14x6d = Eigen::Matrix<double, 14, 6>;
+using Matrix6x14d = Eigen::Matrix<double, 6, 14>;
 
 }  // namespace quads
 

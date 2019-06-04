@@ -64,13 +64,13 @@ Vector12d Quadrotor12D::operator()(const Vector12d& x,
   return xdot;
 }
 
-Matrix12d Quadrotor12D::StateJacobian(const Vector12d& x,
-                                      const Vector3d& u) const {
+Matrix12x12d Quadrotor12D::StateJacobian(const Vector12d& x,
+                                         const Vector3d& u) const {
   const double theta = x(kThetaIdx);
   const double phi = x(kPhiIdx);
   const double zeta = x(kZetaIdx);
 
-  Matrix12d F;
+  Matrix12x12d F;
   F << 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
@@ -86,8 +86,8 @@ Matrix12d Quadrotor12D::StateJacobian(const Vector12d& x,
   return F;
 }
 
-Matrix512d Quadrotor12D::OutputJacobian(const Vector12d& x) const {
-  Matrix512d H(Matrix512d::Zero());
+Matrix5x12d Quadrotor12D::OutputJacobian(const Vector12d& x) const {
+  Matrix5x12d H(Matrix5x12d::Zero());
   H(0, 0) = 1.0;
   H(1, 1) = 1.0;
   H(2, 2) = 1.0;

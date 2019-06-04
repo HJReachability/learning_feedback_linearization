@@ -62,6 +62,8 @@ bool OutputSmoother::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  if (!tf_parser_.Initialize(n)) return false;
+
   if (!RegisterCallbacks(n)) {
     ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
     return false;
@@ -75,10 +77,6 @@ bool OutputSmoother::LoadParameters(const ros::NodeHandle& n) {
 
   // Topics.
   if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
-
-  // Frames of reference.
-  if (!nl.getParam("frames/world", world_frame_)) return false;
-  if (!nl.getParam("frames/quad", quad_frame_)) return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {
@@ -104,18 +102,14 @@ bool OutputSmoother::RegisterCallbacks(const ros::NodeHandle& n) {
 }
 
 void OutputSmoother::TimerCallback(const ros::TimerEvent& e) {
-  geometry_msgs::TransformStamped msg;
-  try {
-    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
-  } catch (tf2::TransformException& ex) {
-    ROS_ERROR("%s", ex.what());
-    return;
-  }
+  double x, y, z, phi, theta, psi;
+  tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
 
   // Update filters and publish msg.
-  smoother_x_.Update(msg.transform.translation.x, dt_);
-  smoother_y_.Update(msg.transform.translation.y, dt_);
-  smoother_z_.Update(msg.transform.translation.z, dt_);
+  smoother_x_.Update(x, dt_);
+  smoother_y_.Update(y, dt_);
+  smoother_z_.Update(z, dt_);
+  smoother_psi_.Update(psi, dt_);
 
   quads_msgs::OutputDerivatives derivs_msg;
   derivs_msg.x = smoother_x_.X();
@@ -132,6 +126,9 @@ void OutputSmoother::TimerCallback(const ros::TimerEvent& e) {
   derivs_msg.zdot1 = smoother_z_.XDot1();
   derivs_msg.zdot2 = smoother_z_.XDot2();
   derivs_msg.zdot3 = smoother_z_.XDot3();
+
+  derivs_msg.psi = smoother_psi_.X();
+  derivs_msg.psidot1 = smoother_psi_.XDot1();
 
   output_derivs_pub_.publish(derivs_msg);
 }

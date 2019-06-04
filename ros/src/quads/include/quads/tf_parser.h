@@ -40,57 +40,41 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_QUADROTOR_12D_H
-#define QUADS_QUADROTOR_12D_H
+#ifndef QUADS_TF_PARSER_H
+#define QUADS_TF_PARSER_H
 
 #include <quads/types.h>
 
 #include <ros/ros.h>
-#include <Eigen/Dense>
+#include <tf2_ros/transform_listener.h>
 #include <string>
 
 namespace quads {
 
-class Quadrotor12D {
+class TfParser {
  public:
-  ~Quadrotor12D() {}
-  Quadrotor12D() : m_(1.0), Ix_(1.0), Iy_(1.0), initialized_(false) {}
+  ~TfParser() {}
+  TfParser() : tf_listener_(tf_buffer_), initialized_(false) {}
 
-  // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
 
-  // Evaluate state derivative at this state/control.
-  Vector12d operator()(const Vector12d& x, const Vector3d& u) const;
-
-  // Jacobians.
-  Matrix12x12d StateJacobian(const Vector12d& x, const Vector3d& u) const;
-  Matrix5x12d OutputJacobian(const Vector12d& x) const;
-
-  // Static state indices.
-  static constexpr size_t kXIdx = 0;
-  static constexpr size_t kYIdx = 1;
-  static constexpr size_t kZIdx = 2;
-  static constexpr size_t kThetaIdx = 3;
-  static constexpr size_t kPhiIdx = 4;
-  static constexpr size_t kDxIdx = 5;
-  static constexpr size_t kDyIdx = 6;
-  static constexpr size_t kDzIdx = 7;
-  static constexpr size_t kZetaIdx = 8;
-  static constexpr size_t kXiIdx = 9;
-  static constexpr size_t kQIdx = 10;
-  static constexpr size_t kRIdx = 11;
+  // Parse current TF.
+  void GetXYZRPY(double* x, double* y, double* z, double* phi, double* theta,
+                 double* psi) const;
 
  private:
-  // Load parameters.
   bool LoadParameters(const ros::NodeHandle& n);
 
-  // Mass and inertia.
-  double m_, Ix_, Iy_;
+  // World frame and quad frame.
+  std::string world_frame_;
+  std::string quad_frame_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 
-  // Initialized flag and name.
-  bool initialized_;
+  // Name and initialization.
   std::string name_;
-};  //\class OutputSmoother
+  bool initialized_;
+};
 
 }  // namespace quads
 

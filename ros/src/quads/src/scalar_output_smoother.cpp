@@ -44,20 +44,19 @@
 #include <quads/scalar_output_smoother.h>
 #include <quads/types.h>
 
-
 #include <Eigen/QR>
-#include <unsupported/Eigen/MatrixFunctions>
 #include <iostream>
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace quads {
 
 void ScalarOutputSmoother::Update(double y, double dt) {
   // Discretize time.
-  const Matrix4d A_dt = (A_ * dt).exp();
+  const Matrix4x4d A_dt = (A_ * dt).exp();
 
   // Predict step.
   const Vector4d x_predict = A_dt * x_;
-  const Matrix4d Px_predict = A_dt * Px_ * A_dt.transpose() + W_ * dt;
+  const Matrix4x4d Px_predict = A_dt * Px_ * A_dt.transpose() + W_ * dt;
 
   // Update step.
   const double innovation = y - H_ * x_predict;

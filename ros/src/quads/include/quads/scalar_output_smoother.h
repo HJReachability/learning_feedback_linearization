@@ -52,16 +52,16 @@ class ScalarOutputSmoother {
  public:
   ~ScalarOutputSmoother() {}
   ScalarOutputSmoother()
-      : x_(Vector4d::Zero()), Px_(100.0 * Matrix4d::Identity()) {
-    A_ = Matrix4d::Zero();
+      : x_(Vector4d::Zero()), Px_(100.0 * Matrix4x4d::Identity()) {
+    A_ = Matrix4x4d::Zero();
     A_(0, 1) = 1.0;
     A_(1, 2) = 1.0;
     A_(2, 3) = 1.0;
 
-    H_ = Matrix14d::Zero();
+    H_ = Matrix1x4d::Zero();
     H_(0, 0) = 1.0;
 
-    W_ = Matrix4d::Identity() * 0.0005;
+    W_ = Matrix4x4d::Identity() * 0.0005;
     W_(3, 3) = 0.05;
 
     V_ = 0.0005;
@@ -81,12 +81,12 @@ class ScalarOutputSmoother {
  private:
   // Mean and covariance estimates for this output channel.
   Vector4d x_;
-  Matrix4d Px_;
+  Matrix4x4d Px_;
 
   // Utilities.
-  Matrix14d H_;
-  Matrix4d A_;
-  Matrix4d W_;
+  Matrix1x4d H_;
+  Matrix4x4d A_;
+  Matrix4x4d W_;
   double V_;
 
 };  //\class ScalarOutputSmoother

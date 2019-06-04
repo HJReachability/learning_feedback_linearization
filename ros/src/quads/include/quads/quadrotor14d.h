@@ -36,12 +36,12 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// 12D quadrotor dynamics.
+// 14D quadrotor dynamics.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_QUADROTOR_12D_H
-#define QUADS_QUADROTOR_12D_H
+#ifndef QUADS_QUADROTOR_14D_H
+#define QUADS_QUADROTOR_14D_H
 
 #include <quads/types.h>
 
@@ -51,20 +51,20 @@
 
 namespace quads {
 
-class Quadrotor12D {
+class Quadrotor14D {
  public:
-  ~Quadrotor12D() {}
-  Quadrotor12D() : m_(1.0), Ix_(1.0), Iy_(1.0), initialized_(false) {}
+  ~Quadrotor14D() {}
+  Quadrotor14D() : m_(1.0), Ix_(1.0), Iy_(1.0), Iz_(1.0), initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
 
   // Evaluate state derivative at this state/control.
-  Vector12d operator()(const Vector12d& x, const Vector3d& u) const;
+  Vector14d operator()(const Vector14d& x, const Vector4d& u) const;
 
   // Jacobians.
-  Matrix12x12d StateJacobian(const Vector12d& x, const Vector3d& u) const;
-  Matrix5x12d OutputJacobian(const Vector12d& x) const;
+  Matrix14x14d StateJacobian(const Vector14d& x, const Vector4d& u) const;
+  Matrix6x14d OutputJacobian(const Vector14d& x) const;
 
   // Static state indices.
   static constexpr size_t kXIdx = 0;
@@ -72,20 +72,22 @@ class Quadrotor12D {
   static constexpr size_t kZIdx = 2;
   static constexpr size_t kThetaIdx = 3;
   static constexpr size_t kPhiIdx = 4;
-  static constexpr size_t kDxIdx = 5;
-  static constexpr size_t kDyIdx = 6;
-  static constexpr size_t kDzIdx = 7;
-  static constexpr size_t kZetaIdx = 8;
-  static constexpr size_t kXiIdx = 9;
-  static constexpr size_t kQIdx = 10;
-  static constexpr size_t kRIdx = 11;
+  static constexpr size_t kPsiIdx = 5;
+  static constexpr size_t kDxIdx = 6;
+  static constexpr size_t kDyIdx = 7;
+  static constexpr size_t kDzIdx = 8;
+  static constexpr size_t kZetaIdx = 9;
+  static constexpr size_t kXiIdx = 10;
+  static constexpr size_t kQIdx = 11;
+  static constexpr size_t kRIdx = 12;
+  static constexpr size_t kPIdx = 13;
 
  private:
   // Load parameters.
   bool LoadParameters(const ros::NodeHandle& n);
 
   // Mass and inertia.
-  double m_, Ix_, Iy_;
+  double m_, Ix_, Iy_, Iz_;
 
   // Initialized flag and name.
   bool initialized_;

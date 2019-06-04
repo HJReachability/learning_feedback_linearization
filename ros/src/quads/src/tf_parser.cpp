@@ -40,58 +40,57 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_QUADROTOR_12D_H
-#define QUADS_QUADROTOR_12D_H
-
+#include <quads/tf_parser.h>
 #include <quads/types.h>
 
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
 #include <Eigen/Dense>
 #include <string>
 
 namespace quads {
 
-class Quadrotor12D {
- public:
-  ~Quadrotor12D() {}
-  Quadrotor12D() : m_(1.0), Ix_(1.0), Iy_(1.0), initialized_(false) {}
+void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
+                         double* theta, double* psi) const {
+  geometry_msgs::TransformStamped msg;
+  try {
+    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
+  } catch (tf2::TransformException& ex) {
+    ROS_ERROR("%s", ex.what());
+  }
 
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+  *x = msg.transform.translation.x;
+  *y = msg.transform.translation.y;
+  *z = msg.transform.translation.z;
 
-  // Evaluate state derivative at this state/control.
-  Vector12d operator()(const Vector12d& x, const Vector3d& u) const;
+  const tf2::Quaternion q(msg.transform.rotation.x, msg.transform.rotation.y,
+                          msg.transform.rotation.z, msg.transform.rotation.w);
+  const tf2::Matrix3x3 R(q);
+  R.getRPY(*phi, *theta, *psi);
+}
 
-  // Jacobians.
-  Matrix12x12d StateJacobian(const Vector12d& x, const Vector3d& u) const;
-  Matrix5x12d OutputJacobian(const Vector12d& x) const;
+bool TfParser::Initialize(const ros::NodeHandle& n) {
+  name_ = ros::names::append(n.getNamespace(), "tf_parser");
 
-  // Static state indices.
-  static constexpr size_t kXIdx = 0;
-  static constexpr size_t kYIdx = 1;
-  static constexpr size_t kZIdx = 2;
-  static constexpr size_t kThetaIdx = 3;
-  static constexpr size_t kPhiIdx = 4;
-  static constexpr size_t kDxIdx = 5;
-  static constexpr size_t kDyIdx = 6;
-  static constexpr size_t kDzIdx = 7;
-  static constexpr size_t kZetaIdx = 8;
-  static constexpr size_t kXiIdx = 9;
-  static constexpr size_t kQIdx = 10;
-  static constexpr size_t kRIdx = 11;
+  if (!LoadParameters(n)) {
+    ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
+    return false;
+  }
 
- private:
-  // Load parameters.
-  bool LoadParameters(const ros::NodeHandle& n);
+  return true;
+}
 
-  // Mass and inertia.
-  double m_, Ix_, Iy_;
+bool TfParser::LoadParameters(const ros::NodeHandle& n) {
+  ros::NodeHandle nl(n);
 
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class OutputSmoother
+  // Frames of reference.
+  if (!nl.getParam("frames/world", world_frame_)) return false;
+  if (!nl.getParam("frames/quad", quad_frame_)) return false;
+
+  return true;
+}
 
 }  // namespace quads
-
-#endif

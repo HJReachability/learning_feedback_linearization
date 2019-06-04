@@ -42,6 +42,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <quads/state_estimator.h>
+#include <quads/quadrotor14d.h>
 
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
@@ -50,41 +51,45 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <math.h>
 #include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
 #include <Eigen/Dense>
 #include <string>
 
 namespace quads {
 namespace {
 // Assumed process and observation noise covariances.
-static const Matrix12d kProcessNoise = 0.01 * Matrix12d::Identity();
-static const Matrix5d kOutputNoise = 0.01 * Matrix5d::Identity();
+static const Matrix14x14d kProcessNoise = 0.01 * Matrix14x14d::Identity();
+static const Matrix6x6d kOutputNoise = 0.0001 * Matrix6x6d::Identity();
 }  // anonymous namespace
 
 void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   if (!control_.get()) return;
 
   // Parse control and observation msgs into vectors.
-  const Vector3d u(control_->u1, control_->u2, control_->u3);
-  const Vector5d y = GetXYZPR();
+  const Vector4d u(control_->u1, control_->u2, control_->u3, control_->u4);
+
+  double x, y, z, phi, theta, psi;
+  tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
+
+  Vector6d meas;
+  meas << x, y, z, phi, theta, psi;
 
   // Compute F and H.
-  const Matrix12d F = dynamics_.StateJacobian(x_, u);
-  const Matrix512d H = dynamics_.OutputJacobian(x_);
+  const Matrix14x14d F = dynamics_.StateJacobian(x_, u);
+  const Matrix6x14d H = dynamics_.OutputJacobian(x_);
 
   // Predict step.
-  const Vector12d x_predict = dt_ * dynamics_(x_, u);
-  const Matrix12d P_predict = F * P_ * F.transpose() + kProcessNoise;
+  const Vector14d x_predict = dt_ * dynamics_(x_, u);
+  const Matrix14x14d P_predict = F * P_ * F.transpose() + kProcessNoise;
 
   // Update step.
-  const Vector5d innovation = y - x_predict.head<5>();
-  const Matrix5d S = H * P_predict * H.transpose() + kOutputNoise;
-  const Eigen::Matrix<double, 12, 5> K =
-      P_predict * H.transpose() * S.inverse();
+  const Vector6d innovation = meas - x_predict.head<6>();
+  const Matrix6x6d S = H * P_predict * H.transpose() + kOutputNoise;
+  const Matrix14x6d K = P_predict * H.transpose() * S.inverse();
   x_ = x_predict + K * innovation;
-  P_ = (Matrix12d::Identity() - K * H) * P_predict;
+  P_ = (Matrix14x14d::Identity() - K * H) * P_predict;
 
   // Publish the answer!
   quads_msgs::State msg;
@@ -93,6 +98,7 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   msg.z = x_(dynamics_.kZIdx);
   msg.theta = x_(dynamics_.kThetaIdx);
   msg.phi = x_(dynamics_.kPhiIdx);
+  msg.psi = x_(dynamics_.kPsiIdx);
   msg.dx = x_(dynamics_.kDxIdx);
   msg.dy = x_(dynamics_.kDyIdx);
   msg.dz = x_(dynamics_.kDzIdx);
@@ -100,29 +106,9 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   msg.xi = x_(dynamics_.kXiIdx);
   msg.q = x_(dynamics_.kQIdx);
   msg.r = x_(dynamics_.kRIdx);
+  msg.p = x_(dynamics_.kPIdx);
 
   state_pub_.publish(msg);
-}
-
-Vector5d StateEstimator::GetXYZPR() const {
-  geometry_msgs::TransformStamped msg;
-  try {
-    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
-  } catch (tf2::TransformException& ex) {
-    ROS_ERROR("%s", ex.what());
-    return Vector5d::Zero();
-  }
-
-  Vector5d y;
-  y(0) = msg.transform.translation.x;
-  y(1) = msg.transform.translation.y;
-  y(2) = msg.transform.translation.z;
-
-  const tf2::Quaternion q(msg.transform.rotation.x, msg.transform.rotation.y,
-                          msg.transform.rotation.z, msg.transform.rotation.w);
-  const tf2::Matrix3x3 R(q);
-  R.getRPY(y(3), y(4), y(5));
-  return y;
 }
 
 bool StateEstimator::Initialize(const ros::NodeHandle& n) {
@@ -134,6 +120,7 @@ bool StateEstimator::Initialize(const ros::NodeHandle& n) {
   }
 
   if (!dynamics_.Initialize(n)) return false;
+  if (!tf_parser_.Initialize(n)) return false;
 
   if (!RegisterCallbacks(n)) {
     ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
@@ -148,10 +135,6 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
 
   // Topics.
   if (!nl.getParam("topics/state", state_topic_)) return false;
-
-  // Frames of reference.
-  if (!nl.getParam("frames/world", world_frame_)) return false;
-  if (!nl.getParam("frames/quad", quad_frame_)) return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {

@@ -44,7 +44,8 @@
 #ifndef QUADS_STATE_ESTIMATOR_H
 #define QUADS_STATE_ESTIMATOR_H
 
-#include <quads/quadrotor12d.h>
+#include <quads/quadrotor14d.h>
+#include <quads/tf_parser.h>
 #include <quads/types.h>
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
@@ -63,9 +64,8 @@ class StateEstimator {
 
  private:
   StateEstimator()
-      : x_(Vector12d::Zero()),
-        P_(100.0 * Matrix12d::Identity()),
-        tf_listener_(tf_buffer_),
+      : x_(Vector14d::Zero()),
+        P_(100.0 * Matrix14x14d::Identity()),
         initialized_(false) {}
 
   // Load parameters and register callbacks.
@@ -82,11 +82,11 @@ class StateEstimator {
   Vector5d GetXYZPR() const;
 
   // Mean and covariance estimates.
-  Vector12d x_;
-  Matrix12d P_;
+  Vector14d x_;
+  Matrix14x14d P_;
 
   // Dynamics.
-  Quadrotor12D dynamics_;
+  Quadrotor14D dynamics_;
 
   // Most recent msg and time discretization (with timer).
   quads_msgs::Control::ConstPtr control_;
@@ -102,11 +102,8 @@ class StateEstimator {
   std::string control_topic_;
   std::string state_topic_;
 
-  // World frame and quad frame.
-  std::string world_frame_;
-  std::string quad_frame_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  // Tf parser.
+  TfParser tf_parser_;
 
   // Initialized flag and name.
   bool initialized_;

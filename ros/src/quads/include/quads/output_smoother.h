@@ -45,6 +45,7 @@
 #define QUADS_OUTPUT_SMOOTHER_H
 
 #include <quads/scalar_output_smoother.h>
+#include <quads/tf_parser.h>
 #include <quads_msgs/Output.h>
 
 #include <geometry_msgs/TransformStamped.h>
@@ -57,7 +58,7 @@ namespace quads {
 class OutputSmoother {
  public:
   ~OutputSmoother() {}
-  OutputSmoother() : initialized_(false), tf_listener_(tf_buffer_) {}
+  OutputSmoother() : initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -71,7 +72,7 @@ class OutputSmoother {
   void TimerCallback(const ros::TimerEvent& e);
 
   // One filter for each output channel since all are decoupled.
-  ScalarOutputSmoother smoother_x_, smoother_y_, smoother_z_;
+  ScalarOutputSmoother smoother_x_, smoother_y_, smoother_z_, smoother_psi_;
 
   // Publishers and subscribers.
   ros::Publisher output_derivs_pub_;
@@ -81,11 +82,8 @@ class OutputSmoother {
   ros::Timer timer_;
   double dt_;
 
-  // World frame and quad frame.
-  std::string world_frame_;
-  std::string quad_frame_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  // TF parser.
+  TfParser tf_parser_;
 
   // Initialized flag and name.
   bool initialized_;

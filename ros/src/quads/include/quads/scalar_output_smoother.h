@@ -61,10 +61,10 @@ class ScalarOutputSmoother {
     H_ = Matrix14d::Zero();
     H_(0, 0) = 1.0;
 
-    W_ = Matrix4d::Identity() * 0.2;
-    W_(3, 3) = 20.0;
+    W_ = Matrix4d::Identity() * 0.0005;
+    W_(3, 3) = 0.05;
 
-    V_ = 0.00005;
+    V_ = 0.0005;
   }
 
   // Update with a new measurement and time delta.

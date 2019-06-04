@@ -11,7 +11,7 @@ int main(void) {
   ScalarOutputSmoother smoother;
 
   // Feed in a sinusoid.
-  const double dt = 0.002; // s
+  const double dt = 0.01; // s
 
   for (double t = 0.0; t < 1000.0*dt; t += dt) {
     const double y = std::sin(t);

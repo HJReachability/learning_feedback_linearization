@@ -53,16 +53,6 @@ class ScalarOutputSmoother {
   ~ScalarOutputSmoother() {}
   ScalarOutputSmoother()
       : x_(Vector4d::Zero()), Px_(100.0 * Matrix4d::Identity()) {
-    F_ = Vector4d::Zero();
-    F_(3) = 1.0;
-
-    E_ = Matrix45d::Zero();
-    E_(0, 0) = 1.0;
-    E_(1, 1) = 1.0;
-    E_(2, 2) = 1.0;
-    E_(3, 3) = 1.0;
-    E_(3, 4) = -1.0;
-
     A_ = Matrix4d::Zero();
     A_(0, 1) = 1.0;
     A_(1, 2) = 1.0;
@@ -80,6 +70,7 @@ class ScalarOutputSmoother {
   double XDot1() const { return x_(1); }
   double XDot2() const { return x_(2); }
   double XDot3() const { return x_(3); }
+  const Vector4d& State() const { return x_; }
   const Matrix4d& Cov() const { return Px_; }
 
  private:
@@ -88,8 +79,6 @@ class ScalarOutputSmoother {
   Matrix4d Px_;
 
   // Utilities.
-  Vector4d F_;
-  Matrix45d E_;
   Matrix14d H_;
   Matrix4d A_;
 };  //\class ScalarOutputSmoother

@@ -18,8 +18,14 @@ int main(void) {
     smoother.Update(y, dt);
 
     // Print out stuff.
-    std::cout << "state is: " << smoother.X() << ", " << smoother.XDot1() << ", " << smoother.XDot2() << ", " << smoother.XDot3() << std::endl;
+    std::cout << "state is: " << smoother.State().transpose() << std::endl;
     std::cout << "cov is:\n" << smoother.Cov() << std::endl;
+
+    // Compute state error.
+    Vector4d truth;
+    truth << y, std::cos(t), -y, -std::cos(t);
+
+    std::cout << "state error: " << (smoother.State() - truth).transpose() << std::endl;
   }
 
   return EXIT_SUCCESS;

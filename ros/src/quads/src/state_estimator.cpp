@@ -135,6 +135,7 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
 
   // Topics.
   if (!nl.getParam("topics/state", state_topic_)) return false;
+  if (!nl.getParam("topics/control", control_topic_)) return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {

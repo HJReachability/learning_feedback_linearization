@@ -79,9 +79,6 @@ class StateEstimator {
   // Timer callback and utility to compute Jacobian.
   void TimerCallback(const ros::TimerEvent& e);
 
-  // Call TF and figure out position, pitch, and roll.
-  Vector5d GetXYZPR() const;
-
   // Mean and covariance estimates.
   Vector14d x_;
   Matrix14x14d P_;

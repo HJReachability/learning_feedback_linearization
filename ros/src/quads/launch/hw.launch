@@ -18,7 +18,9 @@
   <arg name="output_derivs_topic" default="/output_derivs" />
   <arg name="reference_topic" default="/ref"/>
   <arg name="state_topic" default="/state"/>
-  <arg name="lqr_control_topic" default="/control/lqr"/>
+  <arg name="lqr_state_topic" default="/lqr_state"/>
+  <arg name="raw_control_topic" default="/control/raw"/>
+  <arg name="crazyflie_control_topic" default="/control/integrated"/>
   <arg name="takeoff_control_topic" default="/control/takeoff" />
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
@@ -70,6 +72,32 @@
     <param name="frames/world" value="$(arg fixed_frame)" />
     <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="$(arg output_smoother_dt)" />
+  </node>
+
+  <!-- Quad control conversion. -->
+  <node pkg="quads"
+        name="control_integrator"
+        type="control_integrator_node"
+        output="screen"
+        required="true">
+    <param name="topics/raw_control" value="$(arg raw_control_topic)" />
+    <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
+  </node>
+
+  <!-- Feedback linearizing controller + LQR. -->
+  <node pkg="quads"
+        name="controller"
+        type="feedback_linearizing_controller_node.py"
+        output="screen"
+        required="true">
+    <param name="topics/u" value="$(arg raw_control_topic)" />
+    <param name="topics/x" value="$(arg state_topic)" />
+    <param name="topics/y" value="$(arg output_derivs_topic)" />
+
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
 
   <!-- TF static publisher to create a base_link frame for the crazyflie. -->
@@ -129,7 +157,7 @@
         output="screen">
 
     <param name="topics/takeoff_control" value="$(arg takeoff_control_topic)" />
-    <param name="topics/commanded_control" value="$(arg lqr_control_topic)" />
+    <param name="topics/commanded_control" value="$(arg crazyflie_control_topic)" />
     <param name="topics/final_control" value="$(arg final_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
 
@@ -160,6 +188,7 @@
     <param name="frames/quad" value="$(arg robot_frame)" />
 
     <param name="topics/state" value="$(arg state_topic)" />
+    <param name="topics/control" value="$(arg raw_control_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
@@ -167,7 +196,21 @@
     <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
 
-  <!-- LQR controller.
+    <node name="lqr_state_estimator"
+        pkg="crazyflie_state_estimator"
+        type="position_velocity_yaw_state_estimator_node"
+        output="screen">
+
+    <param name="time_step" value="$(arg estimator_dt)" />
+    <param name="x_dim" value="$(arg x_dim)" />
+
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
+    <param name="frames/robot" value="$(arg robot_frame)" />
+
+    <param name="topics/state" value="$(arg lqr_state_topic)" />
+  </node>
+
+  <!-- LQR controller. -->
   <node name="lqr_controller"
         pkg="crazyflie_lqr"
         type="position_velocity_yaw_state_lift_lqr_node"
@@ -180,13 +223,12 @@
     <param name="u_ref_file" value="$(arg u_ref_file)" />
 
     <param name="topics/reference" value="$(arg reference_topic)" />
-    <param name="topics/state" value="$(arg state_topic)" />
-    <param name="topics/control" value="$(arg lqr_control_topic)" />
+    <param name="topics/state" value="$(arg lqr_state_topic)" />
+    <param name="topics/control" value="$(arg crazyflie_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
-  -->
 
-  <!-- Launch RViz with the proper config file robot descriptor. -->
+  <!-- Launch RViz with the proper config file robot descriptor.
   <node name="rviz"
         pkg="rviz"
         type="rviz"
@@ -196,5 +238,6 @@
     <param name="robot_description"
            command="$(find xacro)/xacro.py
                     $(find crazyflie_description)/urdf/crazyflie.urdf.xacro" />
-  </node>
+                    </node>
+  -->
 </launch>

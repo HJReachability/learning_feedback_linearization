@@ -16,12 +16,14 @@
   <build_depend>rospy</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>crazyflie_msgs</build_depend>
+  <build_depend>crazyflie_utils</build_depend>
   <build_depend>quads_msgs</build_depend>
   <build_depend>tf2_ros</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>crazyflie_msgs</run_depend>
+  <run_depend>crazyflie_utils</run_depend>
   <run_depend>quads_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>tf2_ros</run_depend>

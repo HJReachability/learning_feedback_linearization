@@ -75,10 +75,10 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
 
   Vector6d meas;
-  meas << x, y, z, phi, theta, psi;
+  meas << x, y, z, theta, phi, psi;
 
   // Compute F and H.
-  const Matrix14x14d F = dynamics_.StateJacobian(x_, u);
+  const Matrix14x14d F = dynamics_.StateJacobian(x_, u) * dt_;
   const Matrix6x14d H = dynamics_.OutputJacobian(x_);
 
   // Predict step.

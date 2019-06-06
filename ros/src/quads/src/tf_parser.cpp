@@ -42,6 +42,7 @@
 
 #include <quads/tf_parser.h>
 #include <quads/types.h>
+#include <crazyflie_utils/angles.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
@@ -57,7 +58,7 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
                          double* theta, double* psi) const {
   geometry_msgs::TransformStamped msg;
   try {
-    msg = tf_buffer_.lookupTransform(quad_frame_, world_frame_, ros::Time(0));
+    msg = tf_buffer_.lookupTransform(world_frame_, quad_frame_, ros::Time(0));
   } catch (tf2::TransformException& ex) {
     ROS_ERROR("%s", ex.what());
   }
@@ -66,10 +67,19 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
   *y = msg.transform.translation.y;
   *z = msg.transform.translation.z;
 
-  const tf2::Quaternion q(msg.transform.rotation.x, msg.transform.rotation.y,
-                          msg.transform.rotation.z, msg.transform.rotation.w);
-  const tf2::Matrix3x3 R(q);
-  R.getRPY(*phi, *theta, *psi);
+  // Get roll, pitch, and yaw from quaternion.
+  const Eigen::Quaterniond quat(msg.transform.rotation.w,
+                                msg.transform.rotation.x,
+                                msg.transform.rotation.y,
+                                msg.transform.rotation.z);
+
+  // Multiply by sign of x component to ensure quaternion giving the preferred
+  // Euler transformation (here we're exploiting the fact that rot(q)=rot(-q) ).
+  Eigen::Matrix3d R = quat.toRotationMatrix();
+  Vector3d euler = crazyflie_utils::angles::Matrix2RPY(R);
+  *phi = crazyflie_utils::angles::WrapAngleRadians(euler(0));
+  *theta = crazyflie_utils::angles::WrapAngleRadians(euler(1));
+  *psi = crazyflie_utils::angles::WrapAngleRadians(euler(2));
 
   // Catch nans.
   if (std::isnan(*x) || std::isnan(*y) || std::isnan(*z) || std::isnan(*phi) ||

@@ -11,7 +11,6 @@
   <arg name="HY6" value="radio://0/6/2M/FA57CF2018" />
   <arg name="HY7" value="radio://0/7/2M/FA57CF2018" />
 
-
   <arg name="uri" default="$(arg HY4)" />
 
   <!-- Topics. -->
@@ -45,17 +44,11 @@
   <arg name="takeoff_hover_y" default="0.0" />
   <arg name="takeoff_hover_z" default="1.0" />
 
-  <!-- Start point for the simulator. -->
-  <arg name="sim_init_x" default="0.0" />
-  <arg name="sim_init_y" default="0.0" />
-  <arg name="sim_init_z" default="0.0" />
-
   <!-- Control parameters. -->
   <arg name="K_file" default="$(find crazyflie_lqr)/references/K_manual.txt"/>
   <arg name="u_ref_file" default="$(find crazyflie_lqr)/references/u_ref_hover.txt"/>
 
   <!-- Time steps. -->
-  <arg name="simulator_dt" default="0.001" />
   <arg name="estimator_dt" default="0.01" />
   <arg name="output_smoother_dt" default="0.01" />
 

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
   crazyflie_msgs
+  crazyflie_utils
   quads_msgs
   tf2_ros
 )
@@ -29,6 +30,7 @@ catkin_package(
     rospy
     quads_msgs
     crazyflie_msgs
+    crazyflie_utils
     geometry_msgs
     tf2_ros
   DEPENDS

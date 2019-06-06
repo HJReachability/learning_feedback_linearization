@@ -61,9 +61,19 @@ class StateEstimator {
  public:
   ~StateEstimator() {}
   StateEstimator()
-    : x_(Vector14d::Zero()),
-      P_(100.0 * Matrix14x14d::Identity()),
-      initialized_(false) {}
+      : x_(Vector14d::Zero()),
+        P_(100.0 * Matrix14x14d::Identity()),
+        in_flight_(false),
+        initialized_(false) {
+    // Initialize control to be zero.
+    control_.u1 = 0.0;
+    control_.u2 = 0.0;
+    control_.u3 = 0.0;
+    control_.u4 = 0.0;
+
+    // Initialize x_ to have zeta = g.
+    x_(dynamics_.kZetaIdx) = 9.81;
+  }
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -72,6 +82,11 @@ class StateEstimator {
   // Load parameters and register callbacks.
   bool LoadParameters(const ros::NodeHandle& n);
   bool RegisterCallbacks(const ros::NodeHandle& n);
+
+  // Are we in flight?
+  void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
+    in_flight_ = true;
+  }
 
   // Callback to process new control msgs.
   void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
@@ -82,12 +97,13 @@ class StateEstimator {
   // Mean and covariance estimates.
   Vector14d x_;
   Matrix14x14d P_;
+  bool in_flight_;
 
   // Dynamics.
   Quadrotor14D dynamics_;
 
   // Most recent msg and time discretization (with timer).
-  quads_msgs::Control::ConstPtr control_;
+  quads_msgs::Control control_;
   ros::Timer timer_;
   double dt_;
 

@@ -21,9 +21,13 @@
   <arg name="lqr_state_topic" default="/lqr_state"/>
   <arg name="raw_control_topic" default="/control/raw"/>
   <arg name="crazyflie_control_topic" default="/control/integrated"/>
+  <arg name="lqr_control_topic" default="/control/lqr"/>
   <arg name="takeoff_control_topic" default="/control/takeoff" />
+  <arg name="merged_control_topic" default="/control/merged" />
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
+
+  <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
   <arg name="mass" default="1.0" />
@@ -157,9 +161,10 @@
         output="screen">
 
     <param name="topics/takeoff_control" value="$(arg takeoff_control_topic)" />
-    <param name="topics/commanded_control" value="$(arg crazyflie_control_topic)" />
+    <param name="topics/commanded_control" value="$(arg merged_control_topic)" />
     <param name="topics/final_control" value="$(arg final_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="duration/hover" value="10.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />
@@ -174,6 +179,20 @@
 
     <param name="topics/control" value="$(arg final_control_topic)" />
     <param name="topics/cmd_vel" value="/$(arg robot_frame)/cmd_vel" />
+  </node>
+
+  <!-- Merger node. -->
+  <node name="merger"
+        pkg="crazyflie_control_merger"
+        type="regular_control_merger_node"
+        output="screen">
+
+    <param name="mode" value="$(arg merger_mode)" />
+
+    <param name="topics/control" value="$(arg lqr_control_topic)" />
+    <param name="topics/prioritized_control" value="$(arg crazyflie_control_topic)" />
+    <param name="topics/merged" value="$(arg merged_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
 
   <!-- State estimator. -->
@@ -224,7 +243,7 @@
 
     <param name="topics/reference" value="$(arg reference_topic)" />
     <param name="topics/state" value="$(arg lqr_state_topic)" />
-    <param name="topics/control" value="$(arg crazyflie_control_topic)" />
+    <param name="topics/control" value="$(arg lqr_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
 

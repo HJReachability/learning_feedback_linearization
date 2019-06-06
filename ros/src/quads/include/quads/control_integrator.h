@@ -43,7 +43,7 @@
 #ifndef QUADS_CONTROL_INTEGRATOR_H
 #define QUADS_CONTROL_INTEGRATOR_H
 
-#include <crazyflie_msgs/ControlStamped.h>
+#include <crazyflie_msgs/PrioritizedControlStamped.h>
 #include <quads_msgs/Control.h>
 
 #include <ros/ros.h>

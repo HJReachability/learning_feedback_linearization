@@ -75,11 +75,10 @@ class FeedbackLinearizingController(object):
         self._state_sub = rospy.Subscriber(
             self._state_topic, State, self.state_callback)
 
-        self._output_devivs_sub = rospy.Subscriber(
+        self._output_derivs_sub = rospy.Subscriber(
             self._output_derivs_topic, OutputDerivatives, self.output_callback)
 
-        self._control_pub = rospy.Subscriber(
-            self._control_topic, Control, 1)
+        self._control_pub = rospy.Publisher(self._control_topic, Control)
 
         return True
 
@@ -91,10 +90,10 @@ class FeedbackLinearizingController(object):
 
         # Determine v.
         if self._y is not None:
-            v = -np.dot(K, (self._y - self._ref))
+            v = -np.dot(self._K, (self._y - self._ref))
 
-            u = self.feedback(x, v).detach().numpy().copy()
-            u_msg = quads_msgs.msg.Control()
+            u = self.feedback(x, v) #.detach().numpy().copy()
+            u_msg = Control()
             u_msg.u1 = u[0, 0]
             u_msg.u2 = u[1, 0]
             u_msg.u3 = u[2, 0]
@@ -106,7 +105,7 @@ class FeedbackLinearizingController(object):
 
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
-        v = np.reshape(v, (self._udim, 1))
+        v = np.reshape(v, (4, 1))
 
         return np.dot(self._M1(x), v) + self._f1(x)
 

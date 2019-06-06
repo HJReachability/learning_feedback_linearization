@@ -72,11 +72,12 @@ void ControlIntegrator::RawControlCallback(
   yawdot_ += msg->u4 * dt;
 
   // Publish this guy.
-  crazyflie_msgs::ControlStamped integrated_msg;
-  integrated_msg.control.thrust = thrust_ ;
-  integrated_msg.control.roll = roll_;
-  integrated_msg.control.pitch = pitch_;
-  integrated_msg.control.yaw_dot = yawdot_;
+  crazyflie_msgs::PrioritizedControlStamped integrated_msg;
+  integrated_msg.control.priority = 1.0;
+  integrated_msg.control.control.thrust = thrust_;
+  integrated_msg.control.control.roll = roll_;
+  integrated_msg.control.control.pitch = pitch_;
+  integrated_msg.control.control.yaw_dot = yawdot_;
   crazyflie_control_pub_.publish(integrated_msg);
 }
 
@@ -115,8 +116,9 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
                                   &ControlIntegrator::RawControlCallback, this);
 
   // Publisher.
-  crazyflie_control_pub_ = nl.advertise<crazyflie_msgs::ControlStamped>(
-      crazyflie_control_topic_.c_str(), 1, false);
+  crazyflie_control_pub_ =
+      nl.advertise<crazyflie_msgs::PrioritizedControlStamped>(
+          crazyflie_control_topic_.c_str(), 1, false);
 
   return true;
 }

@@ -65,10 +65,11 @@ static const Matrix6x6d kOutputNoise = 0.0001 * Matrix6x6d::Identity();
 }  // anonymous namespace
 
 void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
-  if (!control_.get()) return;
-
   // Parse control and observation msgs into vectors.
-  const Vector4d u(control_->u1, control_->u2, control_->u3, control_->u4);
+  Vector4d u(Vector4d::Zero());
+
+  if (in_flight_)
+    u << control_.u1, control_.u2, control_.u3, control_.u4;
 
   double x, y, z, phi, theta, psi;
   tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
@@ -81,7 +82,7 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   const Matrix6x14d H = dynamics_.OutputJacobian(x_);
 
   // Predict step.
-  const Vector14d x_predict = dt_ * dynamics_(x_, u);
+  const Vector14d x_predict = x_ + dt_ * dynamics_(x_, u);
   const Matrix14x14d P_predict = F * P_ * F.transpose() + kProcessNoise;
 
   // Update step.
@@ -165,7 +166,7 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
 
 inline void StateEstimator::ControlCallback(
     const quads_msgs::Control::ConstPtr& msg) {
-  control_ = msg;
+  control_ = *msg;
 }
 
 }  // namespace quads

@@ -60,8 +60,8 @@
 namespace quads {
 namespace {
 // Assumed process and observation noise covariances.
-static const Matrix14x14d kProcessNoise = 0.01 * Matrix14x14d::Identity();
-static const Matrix6x6d kOutputNoise = 0.0001 * Matrix6x6d::Identity();
+static const Matrix14x14d kProcessNoise = 0.0001 * Matrix14x14d::Identity();
+static const Matrix6x6d kOutputNoise = 0.0000001 * Matrix6x6d::Identity();
 }  // anonymous namespace
 
 void StateEstimator::TimerCallback(const ros::TimerEvent& e) {

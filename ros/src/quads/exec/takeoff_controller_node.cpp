@@ -34,70 +34,23 @@
  * Authors: David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Integrate control to match crazyflie inputs.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-#ifndef QUADS_CONTROL_INTEGRATOR_H
-#define QUADS_CONTROL_INTEGRATOR_H
-
-#include <crazyflie_msgs/PrioritizedControlStamped.h>
-#include <quads_msgs/Control.h>
+#include <quads/takeoff_controller.h>
 
 #include <ros/ros.h>
 
-namespace quads {
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "takeoff_controller");
+  ros::NodeHandle n("~");
 
-class ControlIntegrator {
- public:
-  ~ControlIntegrator() {}
-  ControlIntegrator()
-      : thrust_(9.81),
-        thrustdot_(0.0),
-        roll_(0.0),
-        rolldot_(0.0),
-        pitch_(0.0),
-        pitchdot_(0.0),
-        yawdot_(0.0),
-        prioritized_(true),
-        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
-        initialized_(false) {}
+  quads::TakeoffController ctrl;
 
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+  if (!ctrl.Initialize(n)) {
+    ROS_ERROR("%s: Failed to initialize takeoff_controller.",
+              ros::this_node::getName().c_str());
+    return EXIT_FAILURE;
+  }
 
- private:
-  // Load parameters and register callbacks.
-  bool LoadParameters(const ros::NodeHandle& n);
-  bool RegisterCallbacks(const ros::NodeHandle& n);
+  ros::spin();
 
-  // Callback to process new control msg.
-  void RawControlCallback(const quads_msgs::Control::ConstPtr& msg);
-
-  // Keep track of integral(s) of raw control inputs.
-  double thrust_, thrustdot_;
-  double roll_, rolldot_;
-  double pitch_, pitchdot_;
-  double yawdot_;
-  double time_of_last_msg_;
-
-  // Is this signal prioritized?
-  bool prioritized_;
-
-  // Publishers and subscribers.
-  ros::Subscriber raw_control_sub_;
-  ros::Publisher crazyflie_control_pub_;
-
-  std::string raw_control_topic_;
-  std::string crazyflie_control_topic_;
-
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class ControlIntegrator
-
-}  // namespace quads
-
-#endif
+  return EXIT_SUCCESS;
+}

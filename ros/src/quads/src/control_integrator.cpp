@@ -71,14 +71,33 @@ void ControlIntegrator::RawControlCallback(
 
   yawdot_ += msg->u4 * dt;
 
+  // Antiwindup.
+  constexpr double kExtraAccel = 3.0;
+  thrust_ = std::max(9.81 - kExtraAccel, std::min(thrust_, 9.81 + kExtraAccel));
+
+  constexpr double kMaxRollPitch = 0.25 * M_PI;
+  roll_ = std::max(-kMaxRollPitch, std::min(roll_, kMaxRollPitch));
+  pitch_ = std::max(-kMaxRollPitch, std::min(pitch_, kMaxRollPitch));
+
+  yawdot_ = std::max(-1.0, std::min(yawdot_, 1.0));
+
   // Publish this guy.
-  crazyflie_msgs::PrioritizedControlStamped integrated_msg;
-  integrated_msg.control.priority = 1.0;
-  integrated_msg.control.control.thrust = thrust_;
-  integrated_msg.control.control.roll = roll_;
-  integrated_msg.control.control.pitch = pitch_;
-  integrated_msg.control.control.yaw_dot = yawdot_;
-  crazyflie_control_pub_.publish(integrated_msg);
+  if (prioritized_) {
+    crazyflie_msgs::PrioritizedControlStamped integrated_msg;
+    integrated_msg.control.priority = 1.0;
+    integrated_msg.control.control.thrust = thrust_;
+    integrated_msg.control.control.roll = roll_;
+    integrated_msg.control.control.pitch = pitch_;
+    integrated_msg.control.control.yaw_dot = yawdot_;
+    crazyflie_control_pub_.publish(integrated_msg);
+  } else {
+    crazyflie_msgs::ControlStamped integrated_msg;
+    integrated_msg.control.thrust = thrust_;
+    integrated_msg.control.roll = roll_;
+    integrated_msg.control.pitch = pitch_;
+    integrated_msg.control.yaw_dot = yawdot_;
+    crazyflie_control_pub_.publish(integrated_msg);
+  }
 }
 
 bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
@@ -105,6 +124,8 @@ bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/crazyflie_control", crazyflie_control_topic_))
     return false;
 
+  if (!nl.getParam("prioritized", prioritized_)) return false;
+
   return true;
 }
 
@@ -116,9 +137,14 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
                                   &ControlIntegrator::RawControlCallback, this);
 
   // Publisher.
-  crazyflie_control_pub_ =
-      nl.advertise<crazyflie_msgs::PrioritizedControlStamped>(
-          crazyflie_control_topic_.c_str(), 1, false);
+  if (prioritized_) {
+    crazyflie_control_pub_ =
+        nl.advertise<crazyflie_msgs::PrioritizedControlStamped>(
+            crazyflie_control_topic_.c_str(), 1, false);
+  } else {
+    crazyflie_control_pub_ = nl.advertise<crazyflie_msgs::ControlStamped>(
+        crazyflie_control_topic_.c_str(), 1, false);
+  }
 
   return true;
 }

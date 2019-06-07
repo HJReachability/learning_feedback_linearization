@@ -36,95 +36,54 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// EKF to estimate 12D quadrotor state. Roughly following variable naming
-// scheme of https://en.wikipedia.org/wiki/Extended_Kalman_filter.
+// Controller just to be used for takeoff. Implemented as a P controller on
+// position and yaw.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_STATE_ESTIMATOR_H
-#define QUADS_STATE_ESTIMATOR_H
+#ifndef QUADS_TAKEOFF_CONTROLLER_H
+#define QUADS_TAKEOFF_CONTROLLER_H
 
-#include <quads/quadrotor14d.h>
-#include <quads/tf_parser.h>
-#include <quads/types.h>
 #include <quads_msgs/Control.h>
-#include <quads_msgs/Output.h>
+#include <quads/tf_parser.h>
 
 #include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <Eigen/Dense>
-#include <string>
 
 namespace quads {
 
-class StateEstimator {
+class TakeoffController {
  public:
-  ~StateEstimator() {}
-  StateEstimator()
-      : x_(Vector14d::Zero()),
-        P_(100.0 * Matrix14x14d::Identity()),
-        in_flight_(false),
-        initialized_(false) {
-    // Initialize control to be zero.
-    control_.u1 = 0.0;
-    control_.u2 = 0.0;
-    control_.u3 = 0.0;
-    control_.u4 = 0.0;
-
-    // Initialize x_ to have zeta = g.
-    x_(dynamics_.kZetaIdx) = 9.81;
-  }
+  ~TakeoffController() {}
+  TakeoffController() {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
 
  private:
-  // Load parameters and register callbacks.
   bool LoadParameters(const ros::NodeHandle& n);
   bool RegisterCallbacks(const ros::NodeHandle& n);
 
-  // Are we in flight?
-  void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
-    in_flight_ = true;
-  }
-
-  // Callback to process new control msgs.
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
-
-  // Timer callback and utility to compute Jacobian.
+  // Callback to process new control msg.
   void TimerCallback(const ros::TimerEvent& e);
 
-  // Mean and covariance estimates.
-  Vector14d x_;
-  Matrix14x14d P_;
-  bool in_flight_;
-
-  // Dynamics.
-  Quadrotor14D dynamics_;
-
-  // Most recent msg and time discretization (with timer).
-  quads_msgs::Control control_;
-  ros::Timer timer_;
-  double dt_;
-
-  // Publishers and subscribers.
-  ros::Subscriber in_flight_sub_;
-  ros::Subscriber takeoff_control_sub_;
-  ros::Subscriber control_sub_;
-  ros::Publisher state_pub_;
-
-  std::string in_flight_topic_;
-  std::string takeoff_control_topic_;
-  std::string control_topic_;
-  std::string state_topic_;
+  // Hover point.
+  double hover_x_, hover_y_, hover_z_;
 
   // Tf parser.
   TfParser tf_parser_;
 
+  // Timer.
+  ros::Timer timer_;
+  double dt_;
+
+  // Publisher for latest control.
+  ros::Publisher control_pub_;
+  std::string control_topic_;
+
   // Initialized flag and name.
   bool initialized_;
   std::string name_;
-};  //\class StateEstimator
+};  //\class TakeoffController
 
 }  // namespace quads
 

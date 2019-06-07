@@ -68,8 +68,7 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   // Parse control and observation msgs into vectors.
   Vector4d u(Vector4d::Zero());
 
-  if (in_flight_)
-    u << control_.u1, control_.u2, control_.u3, control_.u4;
+  if (in_flight_) u << control_.u1, control_.u2, control_.u3, control_.u4;
 
   double x, y, z, phi, theta, psi;
   tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
@@ -135,8 +134,11 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
 
   // Topics.
+  if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/state", state_topic_)) return false;
   if (!nl.getParam("topics/control", control_topic_)) return false;
+  if (!nl.getParam("topics/takeoff_control", takeoff_control_topic_))
+    return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {
@@ -153,6 +155,10 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
   // Subscribers.
   control_sub_ = nl.subscribe(control_topic_.c_str(), 1,
                               &StateEstimator::ControlCallback, this);
+  takeoff_control_sub_ = nl.subscribe(takeoff_control_topic_.c_str(), 1,
+                                      &StateEstimator::ControlCallback, this);
+  in_flight_sub_ = nl.subscribe(in_flight_topic_.c_str(), 1,
+                                &StateEstimator::InFlightCallback, this);
 
   // Publisher.
   state_pub_ = nl.advertise<quads_msgs::State>(state_topic_.c_str(), 1, false);

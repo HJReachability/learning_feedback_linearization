@@ -11,7 +11,7 @@
   <arg name="HY6" value="radio://0/6/2M/FA57CF2018" />
   <arg name="HY7" value="radio://0/7/2M/FA57CF2018" />
 
-  <arg name="uri" default="$(arg HY4)" />
+  <arg name="uri" default="$(arg HY5)" />
 
   <!-- Topics. -->
   <arg name="output_derivs_topic" default="/output_derivs" />
@@ -20,8 +20,9 @@
   <arg name="lqr_state_topic" default="/lqr_state"/>
   <arg name="raw_control_topic" default="/control/raw"/>
   <arg name="crazyflie_control_topic" default="/control/integrated"/>
-  <arg name="lqr_control_topic" default="/control/lqr"/>
-  <arg name="takeoff_control_topic" default="/control/takeoff" />
+  <arg name="takeoff_control_topic" default="/control/takeoff"/>
+  <arg name="raw_takeoff_control_topic" default="/control/raw_takeoff"/>
+  <arg name="open_loop_takeoff_control_topic" default="/control/open_loop_takeoff" />
   <arg name="merged_control_topic" default="/control/merged" />
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
@@ -29,10 +30,10 @@
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="1.0" />
-  <arg name="Ix" default="1.0" />
-  <arg name="Iy" default="1.0" />
-  <arg name="Iz" default="1.0" />
+  <arg name="mass" default="0.02" />
+  <arg name="Ix" default="0.001" />
+  <arg name="Iy" default="0.001" />
+  <arg name="Iz" default="0.0002" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
@@ -79,6 +80,17 @@
         required="true">
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
+    <param name="prioritized" value="true" />
+  </node>
+
+  <node pkg="quads"
+        name="takeoff_control_integrator"
+        type="control_integrator_node"
+        output="screen"
+        required="true">
+    <param name="topics/raw_control" value="$(arg raw_takeoff_control_topic)" />
+    <param name="topics/crazyflie_control" value="$(arg takeoff_control_topic)" />
+    <param name="prioritized" value="false" />
   </node>
 
   <!-- Feedback linearizing controller + LQR. -->
@@ -139,7 +151,7 @@
         output="screen">
 
     <param name="topics/reference" value="$(arg reference_topic)" />
-    <param name="topics/control" value="$(arg takeoff_control_topic)" />
+    <param name="topics/control" value="$(arg open_loop_takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
@@ -153,11 +165,11 @@
         type="takeoff_control_filter_node"
         output="screen">
 
-    <param name="topics/takeoff_control" value="$(arg takeoff_control_topic)" />
+    <param name="topics/takeoff_control" value="$(arg open_loop_takeoff_control_topic)" />
     <param name="topics/commanded_control" value="$(arg merged_control_topic)" />
     <param name="topics/final_control" value="$(arg final_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
-    <param name="duration/hover" value="10.0" />
+    <param name="duration/hover" value="0.1" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />
@@ -182,7 +194,7 @@
 
     <param name="mode" value="$(arg merger_mode)" />
 
-    <param name="topics/control" value="$(arg lqr_control_topic)" />
+    <param name="topics/control" value="$(arg takeoff_control_topic)" />
     <param name="topics/prioritized_control" value="$(arg crazyflie_control_topic)" />
     <param name="topics/merged" value="$(arg merged_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
@@ -199,8 +211,10 @@
     <param name="frames/world" value="$(arg fixed_frame)" />
     <param name="frames/quad" value="$(arg robot_frame)" />
 
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/state" value="$(arg state_topic)" />
     <param name="topics/control" value="$(arg raw_control_topic)" />
+    <param name="topics/takeoff_control" value="$(arg raw_takeoff_control_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
@@ -208,36 +222,15 @@
     <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
 
-    <node name="lqr_state_estimator"
-        pkg="crazyflie_state_estimator"
-        type="position_velocity_yaw_state_estimator_node"
+  <!-- Takeoff controller. -->
+  <node name="takeoff_controller"
+        pkg="quads"
+        type="takeoff_controller_node"
         output="screen">
-
+    <param name="topics/control" value="$(arg raw_takeoff_control_topic)" />
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg estimator_dt)" />
-    <param name="x_dim" value="$(arg x_dim)" />
-
-    <param name="frames/fixed" value="$(arg fixed_frame)" />
-    <param name="frames/robot" value="$(arg robot_frame)" />
-
-    <param name="topics/state" value="$(arg lqr_state_topic)" />
-  </node>
-
-  <!-- LQR controller. -->
-  <node name="lqr_controller"
-        pkg="crazyflie_lqr"
-        type="position_velocity_yaw_state_lift_lqr_node"
-        output="screen">
-
-    <param name="x_dim" value="$(arg x_dim)" />
-    <param name="u_dim" value="$(arg u_dim)" />
-
-    <param name="K_file" value="$(arg K_file)" />
-    <param name="u_ref_file" value="$(arg u_ref_file)" />
-
-    <param name="topics/reference" value="$(arg reference_topic)" />
-    <param name="topics/state" value="$(arg lqr_state_topic)" />
-    <param name="topics/control" value="$(arg lqr_control_topic)" />
-    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
 
   <!-- Launch RViz with the proper config file robot descriptor.

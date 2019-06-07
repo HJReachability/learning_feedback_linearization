@@ -36,68 +36,80 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Integrate control to match crazyflie inputs.
+// Controller just to be used for takeoff. Implemented as a P controller on
+// position and yaw.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_CONTROL_INTEGRATOR_H
-#define QUADS_CONTROL_INTEGRATOR_H
-
-#include <crazyflie_msgs/PrioritizedControlStamped.h>
+#include <quads/takeoff_controller.h>
 #include <quads_msgs/Control.h>
 
 #include <ros/ros.h>
 
 namespace quads {
 
-class ControlIntegrator {
- public:
-  ~ControlIntegrator() {}
-  ControlIntegrator()
-      : thrust_(9.81),
-        thrustdot_(0.0),
-        roll_(0.0),
-        rolldot_(0.0),
-        pitch_(0.0),
-        pitchdot_(0.0),
-        yawdot_(0.0),
-        prioritized_(true),
-        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
-        initialized_(false) {}
+bool TakeoffController::Initialize(const ros::NodeHandle& n) {
+  name_ = ros::names::append(n.getNamespace(), "takeoff_controller");
 
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+  if (!LoadParameters(n)) {
+    ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
+    return false;
+  }
 
- private:
-  // Load parameters and register callbacks.
-  bool LoadParameters(const ros::NodeHandle& n);
-  bool RegisterCallbacks(const ros::NodeHandle& n);
+  if (!RegisterCallbacks(n)) {
+    ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
+    return false;
+  }
 
-  // Callback to process new control msg.
-  void RawControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  if (!tf_parser_.Initialize(n)) return false;
 
-  // Keep track of integral(s) of raw control inputs.
-  double thrust_, thrustdot_;
-  double roll_, rolldot_;
-  double pitch_, pitchdot_;
-  double yawdot_;
-  double time_of_last_msg_;
+  initialized_ = true;
+  return true;
+}
 
-  // Is this signal prioritized?
-  bool prioritized_;
+bool TakeoffController::LoadParameters(const ros::NodeHandle& n) {
+  ros::NodeHandle nl(n);
 
-  // Publishers and subscribers.
-  ros::Subscriber raw_control_sub_;
-  ros::Publisher crazyflie_control_pub_;
+  if (!nl.getParam("topics/control", control_topic_)) return false;
+  if (!nl.getParam("time_step", dt_)) return false;
+  if (!nl.getParam("hover/x", hover_x_)) hover_x_ = 0.0;
+  if (!nl.getParam("hover/y", hover_y_)) hover_y_ = 0.0;
+  if (!nl.getParam("hover/z", hover_z_)) hover_z_ = 1.0;
 
-  std::string raw_control_topic_;
-  std::string crazyflie_control_topic_;
+  return true;
+}
 
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class ControlIntegrator
+bool TakeoffController::RegisterCallbacks(const ros::NodeHandle& n) {
+  ros::NodeHandle nl(n);
+
+  // Subscribers.
+  control_pub_ =
+      nl.advertise<quads_msgs::Control>(control_topic_.c_str(), 1, false);
+
+  // Timer.
+  timer_ = nl.createTimer(ros::Duration(dt_), &TakeoffController::TimerCallback,
+                          this);
+
+  return true;
+}
+
+void TakeoffController::TimerCallback(const ros::TimerEvent& e) {
+  constexpr double kDxGain = 0.1;
+  constexpr double kDyGain = 0.1;
+  constexpr double kDzGain = 0.5;
+  constexpr double kDpsiGain = 0.3;
+
+  // Compute the current pose.
+  double x, y, z, phi, theta, psi;
+  tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
+
+  // Compute errors and feedback.
+  quads_msgs::Control msg;
+  msg.u1 = -kDzGain * (z - hover_z_);
+  msg.u2 = -kDxGain * (x - hover_x_);
+  msg.u3 = kDyGain * (y - hover_y_);
+  msg.u4 = -kDpsiGain * (psi - 0.0);
+  control_pub_.publish(msg);
+}
 
 }  // namespace quads
-
-#endif

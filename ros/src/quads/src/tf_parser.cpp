@@ -60,7 +60,7 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
   try {
     msg = tf_buffer_.lookupTransform(world_frame_, quad_frame_, ros::Time(0));
   } catch (tf2::TransformException& ex) {
-    ROS_ERROR("%s", ex.what());
+    ROS_WARN("%s", ex.what());
   }
 
   *x = msg.transform.translation.x;

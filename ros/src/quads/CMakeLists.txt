@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   crazyflie_utils
   quads_msgs
   tf2_ros
+  std_msgs
 )
 
 catkin_package(
@@ -33,6 +34,7 @@ catkin_package(
     crazyflie_utils
     geometry_msgs
     tf2_ros
+    std_msgs
   DEPENDS
     EIGEN3
 )

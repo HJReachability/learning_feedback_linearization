@@ -48,6 +48,7 @@
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
 #include <string>
+#include <std_msgs/Empty.h>
 
 namespace quads {
 

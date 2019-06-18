@@ -50,7 +50,7 @@
 
 namespace quads {
 
-template <size_t k = 3, size_t n = 6>
+template <size_t k, size_t n>
 class PolynomialFit {
  public:
   ~PolynomialFit() {}
@@ -123,6 +123,8 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
   }
 
   return total;
+}
+
 }  // namespace quads
 
 #endif

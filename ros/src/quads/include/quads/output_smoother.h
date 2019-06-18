@@ -44,7 +44,7 @@
 #ifndef QUADS_OUTPUT_SMOOTHER_H
 #define QUADS_OUTPUT_SMOOTHER_H
 
-#include <quads/scalar_output_smoother.h>
+#include <quads/polynomial_fit.h>
 #include <quads/tf_parser.h>
 #include <quads_msgs/Output.h>
 
@@ -72,7 +72,7 @@ class OutputSmoother {
   void TimerCallback(const ros::TimerEvent& e);
 
   // One filter for each output channel since all are decoupled.
-  ScalarOutputSmoother smoother_x_, smoother_y_, smoother_z_, smoother_psi_;
+  PolynomialFit<5, 20> smoother_x_, smoother_y_, smoother_z_, smoother_psi_;
 
   // Publishers and subscribers.
   ros::Publisher output_derivs_pub_;

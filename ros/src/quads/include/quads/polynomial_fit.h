@@ -44,6 +44,7 @@
 #define QUADS_POLYNOMIAL_FIT_H
 
 #include <math.h>
+#include <ros/ros.h>
 #include <Eigen/Dense>
 #include <list>
 
@@ -116,7 +117,7 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
 
   double total = 0.0;
   double time_power = 1.0;
-  for (size_t ii = num_derivatves; ii < k + 1; ii++) {
+  for (size_t ii = num_derivatives; ii < k + 1; ii++) {
     total += time_power * coeffs_(ii);
     time_power *= t;
   }

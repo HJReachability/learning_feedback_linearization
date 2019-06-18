@@ -42,7 +42,6 @@
 
 #include <quads/output_smoother.h>
 
-
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
 #include <quads_msgs/OutputDerivatives.h>
@@ -106,30 +105,33 @@ void OutputSmoother::TimerCallback(const ros::TimerEvent& e) {
   double x, y, z, phi, theta, psi;
   tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
 
+  // Get the current time.
+  const double t = ros::Time::now().toSec();
+
   // Update filters and publish msg.
-  smoother_x_.Update(x, dt_);
-  smoother_y_.Update(y, dt_);
-  smoother_z_.Update(z, dt_);
-  smoother_psi_.Update(psi, dt_);
+  smoother_x_.Update(x, t);
+  smoother_y_.Update(y, t);
+  smoother_z_.Update(z, t);
+  smoother_psi_.Update(psi, t);
 
   quads_msgs::OutputDerivatives derivs_msg;
-  derivs_msg.x = smoother_x_.X();
-  derivs_msg.xdot1 = smoother_x_.XDot1();
-  derivs_msg.xdot2 = smoother_x_.XDot2();
-  derivs_msg.xdot3 = smoother_x_.XDot3();
+  derivs_msg.x = smoother_x_.Interpolate(t, 0);
+  derivs_msg.xdot1 = smoother_x_.Interpolate(t, 1);
+  derivs_msg.xdot2 = smoother_x_.Interpolate(t, 2);
+  derivs_msg.xdot3 = smoother_x_.Interpolate(t, 3);
 
-  derivs_msg.y = smoother_y_.X();
-  derivs_msg.ydot1 = smoother_y_.XDot1();
-  derivs_msg.ydot2 = smoother_y_.XDot2();
-  derivs_msg.ydot3 = smoother_y_.XDot3();
+  derivs_msg.y = smoother_y_.Interpolate(t, 0);
+  derivs_msg.ydot1 = smoother_y_.Interpolate(t, 1);
+  derivs_msg.ydot2 = smoother_y_.Interpolate(t, 2);
+  derivs_msg.ydot3 = smoother_y_.Interpolate(t, 3);
 
-  derivs_msg.z = smoother_z_.X();
-  derivs_msg.zdot1 = smoother_z_.XDot1();
-  derivs_msg.zdot2 = smoother_z_.XDot2();
-  derivs_msg.zdot3 = smoother_z_.XDot3();
+  derivs_msg.z = smoother_z_.Interpolate(t, 0);
+  derivs_msg.zdot1 = smoother_z_.Interpolate(t, 1);
+  derivs_msg.zdot2 = smoother_z_.Interpolate(t, 2);
+  derivs_msg.zdot3 = smoother_z_.Interpolate(t, 3);
 
-  derivs_msg.psi = smoother_psi_.X();
-  derivs_msg.psidot1 = smoother_psi_.XDot1();
+  derivs_msg.psi = smoother_psi_.Interpolate(t, 0);
+  derivs_msg.psidot1 = smoother_psi_.Interpolate(t, 1);
 
   output_derivs_pub_.publish(derivs_msg);
 }

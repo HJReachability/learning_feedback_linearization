@@ -50,6 +50,18 @@
 
 namespace quads {
 
+namespace {
+size_t factorial(size_t ii) {
+  if (ii == 0 || ii == 1) return 1;
+  return ii * factorial(ii - 1);
+}
+
+size_t factorial_fraction(size_t ii, size_t jj) {
+  if (ii == jj) return 1;
+  return ii * factorial_fraction(ii - 1, jj);
+}
+}
+
 template <size_t k, size_t n>
 class PolynomialFit {
  public:
@@ -68,7 +80,7 @@ class PolynomialFit {
   std::list<double> ts_;
 
   // Polynomial coefficients.
-  Eigen::Matrix<double, k, 1> coeffs_;
+  Eigen::Matrix<double, k + 1, 1> coeffs_;
 };  //\class PolynomialFit
 
 // -------------------------- Implementation ---------------------------- //
@@ -115,10 +127,11 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
     return 0.0;
   }
 
-  double total = 0.0;
   double time_power = 1.0;
+  double total = 0.0;
   for (size_t ii = num_derivatives; ii < k + 1; ii++) {
-    total += time_power * coeffs_(ii);
+    total += static_cast<double>(factorial(ii)) * time_power * coeffs_(ii) /
+             static_cast<double>(factorial(ii - num_derivatives));
     time_power *= t;
   }
 

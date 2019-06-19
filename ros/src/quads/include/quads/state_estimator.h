@@ -44,6 +44,7 @@
 #ifndef QUADS_STATE_ESTIMATOR_H
 #define QUADS_STATE_ESTIMATOR_H
 
+#include <quads/polynomial_fit.h>
 #include <quads/quadrotor14d.h>
 #include <quads/tf_parser.h>
 #include <quads/types.h>
@@ -53,6 +54,7 @@
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
 #include <Eigen/Dense>
+#include <limits>
 #include <string>
 
 namespace quads {
@@ -61,19 +63,11 @@ class StateEstimator {
  public:
   ~StateEstimator() {}
   StateEstimator()
-      : x_(Vector14d::Zero()),
-        P_(100.0 * Matrix14x14d::Identity()),
+      : thrust_(9.81),
+        thrustdot_(0.0),
+        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
         in_flight_(false),
-        initialized_(false) {
-    // Initialize control to be zero.
-    control_.u1 = 0.0;
-    control_.u2 = 0.0;
-    control_.u3 = 0.0;
-    control_.u4 = 0.0;
-
-    // Initialize x_ to have zeta = g.
-    x_(dynamics_.kZetaIdx) = 9.81;
-  }
+        initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -94,10 +88,16 @@ class StateEstimator {
   // Timer callback and utility to compute Jacobian.
   void TimerCallback(const ros::TimerEvent& e);
 
-  // Mean and covariance estimates.
-  Vector14d x_;
-  Matrix14x14d P_;
+  // Are we in flight?
   bool in_flight_;
+
+  // Polynomial fits.
+  PolynomialFit<3, 20> smoother_x_, smoother_y_, smoother_z_, smoother_psi_,
+      smoother_theta_, smoother_phi_;
+
+  // Keep track of integral(s) of raw control inputs.
+  double thrust_, thrustdot_;
+  double time_of_last_msg_;
 
   // Dynamics.
   Quadrotor14D dynamics_;

@@ -58,55 +58,37 @@
 #include <string>
 
 namespace quads {
-namespace {
-// Assumed process and observation noise covariances.
-static const Matrix14x14d kProcessNoise = 0.0001 * Matrix14x14d::Identity();
-static const Matrix6x6d kOutputNoise = 0.0000001 * Matrix6x6d::Identity();
-}  // anonymous namespace
 
 void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
-  // Parse control and observation msgs into vectors.
-  Vector4d u(Vector4d::Zero());
-
-  if (in_flight_) u << control_.u1, control_.u2, control_.u3, control_.u4;
-
   double x, y, z, phi, theta, psi;
   tf_parser_.GetXYZRPY(&x, &y, &z, &phi, &theta, &psi);
 
-  Vector6d meas;
-  meas << x, y, z, theta, phi, psi;
+  const double t = ros::Time::now().toSec();
 
-  // Compute F and H.
-  const Matrix14x14d F = dynamics_.StateJacobian(x_, u) * dt_;
-  const Matrix6x14d H = dynamics_.OutputJacobian(x_);
-
-  // Predict step.
-  const Vector14d x_predict = x_ + dt_ * dynamics_(x_, u);
-  const Matrix14x14d P_predict = F * P_ * F.transpose() + kProcessNoise;
-
-  // Update step.
-  const Vector6d innovation = meas - x_predict.head<6>();
-  const Matrix6x6d S = H * P_predict * H.transpose() + kOutputNoise;
-  const Matrix14x6d K = P_predict * H.transpose() * S.inverse();
-  x_ = x_predict + K * innovation;
-  P_ = (Matrix14x14d::Identity() - K * H) * P_predict;
+  // Update all the polynomial fits.
+  smoother_x_.Update(x, t);
+  smoother_y_.Update(y, t);
+  smoother_z_.Update(z, t);
+  smoother_theta_.Update(theta, t);
+  smoother_phi_.Update(phi, t);
+  smoother_psi_.Update(psi, t);
 
   // Publish the answer!
   quads_msgs::State msg;
-  msg.x = x_(dynamics_.kXIdx);
-  msg.y = x_(dynamics_.kYIdx);
-  msg.z = x_(dynamics_.kZIdx);
-  msg.theta = x_(dynamics_.kThetaIdx);
-  msg.phi = x_(dynamics_.kPhiIdx);
-  msg.psi = x_(dynamics_.kPsiIdx);
-  msg.dx = x_(dynamics_.kDxIdx);
-  msg.dy = x_(dynamics_.kDyIdx);
-  msg.dz = x_(dynamics_.kDzIdx);
-  msg.zeta = x_(dynamics_.kZetaIdx);
-  msg.xi = x_(dynamics_.kXiIdx);
-  msg.q = x_(dynamics_.kQIdx);
-  msg.r = x_(dynamics_.kRIdx);
-  msg.p = x_(dynamics_.kPIdx);
+  msg.x = smoother_x_.Interpolate(t, 0);
+  msg.y = smoother_y_.Interpolate(t, 0);
+  msg.z = smoother_z_.Interpolate(t, 0);
+  msg.theta = smoother_theta_.Interpolate(t, 0);
+  msg.phi = smoother_phi_.Interpolate(t, 0);
+  msg.psi = smoother_psi_.Interpolate(t, 0);
+  msg.dx = smoother_x_.Interpolate(t, 1);
+  msg.dy = smoother_y_.Interpolate(t, 1);
+  msg.dz = smoother_z_.Interpolate(t, 1);
+  msg.zeta = thrust_;
+  msg.xi = thrustdot_;
+  msg.q = smoother_theta_.Interpolate(t, 1);
+  msg.r = smoother_phi_.Interpolate(t, 1);
+  msg.p = smoother_psi_.Interpolate(t, 1);
 
   state_pub_.publish(msg);
 }
@@ -172,7 +154,22 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
 
 inline void StateEstimator::ControlCallback(
     const quads_msgs::Control::ConstPtr& msg) {
-  control_ = *msg;
+  if (std::isnan(time_of_last_msg_)) {
+    time_of_last_msg_ = ros::Time::now().toSec();
+    return;
+  }
+
+  const double current_time = ros::Time::now().toSec();
+  const double dt = current_time - time_of_last_msg_;
+  time_of_last_msg_ = current_time;
+
+  // Integrate stuff.
+  thrustdot_ += msg->u1 * dt;
+  thrust_ += thrustdot_ * dt;
+
+  // Antiwindup.
+  constexpr double kExtraAccel = 3.0;
+  thrust_ = std::max(9.81 - kExtraAccel, std::min(thrust_, 9.81 + kExtraAccel));
 }
 
 }  // namespace quads

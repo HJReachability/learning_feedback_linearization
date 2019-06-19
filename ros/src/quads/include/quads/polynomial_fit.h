@@ -111,8 +111,7 @@ void PolynomialFit<k, n>::Update(double x, double t) {
     b(ii) = *xs_iter;
 
     A(ii, 0) = 1.0;
-    for (size_t jj = 1; jj < k + 1; jj++)
-      A(ii, jj) = A(ii, jj - 1) * (*ts_iter - ts_.front());
+    for (size_t jj = 1; jj < k + 1; jj++) A(ii, jj) = A(ii, jj - 1) * *ts_iter;
   }
 
   // Solve least squares.
@@ -133,7 +132,7 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
   for (size_t ii = num_derivatives; ii < k + 1; ii++) {
     total += static_cast<double>(factorial(ii)) * time_power * coeffs_(ii) /
              static_cast<double>(factorial(ii - num_derivatives));
-    time_power *= (t - ts_.front());
+    time_power *= t;
   }
 
   return total;

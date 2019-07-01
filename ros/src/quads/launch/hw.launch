@@ -60,6 +60,17 @@
   <!-- Joystick address. -->
   <arg name="joy_dev" default="/dev/input/js0" />
 
+  <!-- Record? -->
+  <arg name="record" default="false" />
+
+  <!-- Record a rosbag. -->
+  <node pkg="rosbag"
+	      type="record"
+	      name="recorder"
+	      args="-a -o $(find quads)/bagfiles/recording.bag"
+	      if="$(arg record)">
+  </node>
+
   <!-- Output smoother. -->
   <node pkg="quads"
         name="output_smoother"
@@ -169,7 +180,7 @@
     <param name="topics/commanded_control" value="$(arg merged_control_topic)" />
     <param name="topics/final_control" value="$(arg final_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
-    <param name="duration/hover" value="0.1" />
+    <param name="duration/hover" value="20.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />
@@ -213,8 +224,7 @@
 
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/state" value="$(arg state_topic)" />
-    <param name="topics/control" value="$(arg raw_control_topic)" />
-    <param name="topics/takeoff_control" value="$(arg raw_takeoff_control_topic)" />
+    <param name="topics/control" value="$(arg final_control_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

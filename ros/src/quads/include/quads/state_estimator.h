@@ -51,6 +51,8 @@
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
 
+#include <crazyflie_msgs/ControlStamped.h>
+
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
 #include <Eigen/Dense>
@@ -62,12 +64,7 @@ namespace quads {
 class StateEstimator {
  public:
   ~StateEstimator() {}
-  StateEstimator()
-      : thrust_(9.81),
-        thrustdot_(0.0),
-        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
-        in_flight_(false),
-        initialized_(false) {}
+  StateEstimator() : in_flight_(false), initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -83,7 +80,7 @@ class StateEstimator {
   }
 
   // Callback to process new control msgs.
-  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  void ControlCallback(const crazyflie_msgs::ControlStamped::ConstPtr& msg);
 
   // Timer callback and utility to compute Jacobian.
   void TimerCallback(const ros::TimerEvent& e);
@@ -93,28 +90,21 @@ class StateEstimator {
 
   // Polynomial fits.
   PolynomialFit<3, 20> smoother_x_, smoother_y_, smoother_z_, smoother_psi_,
-      smoother_theta_, smoother_phi_;
-
-  // Keep track of integral(s) of raw control inputs.
-  double thrust_, thrustdot_;
-  double time_of_last_msg_;
+      smoother_theta_, smoother_phi_, smoother_thrust_;
 
   // Dynamics.
   Quadrotor14D dynamics_;
 
   // Most recent msg and time discretization (with timer).
-  quads_msgs::Control control_;
   ros::Timer timer_;
   double dt_;
 
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;
-  ros::Subscriber takeoff_control_sub_;
   ros::Subscriber control_sub_;
   ros::Publisher state_pub_;
 
   std::string in_flight_topic_;
-  std::string takeoff_control_topic_;
   std::string control_topic_;
   std::string state_topic_;
 

@@ -48,6 +48,8 @@
 #include <quads_msgs/Output.h>
 #include <quads_msgs/State.h>
 
+#include <crazyflie_msgs/ControlStamped.h>
+
 #include <geometry_msgs/TransformStamped.h>
 #include <math.h>
 #include <ros/ros.h>
@@ -84,8 +86,8 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   msg.dx = smoother_x_.Interpolate(t, 1);
   msg.dy = smoother_y_.Interpolate(t, 1);
   msg.dz = smoother_z_.Interpolate(t, 1);
-  msg.zeta = thrust_;
-  msg.xi = thrustdot_;
+  msg.zeta = smoother_thrust_.Interpolate(t, 0);
+  msg.xi = smoother_thrust_.Interpolate(t, 1);
   msg.q = smoother_theta_.Interpolate(t, 1);
   msg.r = smoother_phi_.Interpolate(t, 1);
   msg.p = smoother_psi_.Interpolate(t, 1);
@@ -119,8 +121,6 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/state", state_topic_)) return false;
   if (!nl.getParam("topics/control", control_topic_)) return false;
-  if (!nl.getParam("topics/takeoff_control", takeoff_control_topic_))
-    return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {
@@ -137,8 +137,6 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
   // Subscribers.
   control_sub_ = nl.subscribe(control_topic_.c_str(), 1,
                               &StateEstimator::ControlCallback, this);
-  takeoff_control_sub_ = nl.subscribe(takeoff_control_topic_.c_str(), 1,
-                                      &StateEstimator::ControlCallback, this);
   in_flight_sub_ = nl.subscribe(in_flight_topic_.c_str(), 1,
                                 &StateEstimator::InFlightCallback, this);
 
@@ -153,23 +151,13 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
 }
 
 inline void StateEstimator::ControlCallback(
-    const quads_msgs::Control::ConstPtr& msg) {
-  if (std::isnan(time_of_last_msg_)) {
-    time_of_last_msg_ = ros::Time::now().toSec();
-    return;
-  }
+    const crazyflie_msgs::ControlStamped::ConstPtr& msg) {
+  const double t = ros::Time::now().toSec();
 
-  const double current_time = ros::Time::now().toSec();
-  const double dt = current_time - time_of_last_msg_;
-  time_of_last_msg_ = current_time;
-
-  // Integrate stuff.
-  thrustdot_ += msg->u1 * dt;
-  thrust_ += thrustdot_ * dt;
-
-  // Antiwindup.
   constexpr double kExtraAccel = 3.0;
-  thrust_ = std::max(9.81 - kExtraAccel, std::min(thrust_, 9.81 + kExtraAccel));
+  const double thrust = std::max(
+      9.81 - kExtraAccel, std::min(9.81 + kExtraAccel, msg->control.thrust));
+  smoother_thrust_.Update(thrust, t);
 }
 
 }  // namespace quads

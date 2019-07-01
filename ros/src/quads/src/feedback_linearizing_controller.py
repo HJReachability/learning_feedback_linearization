@@ -24,7 +24,7 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         A, B, C = self._dynamics.linearized_system()
-        Q = 0.01 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        Q = 1000.0 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
         R = 1.0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
@@ -85,8 +85,8 @@ class FeedbackLinearizingController(object):
     def state_callback(self, msg):
         # Update x.
         x = np.array([[msg.x], [msg.y], [msg.z], [msg.theta],
-                            [msg.phi], [msg.psi], [msg.dx], [msg.dy],
-                            [msg.dz], [msg.zeta], [msg.xi], [msg.q], [msg.r], [msg.p]])
+                      [msg.phi], [msg.psi], [msg.dx], [msg.dy],
+                      [msg.dz], [msg.zeta], [msg.xi], [msg.q], [msg.r], [msg.p]])
 
         # Determine v.
         if self._y is not None:
@@ -101,11 +101,17 @@ class FeedbackLinearizingController(object):
             self._control_pub.publish(u_msg)
 
     def output_callback(self, msg):
-        self._y = np.array([[msg.x], [msg.xdot1], [msg.xdot2], [msg.xdot3], [msg.x], [msg.ydot1], [msg.ydot2], [msg.ydot3], [msg.z], [msg.zdot1], [msg.zdot2], [msg.zdot3], [msg.psi], [msg.psidot1]])
+        self._y = np.array([[msg.x], [msg.xdot1], [msg.xdot2], [msg.xdot3],
+                            [msg.y], [msg.ydot1], [msg.ydot2], [msg.ydot3],
+                            [msg.z], [msg.zdot1], [msg.zdot2], [msg.zdot3],
+                            [msg.psi], [msg.psidot1]])
 
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (4, 1))
+
+#        print "M1 v = ", np.dot(self._M1(x), v)
+#        print "f1 = ", self._f1(x)
 
         return np.dot(self._M1(x), v) + self._f1(x)
 

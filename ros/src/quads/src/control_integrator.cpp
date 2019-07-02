@@ -73,13 +73,23 @@ void ControlIntegrator::RawControlCallback(
 
   // Antiwindup.
   constexpr double kExtraAccel = 3.0;
-  thrust_ = std::max(9.81 - kExtraAccel, std::min(thrust_, 9.81 + kExtraAccel));
+  constexpr double kMaxThrustDot = 1.0;
+  const double clipped_thrust =
+      std::max(9.81 - kExtraAccel, std::min(thrust_, 9.81 + kExtraAccel));
+  if (std::abs(thrust_ - clipped_thrust) > 1e-8) {
+    // Clipped, so set thrustdot to 0.
+    thrust_ = clipped_thrust;
+    thrustdot_ = 0.0;
+  }
 
   constexpr double kMaxRollPitch = 0.25 * M_PI;
   roll_ = std::max(-kMaxRollPitch, std::min(roll_, kMaxRollPitch));
   pitch_ = std::max(-kMaxRollPitch, std::min(pitch_, kMaxRollPitch));
 
   yawdot_ = std::max(-1.0, std::min(yawdot_, 1.0));
+
+  // If not in flight, get out of here.
+  if (!in_flight_) return;
 
   // Publish this guy.
   if (prioritized_) {
@@ -120,6 +130,7 @@ bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
 
   // Topics.
+  if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/raw_control", raw_control_topic_)) return false;
   if (!nl.getParam("topics/crazyflie_control", crazyflie_control_topic_))
     return false;
@@ -135,6 +146,9 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
   // Subscribers.
   raw_control_sub_ = nl.subscribe(raw_control_topic_.c_str(), 1,
                                   &ControlIntegrator::RawControlCallback, this);
+
+  in_flight_sub_ = nl.subscribe(in_flight_topic_.c_str(), 1,
+                                &ControlIntegrator::InFlightCallback, this);
 
   // Publisher.
   if (prioritized_) {

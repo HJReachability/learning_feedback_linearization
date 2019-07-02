@@ -36,36 +36,27 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Integrate control to match crazyflie inputs.
+// Simulate flight of a 14D quadrotor.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUADS_CONTROL_INTEGRATOR_H
-#define QUADS_CONTROL_INTEGRATOR_H
+#ifndef QUADS_SIMULATOR_14D_H
+#define QUADS_SIMULATOR_14D_H
 
-#include <crazyflie_msgs/PrioritizedControlStamped.h>
-#include <quads_msgs/Control.h>
+#include <quads/quadrotor_14d.h>
+#include <crazyflie_msgs/ControlStamped.h>
 
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
-#include <std_msgs/Empty.h>
+#include <tf2_ros/transform_listener.h>
+#include <string>
 
 namespace quads {
 
-class ControlIntegrator {
+class Simulator14D {
  public:
-  ~ControlIntegrator() {}
-  ControlIntegrator()
-      : thrust_(9.81),
-        thrustdot_(0.0),
-        roll_(0.0),
-        rolldot_(0.0),
-        pitch_(0.0),
-        pitchdot_(0.0),
-        yawdot_(0.0),
-        prioritized_(true),
-        time_of_last_msg_(std::numeric_limits<double>::quiet_NaN()),
-        in_flight_(false),
-        initialized_(false) {}
+  ~Simulator14D() {}
+  Simulator14D() : received_control_(false), initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -75,40 +66,40 @@ class ControlIntegrator {
   bool LoadParameters(const ros::NodeHandle& n);
   bool RegisterCallbacks(const ros::NodeHandle& n);
 
-  // Callback to process new control msg.
-  void RawControlCallback(const quads_msgs::Control::ConstPtr& msg);
+  // Callback to process new output msg.
+  void TimerCallback(const ros::TimerEvent& e);
 
-  // In flight?
-  void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
-    in_flight_ = true;
-  }
+  // Update control signal.
+  void ControlCallback(const crazyflie_msgs::ControlStamped::ConstPtr& msg);
 
-  // Keep track of integral(s) of raw control inputs.
-  double thrust_, thrustdot_;
-  double roll_, rolldot_;
-  double pitch_, pitchdot_;
-  double yawdot_;
-  double time_of_last_msg_;
+  // Current state and control.
+  Vector14d x_;
+  Vector4d u_;
+  Quadrotor14D dynamics_;
 
-  // Is this signal prioritized?
-  bool prioritized_;
+  // Flag for whether first control signal has been received.
+  bool received_control_;
 
-  // Are we in flight?
-  bool in_flight_;
+  // Timer.
+  ros::Timer timer_;
+  double dt_;
+  ros::Time last_time_;
+
+  // TF broadcasting.
+  tf2_ros::TransformBroadcaster br_;
 
   // Publishers and subscribers.
-  ros::Subscriber in_flight_sub_;
-  ros::Subscriber raw_control_sub_;
-  ros::Publisher crazyflie_control_pub_;
+  ros::Subscriber control_sub_;
+  std::string control_topic_;
 
-  std::string in_flight_topic_;
-  std::string raw_control_topic_;
-  std::string crazyflie_control_topic_;
+  // Frames of reference.
+  std::string fixed_frame_id_;
+  std::string robot_frame_id_;
 
   // Initialized flag and name.
   bool initialized_;
   std::string name_;
-};  //\class ControlIntegrator
+};  //\class Simulator14D
 
 }  // namespace quads
 

@@ -65,7 +65,7 @@
     <param name="frames/robot" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg output_smoother_dt)" />
     <param name="topics/control" value="$(arg final_control_topic)" />
-    <param name="init/x" value="0.0" />
+    <param name="init/x" value="0.1" />
     <param name="init/y" value="0.0" />
     <param name="init/z" value="0.0" />
   </node>

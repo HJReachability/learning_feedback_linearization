@@ -41,11 +41,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <crazyflie_msgs/ControlStamped.h>
-#include <quads/quadrotor_14d.h>
+#include <quads/quadrotor14d.h>
 #include <quads/simulator_14d.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <string>
 
@@ -109,11 +110,11 @@ bool Simulator14D::RegisterCallbacks(const ros::NodeHandle& n) {
 
   // Subscribers.
   control_sub_ = nl.subscribe(control_topic_.c_str(), 1,
-                              &NearHoverSimulator::ControlCallback, this);
+                              &Simulator14D::ControlCallback, this);
 
   // Timer.
-  timer_ = nl.createTimer(ros::Duration(dt_),
-                          &NearHoverSimulator::TimerCallback, this);
+  timer_ =
+      nl.createTimer(ros::Duration(dt_), &Simulator14D::TimerCallback, this);
 
   return true;
 }
@@ -127,10 +128,10 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
     x_ += dynamics_(x_, u_) * (now.toSec() - last_time_.toSec());
 
   // Threshold at ground!
-  if (x_(2) < 0.0) {
+  if (x_(dynamics_.kZIdx) < 0.0) {
     // HACK! Assuming state layout.
-    x_(2) = 0.0;
-    x_(5) = std::max(0.0, x_(5));
+    x_(dynamics_.kZIdx) = 0.0;
+    x_(dynamics_.kDzIdx) = std::max(0.0, x_(dynamics_.kDzIdx));
   }
 
   // Update last time.
@@ -149,12 +150,12 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
   transform_stamped.transform.translation.z = x_(2);
 
   // RPY to quaternion.
-  const double roll = u_(0);
-  const double pitch = u_(1);
-  const double yaw = x_(6);
-  const Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitX()) *
-                        Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
-                        Eigen::AngleAxisd(yaw, Vector3d::UnitZ());
+  const double roll = x_(dynamics_.kPhiIdx);
+  const double pitch = x_(dynamics_.kThetaIdx);
+  const double yaw = x_(dynamics_.kPsiIdx);
+  const Eigen::Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitX()) *
+                               Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
+                               Eigen::AngleAxisd(yaw, Vector3d::UnitZ());
 
   /**
   Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
@@ -176,7 +177,11 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
 }
 
 // Update control signal.
-void Simulator14D::ControlCallback(
-    const crazyflie_msgs::ControlStamped::ConstPtr& msg);
+void Simulator14D::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
+  u_(0) = msg->u1;
+  u_(1) = msg->u2;
+  u_(2) = msg->u3;
+  u_(3) = msg->u4;
+}
 
 }  // namespace quads

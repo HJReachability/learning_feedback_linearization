@@ -43,11 +43,13 @@
 #ifndef QUADS_SIMULATOR_14D_H
 #define QUADS_SIMULATOR_14D_H
 
-#include <quads/quadrotor_14d.h>
 #include <crazyflie_msgs/ControlStamped.h>
+#include <quads/quadrotor14d.h>
+#include <quads_msgs/Control.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <string>
 
@@ -70,7 +72,7 @@ class Simulator14D {
   void TimerCallback(const ros::TimerEvent& e);
 
   // Update control signal.
-  void ControlCallback(const crazyflie_msgs::ControlStamped::ConstPtr& msg);
+  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
   // Current state and control.
   Vector14d x_;

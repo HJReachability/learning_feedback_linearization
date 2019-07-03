@@ -46,6 +46,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <string>
+#include <iostream>
 
 namespace quads {
 
@@ -69,6 +70,7 @@ Vector14d Quadrotor14D::operator()(const Vector14d& x,
   xdot << x(kDxIdx), x(kDyIdx), x(kDzIdx), x(kQIdx), x(kRIdx), x(kPIdx),
       gx * x(kZetaIdx), gy * x(kZetaIdx), gz * x(kZetaIdx) - 9.81, x(kXiIdx),
       u(0), u(1) / Ix_, u(2) / Iy_, u(3) / Iz_;
+
   return xdot;
 }
 

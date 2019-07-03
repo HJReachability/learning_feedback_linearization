@@ -34,63 +34,23 @@
  * Authors: David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Implementation of Kalman filtering accounting for unknown inputs.
-// Please refer to: https://hal.archives-ouvertes.fr/hal-00143941/document
-//
-///////////////////////////////////////////////////////////////////////////////
+#include <quads/simulator_14d.h>
 
-#ifndef QUADS_OUTPUT_SMOOTHER_H
-#define QUADS_OUTPUT_SMOOTHER_H
-
-#include <quads/polynomial_fit.h>
-#include <quads/tf_parser.h>
-#include <quads_msgs/Output.h>
-
-#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <string>
 
-namespace quads {
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "simulator");
+  ros::NodeHandle n("~");
 
-class OutputSmoother {
- public:
-  ~OutputSmoother() {}
-  OutputSmoother() : initialized_(false) {}
+  quads::Simulator14D sim;
 
-  // Initialize this class by reading parameters and loading callbacks.
-  bool Initialize(const ros::NodeHandle& n);
+  if (!sim.Initialize(n)) {
+    ROS_ERROR("%s: Failed to initialize simulator.",
+              ros::this_node::getName().c_str());
+    return EXIT_FAILURE;
+  }
 
- private:
-  // Load parameters and register callbacks.
-  bool LoadParameters(const ros::NodeHandle& n);
-  bool RegisterCallbacks(const ros::NodeHandle& n);
+  ros::spin();
 
-  // Callback to process new output msg.
-  void TimerCallback(const ros::TimerEvent& e);
-
-  // One filter for each output channel since all are decoupled.
-  PolynomialFit<4, 100> smoother_x_, smoother_y_, smoother_z_;
-  PolynomialFit<3, 100> smoother_psi_;
-
-  // Publishers and subscribers.
-  ros::Publisher output_derivs_pub_;
-  std::string output_derivs_topic_;
-
-  // Timer and discretization.
-  ros::Timer timer_;
-  double dt_;
-
-  // TF parser.
-  TfParser tf_parser_;
-
-  // Initialized flag and name.
-  bool initialized_;
-  std::string name_;
-};  //\class OutputSmoother
-
-}  // namespace quads
-
-#endif
+  return EXIT_SUCCESS;
+}

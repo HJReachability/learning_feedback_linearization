@@ -71,6 +71,7 @@ void ControlIntegrator::RawControlCallback(
 
   yawdot_ += msg->u4 * dt;
 
+#if 0
   // Antiwindup.
   constexpr double kExtraAccel = 3.0;
   constexpr double kMaxThrustDot = 1.0;
@@ -87,9 +88,10 @@ void ControlIntegrator::RawControlCallback(
   pitch_ = std::max(-kMaxRollPitch, std::min(pitch_, kMaxRollPitch));
 
   yawdot_ = std::max(-1.0, std::min(yawdot_, 1.0));
+#endif
 
   // If not in flight, get out of here.
-  if (!in_flight_) return;
+  //  if (!in_flight_) return;
 
   // Publish this guy.
   if (prioritized_) {

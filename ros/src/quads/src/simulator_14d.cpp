@@ -72,6 +72,8 @@ bool Simulator14D::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  if (!dynamics_.Initialize(n)) return false;
+
   // Set initial time.
   last_time_ = ros::Time::now();
 
@@ -99,9 +101,9 @@ bool Simulator14D::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("init/y", init_y)) return false;
   if (!nl.getParam("init/z", init_z)) return false;
 
-  x_(0) = init_x;
-  x_(1) = init_y;
-  x_(2) = init_z;
+  x_(dynamics_.kXIdx) = init_x;
+  x_(dynamics_.kYIdx) = init_y;
+  x_(dynamics_.kZIdx) = init_z;
 
   return true;
 }
@@ -124,15 +126,17 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
   const ros::Time now = ros::Time::now();
 
   // Only update state if we have received a control signal from outside.
-  if (received_control_)
+  if (received_control_) {
     x_ += dynamics_(x_, u_) * (now.toSec() - last_time_.toSec());
+  }
 
   // Threshold at ground!
+#if 0
   if (x_(dynamics_.kZIdx) < 0.0) {
-    // HACK! Assuming state layout.
     x_(dynamics_.kZIdx) = 0.0;
     x_(dynamics_.kDzIdx) = std::max(0.0, x_(dynamics_.kDzIdx));
   }
+#endif
 
   // Update last time.
   last_time_ = now;
@@ -145,9 +149,9 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
 
   transform_stamped.child_frame_id = robot_frame_id_;
 
-  transform_stamped.transform.translation.x = x_(0);
-  transform_stamped.transform.translation.y = x_(1);
-  transform_stamped.transform.translation.z = x_(2);
+  transform_stamped.transform.translation.x = x_(dynamics_.kXIdx);
+  transform_stamped.transform.translation.y = x_(dynamics_.kYIdx);
+  transform_stamped.transform.translation.z = x_(dynamics_.kZIdx);
 
   // RPY to quaternion.
   const double roll = x_(dynamics_.kPhiIdx);
@@ -182,6 +186,7 @@ void Simulator14D::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
   u_(1) = msg->u2;
   u_(2) = msg->u3;
   u_(3) = msg->u4;
+  received_control_ = true;
 }
 
 }  // namespace quads

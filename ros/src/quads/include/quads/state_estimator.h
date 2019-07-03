@@ -50,6 +50,7 @@
 #include <quads/types.h>
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
+#include <quads_msgs/OutputDerivatives.h>
 
 #include <crazyflie_msgs/ControlStamped.h>
 
@@ -89,8 +90,9 @@ class StateEstimator {
   bool in_flight_;
 
   // Polynomial fits.
-  PolynomialFit<3, 20> smoother_x_, smoother_y_, smoother_z_, smoother_psi_,
-      smoother_theta_, smoother_phi_, smoother_thrust_;
+  PolynomialFit<4, 100> smoother_x_, smoother_y_, smoother_z_;
+  PolynomialFit<3, 100> smoother_psi_, smoother_theta_, smoother_phi_,
+      smoother_thrust_;
 
   // Dynamics.
   Quadrotor14D dynamics_;
@@ -103,7 +105,9 @@ class StateEstimator {
   ros::Subscriber in_flight_sub_;
   ros::Subscriber control_sub_;
   ros::Publisher state_pub_;
+  ros::Publisher output_derivs_pub_;
 
+  std::string output_derivs_topic_;
   std::string in_flight_topic_;
   std::string control_topic_;
   std::string state_topic_;

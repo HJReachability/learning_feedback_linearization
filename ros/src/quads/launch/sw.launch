@@ -41,6 +41,7 @@
   <!-- Time steps. -->
   <arg name="estimator_dt" default="0.01" />
   <arg name="output_smoother_dt" default="0.01" />
+  <arg name="simulator_dt" default="0.001" />
 
   <!-- Dimensions. -->
   <arg name="x_dim" default="7" />
@@ -58,6 +59,7 @@
   </node>
 
   <!-- Simulator. -->
+  <!--
   <node pkg="crazyflie_simulator"
         type="near_hover_simulator_coupled_7d_node"
         name="simulator">
@@ -69,8 +71,27 @@
     <param name="init/y" value="0.0" />
     <param name="init/z" value="0.0" />
   </node>
+  -->
 
-  <!-- Output smoother. -->
+  <node pkg="quads"
+        type="simulator_14d_node"
+        name="simulator"
+        output="screen"
+        required="true">
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
+    <param name="frames/robot" value="$(arg robot_frame)" />
+    <param name="time_step" value="$(arg simulator_dt)" />
+    <param name="topics/control" value="$(arg raw_control_topic)" />
+    <param name="init/x" value="0.1" />
+    <param name="init/y" value="0.0" />
+    <param name="init/z" value="0.0" />
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
+  </node>
+
+  <!-- Output smoother.
   <node pkg="quads"
         name="output_smoother"
         type="output_smoother_node"
@@ -81,6 +102,7 @@
     <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="$(arg output_smoother_dt)" />
   </node>
+  -->
 
   <!-- Quad control conversion. -->
   <node pkg="quads"
@@ -91,7 +113,7 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
-    <param name="prioritized" value="true" />
+    <param name="prioritized" value="false" /> <!-- HACK -->
   </node>
 
   <!-- Feedback linearizing controller + LQR. -->
@@ -149,7 +171,7 @@
     <param name="hover/z" value="$(arg takeoff_hover_z)" />
   </node>
 
-  <!-- Merger node. -->
+  <!-- Merger node.
   <node name="merger"
         pkg="crazyflie_control_merger"
         type="regular_control_merger_node"
@@ -162,6 +184,7 @@
     <param name="topics/merged" value="$(arg merged_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
+  -->
 
   <!-- State estimator. -->
   <node name="state_estimator"
@@ -176,7 +199,8 @@
 
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/state" value="$(arg state_topic)" />
-    <param name="topics/control" value="$(arg final_control_topic)" />
+    <param name="topics/control" value="$(arg crazyflie_control_topic)" /> <!-- HACK -->
+    <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
@@ -184,7 +208,7 @@
     <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
 
-  <!-- Takeoff controller. -->
+  <!-- Takeoff controller.
   <node name="position_velocity_yaw_state_estimator"
         pkg="crazyflie_state_estimator"
         type="position_velocity_yaw_state_estimator_node"
@@ -214,6 +238,7 @@
     <param name="topics/control" value="$(arg takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
   </node>
+  -->
 
   <!-- Launch RViz with the proper config file robot descriptor.
   <node name="rviz"

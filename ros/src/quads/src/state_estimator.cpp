@@ -76,23 +76,49 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   smoother_psi_.Update(psi, t);
 
   // Publish the answer!
-  quads_msgs::State msg;
-  msg.x = smoother_x_.Interpolate(t, 0);
-  msg.y = smoother_y_.Interpolate(t, 0);
-  msg.z = smoother_z_.Interpolate(t, 0);
-  msg.theta = smoother_theta_.Interpolate(t, 0);
-  msg.phi = smoother_phi_.Interpolate(t, 0);
-  msg.psi = smoother_psi_.Interpolate(t, 0);
-  msg.dx = smoother_x_.Interpolate(t, 1);
-  msg.dy = smoother_y_.Interpolate(t, 1);
-  msg.dz = smoother_z_.Interpolate(t, 1);
-  msg.zeta = smoother_thrust_.Interpolate(t, 0);
-  msg.xi = smoother_thrust_.Interpolate(t, 1);
-  msg.q = smoother_theta_.Interpolate(t, 1);
-  msg.r = smoother_phi_.Interpolate(t, 1);
-  msg.p = smoother_psi_.Interpolate(t, 1);
+  quads_msgs::State state_msg;
+  state_msg.x = smoother_x_.Interpolate(t, 0);
+  state_msg.y = smoother_y_.Interpolate(t, 0);
+  state_msg.z = smoother_z_.Interpolate(t, 0);
+  state_msg.theta = smoother_theta_.Interpolate(t, 0);
+  state_msg.phi = smoother_phi_.Interpolate(t, 0);
+  state_msg.psi = smoother_psi_.Interpolate(t, 0);
+  state_msg.dx = smoother_x_.Interpolate(t, 1);
+  state_msg.dy = smoother_y_.Interpolate(t, 1);
+  state_msg.dz = smoother_z_.Interpolate(t, 1);
+  state_msg.zeta = smoother_thrust_.Interpolate(t, 0);
+  state_msg.xi = smoother_thrust_.Interpolate(t, 1);
+  state_msg.q = smoother_theta_.Interpolate(t, 1);
+  state_msg.r = smoother_phi_.Interpolate(t, 1);
+  state_msg.p = smoother_psi_.Interpolate(t, 1);
 
-  state_pub_.publish(msg);
+  // Handle zeta = 0.0, which should only happen upon initialization.
+  if (state_msg.zeta >= 0.0) state_msg.zeta = std::max(1e-1, state_msg.zeta);
+  if (state_msg.zeta <= 0.0) state_msg.zeta = std::min(-1e-1, state_msg.zeta);
+
+  state_pub_.publish(state_msg);
+
+  // Now handle output derivatives.
+  quads_msgs::OutputDerivatives derivs_msg;
+  derivs_msg.x = smoother_x_.Interpolate(t, 0);
+  derivs_msg.xdot1 = smoother_x_.Interpolate(t, 1);
+  derivs_msg.xdot2 = smoother_x_.Interpolate(t, 2);
+  derivs_msg.xdot3 = smoother_x_.Interpolate(t, 3);
+
+  derivs_msg.y = smoother_y_.Interpolate(t, 0);
+  derivs_msg.ydot1 = smoother_y_.Interpolate(t, 1);
+  derivs_msg.ydot2 = smoother_y_.Interpolate(t, 2);
+  derivs_msg.ydot3 = smoother_y_.Interpolate(t, 3);
+
+  derivs_msg.z = smoother_z_.Interpolate(t, 0);
+  derivs_msg.zdot1 = smoother_z_.Interpolate(t, 1);
+  derivs_msg.zdot2 = smoother_z_.Interpolate(t, 2);
+  derivs_msg.zdot3 = smoother_z_.Interpolate(t, 3);
+
+  derivs_msg.psi = smoother_psi_.Interpolate(t, 0);
+  derivs_msg.psidot1 = smoother_psi_.Interpolate(t, 1);
+
+  output_derivs_pub_.publish(derivs_msg);
 }
 
 bool StateEstimator::Initialize(const ros::NodeHandle& n) {
@@ -120,6 +146,7 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
   // Topics.
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/state", state_topic_)) return false;
+  if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
   if (!nl.getParam("topics/control", control_topic_)) return false;
 
   // Time step.
@@ -142,6 +169,8 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
 
   // Publisher.
   state_pub_ = nl.advertise<quads_msgs::State>(state_topic_.c_str(), 1, false);
+  output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
+      output_derivs_topic_.c_str(), 1, false);
 
   // Timer.
   timer_ =
@@ -150,13 +179,17 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
   return true;
 }
 
-inline void StateEstimator::ControlCallback(
+void StateEstimator::ControlCallback(
     const crazyflie_msgs::ControlStamped::ConstPtr& msg) {
   const double t = ros::Time::now().toSec();
+  double thrust = msg->control.thrust;
 
+  /*
   constexpr double kExtraAccel = 3.0;
-  const double thrust = std::max(
-      9.81 - kExtraAccel, std::min(9.81 + kExtraAccel, msg->control.thrust));
+  thrust = std::max(
+      9.81 - kExtraAccel, std::min(9.81 + kExtraAccel, thrust));
+  */
+
   smoother_thrust_.Update(thrust, t);
 }
 

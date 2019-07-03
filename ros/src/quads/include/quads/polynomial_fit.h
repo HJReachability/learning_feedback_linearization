@@ -74,6 +74,12 @@ class PolynomialFit {
   // Interpolate at a specific time.
   double Interpolate(double t, size_t num_derivatives);
 
+  // Accessors.
+  bool IsReadyToInterpolate() const { return xs_.size() == n; }
+  const Eigen::Matrix<double, k + 1, 1>& Coefficients() const {
+    return coeffs_;
+  }
+
  private:
   // Data and time.
   std::list<double> xs_;
@@ -111,7 +117,8 @@ void PolynomialFit<k, n>::Update(double x, double t) {
     b(ii) = *xs_iter;
 
     A(ii, 0) = 1.0;
-    for (size_t jj = 1; jj < k + 1; jj++) A(ii, jj) = A(ii, jj - 1) * *ts_iter;
+    for (size_t jj = 1; jj < k + 1; jj++)
+      A(ii, jj) = A(ii, jj - 1) * (*ts_iter - ts_.front());
   }
 
   // Solve least squares.
@@ -123,7 +130,7 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
   if (num_derivatives > k) return 0.0;
 
   if (xs_.size() != n) {
-    ROS_WARN("Trying to interpolate a polynomial too soon.");
+    ROS_WARN_THROTTLE(1.0, "Trying to interpolate a polynomial too soon.");
     return 0.0;
   }
 
@@ -132,7 +139,7 @@ double PolynomialFit<k, n>::Interpolate(double t, size_t num_derivatives) {
   for (size_t ii = num_derivatives; ii < k + 1; ii++) {
     total += static_cast<double>(factorial(ii)) * time_power * coeffs_(ii) /
              static_cast<double>(factorial(ii - num_derivatives));
-    time_power *= t;
+    time_power *= (t - ts_.front());
   }
 
   return total;

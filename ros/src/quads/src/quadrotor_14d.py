@@ -31,17 +31,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -60,9 +60,9 @@ class Quadrotor14D(Dynamics):
             [dx],
             [dy],
             [dz],
-            [p],
             [q],
             [r],
+            [p],
             [g17 * zeta],
             [g18 * zeta],
             [g19 * zeta - g],
@@ -163,17 +163,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Gravity.
         g = 9.81
@@ -266,17 +266,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -305,17 +305,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin

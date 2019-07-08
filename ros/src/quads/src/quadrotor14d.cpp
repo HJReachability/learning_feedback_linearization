@@ -62,9 +62,9 @@ Vector14d Quadrotor14D::operator()(const Vector14d& x,
   const double ctheta = std::cos(x(kThetaIdx));
   const double stheta = std::sin(x(kThetaIdx));
 
-  const double gx = cpsi * stheta * cphi + spsi * sphi;
-  const double gy = spsi * stheta * cphi - cpsi * sphi;
-  const double gz = cphi * ctheta;
+  const double gx = (cpsi * stheta * cphi + spsi * sphi) / m_;
+  const double gy = (spsi * stheta * cphi - cpsi * sphi) / m_;
+  const double gz = cphi * ctheta / m_;
 
   Vector14d xdot;
   xdot << x(kDxIdx), x(kDyIdx), x(kDzIdx), x(kQIdx), x(kRIdx), x(kPIdx),

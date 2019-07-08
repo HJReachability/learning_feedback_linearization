@@ -130,6 +130,8 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
     x_ += dynamics_(x_, u_) * (now.toSec() - last_time_.toSec());
   }
 
+  std::cout << "state is: \n" << x_ << std::endl;
+
   // Threshold at ground!
 #if 0
   if (x_(dynamics_.kZIdx) < 0.0) {

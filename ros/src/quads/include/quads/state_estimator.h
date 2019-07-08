@@ -65,7 +65,12 @@ namespace quads {
 class StateEstimator {
  public:
   ~StateEstimator() {}
-  StateEstimator() : in_flight_(false), initialized_(false) {}
+  StateEstimator()
+      : thrust_(9.81),
+        thrustdot_(0.0),
+        last_control_time_(std::numeric_limits<double>::quiet_NaN()),
+        in_flight_(false),
+        initialized_(false) {}
 
   // Initialize this class by reading parameters and loading callbacks.
   bool Initialize(const ros::NodeHandle& n);
@@ -81,7 +86,7 @@ class StateEstimator {
   }
 
   // Callback to process new control msgs.
-  void ControlCallback(const crazyflie_msgs::ControlStamped::ConstPtr& msg);
+  void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
   // Timer callback and utility to compute Jacobian.
   void TimerCallback(const ros::TimerEvent& e);
@@ -91,8 +96,11 @@ class StateEstimator {
 
   // Polynomial fits.
   PolynomialFit<4, 100> smoother_x_, smoother_y_, smoother_z_;
-  PolynomialFit<2, 100> smoother_psi_, smoother_theta_, smoother_phi_,
-      smoother_thrust_;
+  PolynomialFit<2, 10> smoother_psi_, smoother_theta_, smoother_phi_;
+
+  // Numerical integration for thrust.
+  double thrust_, thrustdot_;
+  double last_control_time_;
 
   // Dynamics.
   Quadrotor14D dynamics_;

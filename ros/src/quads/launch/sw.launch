@@ -39,7 +39,7 @@
   <arg name="lqr_u_ref_file" default="$(find crazyflie_lqr)/references/u_ref_hover.txt" />
 
   <!-- Time steps. -->
-  <arg name="estimator_dt" default="0.01" />
+  <arg name="estimator_dt" default="0.001" />
   <arg name="output_smoother_dt" default="0.01" />
   <arg name="simulator_dt" default="0.001" />
 
@@ -59,20 +59,19 @@
   </node>
 
   <!-- Simulator. -->
-  <!--
   <node pkg="crazyflie_simulator"
         type="near_hover_simulator_coupled_7d_node"
         name="simulator">
     <param name="frames/fixed" value="$(arg fixed_frame)" />
     <param name="frames/robot" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg output_smoother_dt)" />
-    <param name="topics/control" value="$(arg final_control_topic)" />
+    <param name="topics/control" value="$(arg crazyflie_control_topic)" />
     <param name="init/x" value="0.1" />
     <param name="init/y" value="0.0" />
     <param name="init/z" value="0.0" />
   </node>
-  -->
 
+  <!--
   <node pkg="quads"
         type="simulator_14d_node"
         name="simulator"
@@ -82,14 +81,16 @@
     <param name="frames/robot" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg simulator_dt)" />
     <param name="topics/control" value="$(arg raw_control_topic)" />
-    <param name="init/x" value="0.1" />
-    <param name="init/y" value="0.0" />
+    <param name="init/x" value="0.0" />
+    <param name="init/y" value="0.1" />
     <param name="init/z" value="0.0" />
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
     <param name="dynamics/Iy" value="$(arg Iy)" />
     <param name="dynamics/Iz" value="$(arg Iz)" />
   </node>
+  -->
+
 
   <!-- Output smoother.
   <node pkg="quads"
@@ -199,7 +200,7 @@
 
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/state" value="$(arg state_topic)" />
-    <param name="topics/control" value="$(arg crazyflie_control_topic)" /> <!-- HACK -->
+    <param name="topics/control" value="$(arg raw_control_topic)" />
     <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />

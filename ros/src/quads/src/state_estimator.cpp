@@ -86,8 +86,8 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   state_msg.dx = smoother_x_.Interpolate(t, 1);
   state_msg.dy = smoother_y_.Interpolate(t, 1);
   state_msg.dz = smoother_z_.Interpolate(t, 1);
-  state_msg.zeta = smoother_thrust_.Interpolate(t, 0);
-  state_msg.xi = smoother_thrust_.Interpolate(t, 1);
+  state_msg.zeta = thrust_;
+  state_msg.xi = thrustdot_;
   state_msg.q = smoother_theta_.Interpolate(t, 1);
   state_msg.r = smoother_phi_.Interpolate(t, 1);
   state_msg.p = smoother_psi_.Interpolate(t, 1);
@@ -179,10 +179,14 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
   return true;
 }
 
-void StateEstimator::ControlCallback(
-    const crazyflie_msgs::ControlStamped::ConstPtr& msg) {
+void StateEstimator::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
   const double t = ros::Time::now().toSec();
-  double thrust = msg->control.thrust;
+
+  if (!std::isnan(last_control_time_)) {
+    const double dt = t - last_control_time_;
+    thrust_ += thrustdot_ * dt;
+    thrustdot_ += msg->u1 * dt;
+  }
 
   /*
   constexpr double kExtraAccel = 3.0;
@@ -190,7 +194,7 @@ void StateEstimator::ControlCallback(
       9.81 - kExtraAccel, std::min(9.81 + kExtraAccel, thrust));
   */
 
-  smoother_thrust_.Update(thrust, t);
+  last_control_time_ = t;
 }
 
 }  // namespace quads

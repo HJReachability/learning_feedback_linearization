@@ -32,6 +32,7 @@ class FeedbackLinearizingController(object):
             K = np.dot(np.dot(np.linalg.inv(R), B.T), P)
             return K
 
+
         self._K = solve_lqr(A, B, Q, R)
         self._ref = np.zeros((14, 1))
         self._ref[8, 0] = 1.0

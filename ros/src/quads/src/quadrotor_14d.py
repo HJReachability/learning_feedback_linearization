@@ -78,8 +78,8 @@ class Quadrotor14D(Dynamics):
         # not changing it for now.
         control_coefficient_matrix = np.zeros((self.xdim, self.udim))
         control_coefficient_matrix[10, 0] = 1.0
-        control_coefficient_matrix[11, 1] = 1.0 / self._Ix
-        control_coefficient_matrix[12, 2] = 1.0 / self._Iy
+        control_coefficient_matrix[11, 2] = 1.0 / self._Iy
+        control_coefficient_matrix[12, 1] = 1.0 / self._Ix
         control_coefficient_matrix[13, 3] = 1.0 / self._Iz
 
         xdot = np.dot(control_coefficient_matrix, u) + drift_term
@@ -87,18 +87,18 @@ class Quadrotor14D(Dynamics):
 
     def observation(self, x):
         """ Compute y from x. """
-        return np.array([[x[0, 0]], [x[1, 0]], [x[2, 0]], [x[3, 0]]])
+        return np.array([[x[0, 0]], [x[1, 0]], [x[2, 0]], [x[5, 0]]])
 
     def wrap_angles(self, x):
         """ Wrap angles to [-pi, pi]. """
-        psi = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
-        theta = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
-        phi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        psi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        theta = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        phi = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
 
         wrapped_x = x.copy()
-        wrapped_x[3, 0] = psi
-        wrapped_x[4, 0] = theta
-        wrapped_x[5, 0] = phi
+        wrapped_x[5, 0] = psi
+        wrapped_x[3, 0] = theta
+        wrapped_x[4, 0] = phi
         return wrapped_x
 
     def observation_distance(self, y1, y2, norm):

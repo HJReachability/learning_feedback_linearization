@@ -3,9 +3,9 @@ import numpy as np
 import time
 
 from double_pendulum import DoublePendulum
-from reinforce import Reinforce
+from policygradient import PolicyGradient
 from ppo import PPO
-from feedback_linearization import FeedbackLinearization
+from tf_feedback_linearization import TFFeedbackLinearization
 from logger import Logger
 
 # Seed everything.
@@ -38,9 +38,9 @@ bad_dyn = DoublePendulum(
 # Create a feedback linearization object.
 num_layers = 2
 num_hidden_units = 32
-activation = torch.nn.Tanh()
+activation = "tanh"
 noise_std = 1.0
-fb = FeedbackLinearization(
+fb = TFFeedbackLinearization(
     bad_dyn, num_layers, num_hidden_units, activation, noise_std)
 
 
@@ -125,9 +125,9 @@ if do_Reinforce:
      length1_scaling, length2_scaling, friction_coeff_scaling,
      seed, from_zero))
 
-	solver = Reinforce(num_iters,
+	solver = PolicyGradient(num_iters,
 	             learning_rate,
-	             desired_kl,
+				 desired_kl,
 	             discount_factor,
 	             num_rollouts,
 	             num_steps_per_rollout,

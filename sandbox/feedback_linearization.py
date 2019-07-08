@@ -1,5 +1,4 @@
-
-
+#currently not working - haven't integrated with new structuring
 import torch
 import numpy as np
 from collections import OrderedDict
@@ -112,8 +111,7 @@ class FeedbackLinearization(object):
         v = np.reshape(v, (self._udim, 1))
         u = np.reshape(u, (self._udim, 1))
 
-        return torch.sum(self.noisy_feedback(x, v).log_prob(
-            torch.from_numpy(u).float()))
+        return torch.sum(self.noisy_feedback(x, v).log_prob(torch.from_numpy(u).float()))
 
     def prob(self, u, x, v):
         """ Compute probability of u given x, v. """

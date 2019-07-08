@@ -60,16 +60,16 @@ void ControlIntegrator::RawControlCallback(
   time_of_last_msg_ = current_time;
 
   // Integrate stuff.
-  thrustdot_ += msg->u1 * dt;
+  thrustdot_ += msg->thrustdot2 * dt;
   thrust_ += thrustdot_ * dt;
 
-  rolldot_ += msg->u2 * dt;
+  rolldot_ += msg->rolldot2 * dt;
   roll_ += rolldot_ * dt;
 
-  pitchdot_ += msg->u3 * dt;
+  pitchdot_ += msg->pitchdot2 * dt;
   pitch_ += pitchdot_ * dt;
 
-  yawdot_ += msg->u4 * dt;
+  yawdot_ += msg->yawdot1 * dt;
 
 #if 0
   // Antiwindup.

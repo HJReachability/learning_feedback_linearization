@@ -105,10 +105,10 @@ void TakeoffController::TimerCallback(const ros::TimerEvent& e) {
 
   // Compute errors and feedback.
   quads_msgs::Control msg;
-  msg.u1 = -kDzGain * (z - hover_z_);
-  msg.u2 = -kDxGain * (x - hover_x_);
-  msg.u3 = kDyGain * (y - hover_y_);
-  msg.u4 = -kDpsiGain * (psi - 0.0);
+  msg.thrustdot2 = -kDzGain * (z - hover_z_);
+  msg.pitchdot2 = -kDxGain * (x - hover_x_);
+  msg.rolldot2 = kDyGain * (y - hover_y_);
+  msg.yawdot1 = -kDpsiGain * (psi - 0.0);
   control_pub_.publish(msg);
 }
 

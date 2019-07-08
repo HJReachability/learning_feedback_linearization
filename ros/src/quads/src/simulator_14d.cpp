@@ -184,10 +184,10 @@ void Simulator14D::TimerCallback(const ros::TimerEvent& e) {
 
 // Update control signal.
 void Simulator14D::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
-  u_(0) = msg->u1;
-  u_(1) = msg->u2;
-  u_(2) = msg->u3;
-  u_(3) = msg->u4;
+  u_(0) = msg->thrustdot2;
+  u_(1) = msg->pitchdot2;
+  u_(2) = msg->rolldot2;
+  u_(3) = msg->yawdot1;
   received_control_ = true;
 }
 

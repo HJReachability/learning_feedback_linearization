@@ -75,6 +75,13 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   smoother_phi_.Update(phi, t);
   smoother_psi_.Update(psi, t);
 
+  if (!in_flight_) {
+    ROS_WARN_THROTTLE(1.0,
+                      "%s: Waiting to estimate state until we are in flight.",
+                      name_.c_str());
+    return;
+  }
+
   // Publish the answer!
   quads_msgs::State state_msg;
   state_msg.x = smoother_x_.Interpolate(t, 0);
@@ -185,7 +192,7 @@ void StateEstimator::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
   if (!std::isnan(last_control_time_)) {
     const double dt = t - last_control_time_;
     thrust_ += thrustdot_ * dt;
-    thrustdot_ += msg->u1 * dt;
+    thrustdot_ += msg->thrustdot2 * dt;
   }
 
   /*

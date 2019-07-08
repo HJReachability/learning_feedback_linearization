@@ -78,7 +78,7 @@ class Quadrotor14D(Dynamics):
         # not changing it for now.
         control_coefficient_matrix = np.zeros((self.xdim, self.udim))
         control_coefficient_matrix[10, 0] = 1.0
-        control_coefficient_matrix[11, 2] = -1.0 / self._Iy
+        control_coefficient_matrix[11, 2] = 1.0 / self._Iy
         control_coefficient_matrix[12, 1] = 1.0 / self._Ix
         control_coefficient_matrix[13, 3] = 1.0 / self._Iz
 

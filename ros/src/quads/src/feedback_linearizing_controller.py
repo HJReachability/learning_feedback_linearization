@@ -32,10 +32,12 @@ class FeedbackLinearizingController(object):
             K = np.dot(np.dot(np.linalg.inv(R), B.T), P)
             return K
 
-
         self._K = solve_lqr(A, B, Q, R)
         self._ref = np.zeros((14, 1))
         self._ref[8, 0] = 1.0
+
+        #self._K[:, [2, 3, 6, 7, 10, 11]] = 0.0
+        #print self._K
 
         self._y = None
 
@@ -99,7 +101,7 @@ class FeedbackLinearizingController(object):
             u_msg.thrustdot2 = u[0, 0]
             u_msg.pitchdot2 = u[2, 0]
             u_msg.rolldot2 = u[3, 0]
-            u_msg.yawdot1 = u[1, 0]
+            u_msg.yawdot2 = u[1, 0]
             self._control_pub.publish(u_msg)
 
     def output_callback(self, msg):

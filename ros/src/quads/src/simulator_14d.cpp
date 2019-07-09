@@ -187,7 +187,7 @@ void Simulator14D::ControlCallback(const quads_msgs::Control::ConstPtr& msg) {
   u_(0) = msg->thrustdot2;
   u_(1) = msg->pitchdot2;
   u_(2) = msg->rolldot2;
-  u_(3) = msg->yawdot1;
+  u_(3) = msg->yawdot2;
   received_control_ = true;
 }
 

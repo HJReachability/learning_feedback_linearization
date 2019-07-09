@@ -90,6 +90,9 @@ class ControlIntegrator {
   double yawdot_;
   double time_of_last_msg_;
 
+  // Quadrotor mass (used to convert force to acceleration).
+  double mass_;
+
   // Is this signal prioritized?
   bool prioritized_;
 

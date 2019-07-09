@@ -108,7 +108,7 @@ void TakeoffController::TimerCallback(const ros::TimerEvent& e) {
   msg.thrustdot2 = -kDzGain * (z - hover_z_);
   msg.pitchdot2 = -kDxGain * (x - hover_x_);
   msg.rolldot2 = kDyGain * (y - hover_y_);
-  msg.yawdot1 = -kDpsiGain * (psi - 0.0);
+  msg.yawdot2 = -kDpsiGain * (psi - 0.0);
   control_pub_.publish(msg);
 }
 

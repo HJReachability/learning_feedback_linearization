@@ -18,7 +18,7 @@
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="1.0" />
+  <arg name="mass" default="1.5" />
   <arg name="Ix" default="1.0" />
   <arg name="Iy" default="1.0" />
   <arg name="Iz" default="1.0" />
@@ -111,6 +111,7 @@
         type="control_integrator_node"
         output="screen"
         required="true">
+    <param name="dynamics/m" value="$(arg mass)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />

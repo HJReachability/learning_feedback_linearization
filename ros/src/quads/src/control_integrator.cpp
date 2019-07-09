@@ -69,7 +69,7 @@ void ControlIntegrator::RawControlCallback(
   pitchdot_ += msg->pitchdot2 * dt;
   pitch_ += pitchdot_ * dt;
 
-  yawdot_ += msg->yawdot1 * dt;
+  yawdot_ += msg->yawdot2 * dt;
 
 #if 0
   // Antiwindup.
@@ -97,14 +97,14 @@ void ControlIntegrator::RawControlCallback(
   if (prioritized_) {
     crazyflie_msgs::PrioritizedControlStamped integrated_msg;
     integrated_msg.control.priority = 1.0;
-    integrated_msg.control.control.thrust = thrust_;
+    integrated_msg.control.control.thrust = thrust_ / mass_;
     integrated_msg.control.control.roll = roll_;
     integrated_msg.control.control.pitch = pitch_;
     integrated_msg.control.control.yaw_dot = yawdot_;
     crazyflie_control_pub_.publish(integrated_msg);
   } else {
     crazyflie_msgs::ControlStamped integrated_msg;
-    integrated_msg.control.thrust = thrust_;
+    integrated_msg.control.thrust = thrust_ / mass_;
     integrated_msg.control.roll = roll_;
     integrated_msg.control.pitch = pitch_;
     integrated_msg.control.yaw_dot = yawdot_;
@@ -130,6 +130,9 @@ bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
 
 bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
+
+  // Quadrotor mass. Used to convert between forces and acceleration.
+  if (!nl.getParam("dynamics/m", mass_)) return false;
 
   // Topics.
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;

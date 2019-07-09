@@ -41,7 +41,7 @@
   <!-- Time steps. -->
   <arg name="estimator_dt" default="0.01" />
   <arg name="output_smoother_dt" default="0.01" />
-  <arg name="simulator_dt" default="0.01" />
+  <arg name="simulator_dt" default="0.001" />
 
   <!-- Dimensions. -->
   <arg name="x_dim" default="7" />
@@ -66,8 +66,8 @@
     <param name="frames/robot" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg output_smoother_dt)" />
     <param name="topics/control" value="$(arg final_control_topic)" />
-    <param name="init/x" value="0.1" />
-    <param name="init/y" value="0.0" />
+    <param name="init/x" value="1.0" />
+    <param name="init/y" value="1.0" />
     <param name="init/z" value="0.0" />
   </node>
 
@@ -149,7 +149,7 @@
     <param name="topics/reference" value="$(arg reference_topic)" />
     <param name="topics/control" value="$(arg open_loop_takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
-    <param name="duration/hover" value="30.0" />
+    <param name="duration/hover" value="5.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />

@@ -81,6 +81,20 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
   *theta = crazyflie_utils::angles::WrapAngleRadians(euler(1));
   *psi = crazyflie_utils::angles::WrapAngleRadians(euler(2));
 
+  // Maybe add noise?
+  // NOTE: only for debugging!!!
+  constexpr bool kAddNoise = true;
+  constexpr double kNoiseStddev = 0.0005;
+  if (kAddNoise) {
+    std::normal_distribution<double> normal(0.0, 1.0);
+    *x += normal(rng_) * kNoiseStddev;
+    *y += normal(rng_) * kNoiseStddev;
+    *z += normal(rng_) * kNoiseStddev;
+    *phi += normal(rng_) * kNoiseStddev;
+    *theta += normal(rng_) * kNoiseStddev;
+    *psi += normal(rng_) * kNoiseStddev;
+  }
+
   // Catch nans.
   if (std::isnan(*x) || std::isnan(*y) || std::isnan(*z) || std::isnan(*phi) ||
       std::isnan(*theta) || std::isnan(*psi)) {

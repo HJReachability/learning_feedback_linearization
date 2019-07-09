@@ -46,16 +46,17 @@
 #include <quads/types.h>
 
 #include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <string>
 #include <std_msgs/Empty.h>
+#include <tf2_ros/transform_listener.h>
+#include <random>
+#include <string>
 
 namespace quads {
 
 class TfParser {
  public:
   ~TfParser() {}
-  TfParser() : tf_listener_(tf_buffer_), initialized_(false) {}
+  TfParser() : rng_(rd_()), tf_listener_(tf_buffer_), initialized_(false) {}
 
   bool Initialize(const ros::NodeHandle& n);
 
@@ -71,6 +72,10 @@ class TfParser {
   std::string quad_frame_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
+
+  // Random number generator.
+  mutable std::random_device rd_;
+  mutable std::default_random_engine rng_;
 
   // Name and initialization.
   std::string name_;

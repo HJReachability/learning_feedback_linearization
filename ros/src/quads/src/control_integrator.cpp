@@ -125,6 +125,9 @@ bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  // Scale initial thrust so that it's actually a force.
+  thrust_ = 9.81 * mass_;
+
   return true;
 }
 

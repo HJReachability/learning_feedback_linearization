@@ -46,10 +46,10 @@ class PolicyGradient(RLAgent):
                                         rollout["vs"],
                                         rollout["us"],
                                         rollout["advantages"]):
-                    objective += self._feedback_linearization.log_prob(
+                    objective -= self._feedback_linearization.log_prob(
                         u, x, v) * adv
 
-                mean_return += rollout["values"][0]
+                mean_return -= rollout["values"][0]
 
             objective /= float(self._num_total_time_steps)
             mean_return /= float(self._num_rollouts)
@@ -71,10 +71,10 @@ class PolicyGradient(RLAgent):
         noisegradient = tape.gradient(objective,self._feedback_linearization._noise_std_variable)
 
         for i in range(len(m2gradient)):
-            self._feedback_linearization._M2_net.trainable_variables[i].assign_add(self._learning_rate*m2gradient[i])
+            self._feedback_linearization._M2_net.trainable_variables[i].assign_sub(self._learning_rate*m2gradient[i])
         for i in range(len(f2gradient)):
-            self._feedback_linearization._f2_net.trainable_variables[i].assign_add(self._learning_rate*f2gradient[i])
-        self._feedback_linearization._noise_std_variable.assign_add(self._learning_rate*noisegradient)
+            self._feedback_linearization._f2_net.trainable_variables[i].assign_sub(self._learning_rate*f2gradient[i])
+        self._feedback_linearization._noise_std_variable.assign_sub(self._learning_rate*noisegradient)
 
         del tape
 

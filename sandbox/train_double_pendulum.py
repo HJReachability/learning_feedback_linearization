@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 import time
 
@@ -10,7 +9,6 @@ from logger import Logger
 
 # Seed everything.
 seed = np.random.choice(1000)
-torch.manual_seed(seed)
 np.random.seed(seed)
 
 # Create a double pendulum.

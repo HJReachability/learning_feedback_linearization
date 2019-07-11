@@ -99,9 +99,9 @@ class FeedbackLinearizingController(object):
 
             u_msg = Control()
             u_msg.thrustdot2 = u[0, 0]
-            u_msg.pitchdot2 = u[2, 0]
-            u_msg.rolldot2 = u[3, 0]
-            u_msg.yawdot2 = u[1, 0]
+            u_msg.pitchdot2 = u[1, 0]
+            u_msg.rolldot2 = u[2, 0]
+            u_msg.yawdot2 = u[3, 0]
             self._control_pub.publish(u_msg)
 
     def output_callback(self, msg):

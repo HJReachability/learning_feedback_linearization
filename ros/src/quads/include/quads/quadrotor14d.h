@@ -66,6 +66,12 @@ class Quadrotor14D {
   Matrix14x14d StateJacobian(const Vector14d& x, const Vector4d& u) const;
   Matrix6x14d OutputJacobian(const Vector14d& x) const;
 
+  // Parameters.
+  double Mass() const { return m_; }
+  double InertiaX() const { return Ix_; }
+  double InertiaY() const { return Iy_; }
+  double InertiaZ() const { return Iz_; }
+
   // Static state indices.
   static constexpr size_t kXIdx = 0;
   static constexpr size_t kYIdx = 1;

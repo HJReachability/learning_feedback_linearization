@@ -18,10 +18,10 @@
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="1.5" />
-  <arg name="Ix" default="1.0" />
-  <arg name="Iy" default="1.0" />
-  <arg name="Iz" default="1.0" />
+  <arg name="mass" default="0.04" />
+  <arg name="Ix" default="0.1" />
+  <arg name="Iy" default="0.1" />
+  <arg name="Iz" default="0.1" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
@@ -112,6 +112,9 @@
         output="screen"
         required="true">
     <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />

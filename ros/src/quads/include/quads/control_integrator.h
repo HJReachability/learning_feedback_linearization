@@ -43,6 +43,8 @@
 #ifndef QUADS_CONTROL_INTEGRATOR_H
 #define QUADS_CONTROL_INTEGRATOR_H
 
+#include <quads/quadrotor14d.h>
+
 #include <crazyflie_msgs/PrioritizedControlStamped.h>
 #include <quads_msgs/Control.h>
 
@@ -90,8 +92,8 @@ class ControlIntegrator {
   double yawdot_;
   double time_of_last_msg_;
 
-  // Quadrotor mass (used to convert force to acceleration).
-  double mass_;
+  // Dynamics.
+  Quadrotor14D dynamics_;
 
   // Is this signal prioritized?
   bool prioritized_;

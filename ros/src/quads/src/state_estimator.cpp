@@ -144,6 +144,9 @@ bool StateEstimator::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  // Rescale initial thrust to be a force not an acceleration.
+  thrust_ = 9.81 * dynamics_.Mass();
+
   return true;
 }
 

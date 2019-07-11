@@ -97,17 +97,17 @@ void ControlIntegrator::RawControlCallback(
   if (prioritized_) {
     crazyflie_msgs::PrioritizedControlStamped integrated_msg;
     integrated_msg.control.priority = 1.0;
-    integrated_msg.control.control.thrust = thrust_ / mass_;
-    integrated_msg.control.control.roll = roll_;
-    integrated_msg.control.control.pitch = pitch_;
-    integrated_msg.control.control.yaw_dot = yawdot_;
+    integrated_msg.control.control.thrust = thrust_ / dynamics_.Mass();
+    integrated_msg.control.control.roll = roll_ / dynamics_.InertiaX();
+    integrated_msg.control.control.pitch = pitch_ / dynamics_.InertiaY();
+    integrated_msg.control.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
     crazyflie_control_pub_.publish(integrated_msg);
   } else {
     crazyflie_msgs::ControlStamped integrated_msg;
-    integrated_msg.control.thrust = thrust_ / mass_;
-    integrated_msg.control.roll = roll_;
-    integrated_msg.control.pitch = pitch_;
-    integrated_msg.control.yaw_dot = yawdot_;
+    integrated_msg.control.thrust = thrust_ / dynamics_.Mass();
+    integrated_msg.control.roll = roll_ / dynamics_.InertiaX();
+    integrated_msg.control.pitch = pitch_ / dynamics_.InertiaY();
+    integrated_msg.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
     crazyflie_control_pub_.publish(integrated_msg);
   }
 }
@@ -125,17 +125,16 @@ bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
     return false;
   }
 
+  if (!dynamics_.Initialize(n)) return false;
+
   // Scale initial thrust so that it's actually a force.
-  thrust_ = 9.81 * mass_;
+  thrust_ = 9.81 * dynamics_.Mass();
 
   return true;
 }
 
 bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   ros::NodeHandle nl(n);
-
-  // Quadrotor mass. Used to convert between forces and acceleration.
-  if (!nl.getParam("dynamics/m", mass_)) return false;
 
   // Topics.
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;

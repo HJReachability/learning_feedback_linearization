@@ -78,9 +78,13 @@ class Quadrotor14D(Dynamics):
         # not changing it for now.
         control_coefficient_matrix = np.zeros((self.xdim, self.udim))
         control_coefficient_matrix[10, 0] = 1.0
-        control_coefficient_matrix[11, 2] = 1.0 / self._Iy
-        control_coefficient_matrix[12, 1] = 1.0 / self._Ix
+        control_coefficient_matrix[11, 1] = 1.0 / self._Ix
+        control_coefficient_matrix[12, 2] = 1.0 / self._Iy
         control_coefficient_matrix[13, 3] = 1.0 / self._Iz
+
+        #control_coefficient_matrix[11, 2] = 1.0 / self._Iy
+        #control_coefficient_matrix[12, 1] = 1.0 / self._Ix
+        #control_coefficient_matrix[13, 3] = 1.0 / self._Iz
 
         xdot = np.dot(control_coefficient_matrix, u) + drift_term
         return xdot
@@ -283,11 +287,10 @@ class Quadrotor14D(Dynamics):
         cos = np.cos
         tan = math.tan
 
-        return np.array([
-            [  (sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, (zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(psi)*cos(theta))/(Iy*m),  (zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Iz*m)],
-            [ -(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, (zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(theta)*sin(psi))/(Iy*m), -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Iz*m)],
-            [                               (cos(phi)*cos(theta))/m,                                                                0,         -(zeta*cos(phi)*sin(theta))/(Iy*m),                                -(zeta*cos(theta)*sin(phi))/(Iz*m)],
-            [                                                     0,                                                             1/Ix,                                          0,                                                                 0],
+        return np.array([[  (sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, (zeta*cos(phi)*cos(psi)*cos(theta))/(Ix*m),  (zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Iy*m), (zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/(Iz*m)],
+                         [ -(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, (zeta*cos(phi)*cos(theta)*sin(psi))/(Ix*m), -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Iy*m), (zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/(Iz*m)],
+                         [                               (cos(phi)*cos(theta))/m,         -(zeta*cos(phi)*sin(theta))/(Ix*m),                                -(zeta*cos(theta)*sin(phi))/(Iy*m),                                                                0],
+                         [                                                     0,                                          0,                                                                 0,                                                             1/Iz]
         ])
 
     def _b_q(self, x0):

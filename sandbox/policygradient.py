@@ -30,6 +30,9 @@ class PolicyGradient(RLAgent):
                  norm,
                  scaling,
                  state_constraint=None)
+        self._M2_optimizer = tf.keras.optimizers.RMSprop(self._learning_rate)
+
+        self._f2_optimizer = tf.keras.optimizers.RMSprop(self._learning_rate)
     def _update_feedback(self, rollouts):
         """
         Update the feedback law contained in self._feedback_linearization
@@ -49,7 +52,7 @@ class PolicyGradient(RLAgent):
                     objective -= self._feedback_linearization.log_prob(
                         u, x, v) * adv
 
-                mean_return -= rollout["values"][0]
+                mean_return += rollout["values"][0]
 
             objective /= float(self._num_total_time_steps)
             mean_return /= float(self._num_rollouts)
@@ -65,31 +68,31 @@ class PolicyGradient(RLAgent):
         self._logger.log("learning_rate", self._learning_rate)
         self._logger.log("stddev", stddev)
 
-        
+      
         m2gradient = tape.gradient(objective,self._feedback_linearization._M2_net.trainable_variables)
         f2gradient = tape.gradient(objective,self._feedback_linearization._f2_net.trainable_variables)
         noisegradient = tape.gradient(objective,self._feedback_linearization._noise_std_variable)
+        print(noisegradient)
 
-        for i in range(len(m2gradient)):
-            self._feedback_linearization._M2_net.trainable_variables[i].assign_add(self._learning_rate*m2gradient[i])
-        for i in range(len(f2gradient)):
-            self._feedback_linearization._f2_net.trainable_variables[i].assign_add(self._learning_rate*f2gradient[i])
-        self._feedback_linearization._noise_std_variable.assign_add(self._learning_rate*noisegradient)
+
+        self._M2_optimizer.apply_gradients(zip(m2gradient,self._feedback_linearization._M2_net.trainable_variables))
+        self._f2_optimizer.apply_gradients(zip(f2gradient,self._feedback_linearization._f2_net.trainable_variables))
+        self._feedback_linearization._noise_std_variable.assign_sub(10*self._learning_rate*noisegradient)
 
         del tape
 
         # (4) Update learning rate according to KL divergence criterion.
-        if self._desired_kl > 0.0 and self._previous_xs is not None:
-            kl = self._compute_kl()
-            lr_scaling = None
-            if kl > 2.0 * self._desired_kl:
-                lr_scaling = 1.0 / 1.5
-                self._learning_rate *= lr_scaling
-                print("DECREASING learning rate to ", self._learning_rate)
-            elif kl < 0.5 * self._desired_kl:
-                lr_scaling = 1.5
-                self._learning_rate *= lr_scaling
-                print("INCREASING learning rate to ", self._learning_rate)
+#        if self._desired_kl > 0.0 and self._previous_xs is not None:
+#            kl = self._compute_kl()
+#            lr_scaling = None
+#            if kl > 2.0 * self._desired_kl:
+#                lr_scaling = 1.0 / 1.5
+#                self._learning_rate *= lr_scaling
+#                print("DECREASING learning rate to ", self._learning_rate)
+#            elif kl < 0.5 * self._desired_kl:
+#                lr_scaling = 1.5
+#                self._learning_rate *= lr_scaling
+#                print("INCREASING learning rate to ", self._learning_rate)
         
 
         if self._previous_xs is None:

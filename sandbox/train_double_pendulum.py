@@ -81,7 +81,7 @@ def initial_state_sampler(num):
 
 # Create Solver.
 num_iters = 3000
-learning_rate = 1e-3
+learning_rate = 1e-2
 desired_kl = -1.0
 discount_factor = 0.99
 num_rollouts = 50

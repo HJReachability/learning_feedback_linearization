@@ -14,7 +14,7 @@ from plotter import Plotter
 #'double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl'
 
 #filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_417.pkl_4'
-filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.010000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_895_fromzero_True.pkl_0'
+filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.010000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_760_fromzero_True.pkl_1'
 
 # Plot everything.
 # plotter = Plotter(filename)

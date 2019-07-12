@@ -11,6 +11,7 @@ fb = FeedbackLinearization(dyn, 3, 5, torch.nn.ReLU(), 0.1)
 
 u = np.array([1.0, 1.0])
 x = np.array([1.0, 1.0, 1.0, 1.0])
+
 v = np.array([1.0, 1.0])
 
 #M1 = fb._M1(x)
@@ -19,7 +20,7 @@ v = np.array([1.0, 1.0])
 #M2 = fb._M2(x)
 #print("m2: ", M2)
 
-#w1 = fb._w1(x)
+#w1 = fb._w1(x)\
 #print("w1: ", w1)
 
 #w2 = fb._w2(x)

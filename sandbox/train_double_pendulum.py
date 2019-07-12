@@ -4,6 +4,7 @@ import time
 from double_pendulum import DoublePendulum
 from policygradient import PolicyGradient
 from ppo import PPO
+from actorcritic import ActorCritic
 from tf_feedback_linearization import TFFeedbackLinearization
 from logger import Logger
 
@@ -44,7 +45,8 @@ fb = TFFeedbackLinearization(
 
 # Choose Algorithm
 do_PPO=0
-do_Reinforce=1
+do_Reinforce= 0 
+do_ActorCritic = 1
 
 #Algorithm Params ** Only for Reinforce:
 
@@ -61,8 +63,6 @@ if from_zero:
 	fb._M1= lambda x : np.zeros((2,2))
 	fb._f1= lambda x : np.zeros((2,1))
 
-
-assert do_PPO!=do_Reinforce
 
 # Create an initial state sampler for the double pendulum.
 def initial_state_sampler(num):
@@ -124,6 +124,29 @@ if do_Reinforce:
      seed, from_zero))
 
 	solver = PolicyGradient(num_iters,
+	             learning_rate,
+				 desired_kl,
+	             discount_factor,
+	             num_rollouts,
+	             num_steps_per_rollout,
+	             dyn,
+	             initial_state_sampler,
+	             fb,
+	             logger,
+	             norm,
+	             scale_rewards)
+
+if do_ActorCritic:
+
+	logger = Logger(
+    "./logs/double_pendulum_ActorCritic_%dx%d_std%f_lr%f_kl%f_%d_%d_norm%f_dyn_%f_%f_%f_%f_%f_seed_%d_fromzero_%r.pkl" %
+    (num_layers, num_hidden_units, noise_std, learning_rate, desired_kl,
+     num_rollouts, num_steps_per_rollout,norm,
+     mass1_scaling, mass2_scaling,
+     length1_scaling, length2_scaling, friction_coeff_scaling,
+     seed, from_zero))
+
+	solver = ActorCritic(num_iters,
 	             learning_rate,
 				 desired_kl,
 	             discount_factor,

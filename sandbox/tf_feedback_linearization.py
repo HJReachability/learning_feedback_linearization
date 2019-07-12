@@ -6,12 +6,13 @@ from collections import OrderedDict
 
 
 def create_network(num_inputs, num_outputs,
-                   num_layers, num_hidden_units, activation):
+                   num_layers, num_hidden_units, activation, lastactivation = "tanh"):
     layers = []
     for i in range(num_layers):
         layers.append(tf.keras.layers.Dense(num_hidden_units, activation))
 
-    layers.append(tf.keras.layers.Dense(num_outputs, activation))
+    layers.append(tf.keras.layers.Dense(num_outputs, lastactivation))
+    print(lastactivation)
 
     model = tf.keras.models.Sequential(layers)
     return model
@@ -34,6 +35,11 @@ class TFFeedbackLinearization(object):
         gradients.
         """
         self._M1, self._f1 = dynamics.feedback_linearize()
+
+        self._num_inputs = dynamics.preprocessed_xdim
+        self._num_layers = num_layers
+        self._num_hidden_units = num_hidden_units
+        self._activation = activation
 
 
         # Create some Tensorflow NN for unmodeled dynamics terms.

@@ -35,6 +35,8 @@ class RLAgent(object):
         self._logger = logger
         self._state_constraint = state_constraint
 
+        self._iter_count = 0
+
 
          # Previous states and auxiliary controls. Used for KL update rule.
         self._previous_xs = None
@@ -53,6 +55,7 @@ class RLAgent(object):
             print("---------- Iteration ", ii, " ------------")
             start_time = time.time()
             rollouts = self._collect_rollouts(ii)
+            self._iter_count += 1
 
             ys = rollouts[0]["ys"]
             y_desireds = rollouts[0]["y_desireds"]

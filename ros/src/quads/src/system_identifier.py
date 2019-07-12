@@ -15,6 +15,8 @@ class SystemIdentifier(object):
 
         self._states = []
         self._controls = []
+        self._dt = []
+        self._last_time = None
 
     def state_callback(self, msg):
         x = np.array([msg.x, msg.y, msg.z, msg.theta,
@@ -23,6 +25,12 @@ class SystemIdentifier(object):
 
         if len(self._states) <= len(self._controls):
             self._states.append(x)
+            t = rospy.Time.now().to_sec()
+
+            if self._last_time is not None:
+                self._dt.append(t - self._last_time)
+
+            self._last_time = t
 
     def control_callback(self, msg):
         u = np.array([msg.thrustdot2, msg.pitchdot2, msg.rolldot2, msg.yawdot2])
@@ -43,6 +51,8 @@ class SystemIdentifier(object):
         sin = np.sin
         cos = np.cos
 
+        g = 9.81
+
         for ii in range(num_transitions):
             current_x = self._states[ii]
             current_u = self._controls[ii]
@@ -51,27 +61,28 @@ class SystemIdentifier(object):
             theta = current_x[3]
             phi = current_x[4]
             psi = current_x[5]
+            zeta = current_x[9]
 
             # Unknowns are [1/m, 1/Ix, 1/Iy, 1/Iz].
-            A[6 * ii, 0] = sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta)
-            A[6 * ii + 1, 0] = -cos(psi) * sin(phi) + cos(phi) * sin(psi) * sin(theta)
-            A[6 * ii + 2, 0] = cos(phi) * cos(theta)
+            A[6 * ii, 0] = (sin(phi) * sin(psi) + cos(phi) * cos(psi) * sin(theta)) * zeta
+            A[6 * ii + 1, 0] = (-cos(psi) * sin(phi) + cos(phi) * sin(psi) * sin(theta)) * zeta
+            A[6 * ii + 2, 0] = (cos(phi) * cos(theta)) * zeta
             A[6 * ii + 3, 1] = current_u[1]
             A[6 * ii + 4, 2] = current_u[2]
             A[6 * ii + 5, 3] = current_u[3]
 
-            b[6 * ii, 0] = next_x[6]
-            b[6 * ii + 1, 0] = next_x[7]
-            b[6 * ii + 2, 0] = next_x[8]
-            b[6 * ii + 3, 0] = next_x[11]
-            b[6 * ii + 4, 0] = next_x[12]
-            b[6 * ii + 5, 0] = next_x[13]
+            b[6 * ii, 0] = (next_x[6] - current_x[6]) / self._dt[ii]
+            b[6 * ii + 1, 0] = (next_x[7] - current_x[7]) / self._dt[ii]
+            b[6 * ii + 2, 0] = (next_x[8] - current_x[8]) / self._dt[ii] + g
+            b[6 * ii + 3, 0] = (next_x[11] - current_x[11]) / self._dt[ii]
+            b[6 * ii + 4, 0] = (next_x[12] - current_x[12]) / self._dt[ii]
+            b[6 * ii + 5, 0] = (next_x[13] - current_x[13]) / self._dt[ii]
 
         # Solve A x = b.
         soln, _, _, _ = np.linalg.lstsq(A, b)
 
         print "Solved!"
-        print "-- m = ", soln[0]
-        print "-- Ix = ", soln[1]
-        print "-- Iy = ", soln[2]
-        print "-- Iz = ", soln[3]
+        print "-- m = ", 1.0 / soln[0]
+        print "-- Ix = ", 1.0 / soln[1]
+        print "-- Iy = ", 1.0 / soln[2]
+        print "-- Iz = ", 1.0 / soln[3]

@@ -35,7 +35,7 @@ bad_dyn = DoublePendulum(
     time_step, friction_coeff_scaling * friction_coeff)
 
 # Create a feedback linearization object.
-num_layers = 2
+num_layers = 1
 num_hidden_units = 32
 activation = "tanh"
 noise_std = 1.0
@@ -45,8 +45,8 @@ fb = TFFeedbackLinearization(
 
 # Choose Algorithm
 do_PPO=0
-do_Reinforce= 0 
-do_ActorCritic = 1
+do_Reinforce= 1
+do_ActorCritic = 0
 
 #Algorithm Params ** Only for Reinforce:
 
@@ -54,7 +54,7 @@ do_ActorCritic = 1
 from_zero=True
 
 # Rewards scaling - default is 10.0
-scale_rewards=100.0
+scale_rewards=10.0
 
 # norm to use
 norm=2
@@ -83,7 +83,7 @@ def initial_state_sampler(num):
 num_iters = 3000
 learning_rate = 1e-2
 desired_kl = -1.0
-discount_factor = 0.99
+discount_factor = 0.8
 num_rollouts = 50
 num_steps_per_rollout = 25
 

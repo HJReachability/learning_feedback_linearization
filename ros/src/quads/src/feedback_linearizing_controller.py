@@ -174,3 +174,8 @@ class FeedbackLinearizingController(object):
 
         # TODO: make sure this works with tf stuff.
         return np.dot(self._M1(x) + self._M2(x), v) + self._f1(x) + self.f2(x)
+
+    def _construct_learned_parameters(self):
+        """ Create params, M2, f2. """
+        # TODO!
+        pass

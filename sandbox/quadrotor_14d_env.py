@@ -1,21 +1,29 @@
 import numpy as np
 import gym
 import sys
-import rospy
+from quadrotor_14d import Quadrotor14d
+from scipy.linalg import solve_continuous_are
 
 class Quadrotor14dEnv(gym.Env):
     def __init__(self):
         #calling init method of parent class
-        super(Quadrotor14dEnv, self). __init__()
+        super(Quadrotor14dEnv, self).__init__()
 
-        #setting name of ros node????
-        self._name = rospy.get_name() + "/Environment"
-
-        # loading parameters for dynamics
-        if not self.load_parameters(): sys.exit(1)
-        if not self.register_callbacks(): sys.exit(1)
+        #change in order to change dynamics which quadrotor trains from
+        self._num_steps_per_rollout = 25
+        self._reward_scaling = 10.0
+        self._norm = 2
+        self._mass = 1.0
+        Ix = 1.0
+        Iy = 1.0
+        Iz = 1.0
+        self._time_step = 0.01
+        self._dynamics = Quadrotor14d(self._mass, Ix, Iy, Iz, self._time_step)
+        self._count = 0
 
     def step(self, u):
+        #update stuff
+        self._dynamics.integrate(self._state, u, self._time_step)
         self._count += 1
 
         #returns observations, rewards, done, info???
@@ -27,66 +35,46 @@ class Quadrotor14dEnv(gym.Env):
         return observation, reward, done
 
     def reset(self):
+        #(0) Sample state using state smapler method
+        self._state = self.initial_state_sampler()
+
         # (1) Generate a time series for v and corresponding y.
         reference,K = self._generate_reference(self._state)
-    
+        self._y_desired, _ = self._generate_ys(self._state,reference,K)
         observation = self._dynamics.linearized_system_state(self._state)
 
         self._count = 0
         return observation, reference
 
+    def seed(self, s):
+        np.random.seed(0)
+
     def render(self):
         # TODO!
-        #aren't we doing this in rviz already?
         pass
 
-    def load_parameters(self):
-        if not rospy.has_param("~topics/y"):
-            return False
-        self._output_derivs_topic = rospy.get_param("~topics/y")
+   
+    def initial_state_sampler(self):
+        lower0 = np.array([[-0.25, -0.25, -0.25,
+                        -0.1, -0.1, -0.1,
+                        -0.1, -0.1, -0.1,
+                        -1.0, # This is the thrust acceleration - g.
+                        -0.1, -0.1, -0.1, -0.1]]).T
+        lower1 = np.array([[-2.5, -2.5, -2.5,
+                        -np.pi, -np.pi / 4.0, -np.pi / 4.0,
+                        -0.3, -0.3, -0.3,
+                        -3.0, # This is the thrust acceleration - g.
+                        -0.3, -0.3, -0.3, -0.3]]).T
 
-        if not rospy.has_param("~topics/x"):
-            return False
-        self._state_topic = rospy.get_param("~topics/x")
+        frac = 1.0
+        lower = frac * lower1 + (1.0 - frac) * lower0
+        upper = -lower
 
-        if not rospy.has_param("~topics/u"):
-            return False
-        self._control_topic = rospy.get_param("~topics/u")
+        lower[9, 0] = (lower[9, 0] + 9.81) / self._mass
+        upper[9, 0] = (upper[9, 0] + 9.81) / self._mass
 
-        if not rospy.has_param("~dynamics/m"):
-            return False
-        m = rospy.get_param("~dynamics/m")
+        return np.random.uniform(lower, upper)
 
-        if not rospy.has_param("~dynamics/Ix"):
-            return False
-        Ix = rospy.get_param("~dynamics/Ix")
-
-        if not rospy.has_param("~dynamics/Iy"):
-            return False
-        Iy = rospy.get_param("~dynamics/Iy")
-
-        if not rospy.has_param("~dynamics/Iz"):
-            return False
-        Iz = rospy.get_param("~dynamics/Iz")
-
-        self._mass = m
-
-        self._dynamics = Quadrotor14D(m, Ix, Iy, Iz)
-
-        return True
-
-    def register_callbacks(self):
-        self._state_sub = rospy.Subscriber(
-            self._state_topic, State, self.state_callback)
-
-        self._output_derivs_sub = rospy.Subscriber(
-            self._output_derivs_topic, OutputDerivatives, self.output_callback)
-
-        self._control_pub = rospy.Publisher(self._control_topic, Control)
-
-        return True
-
-    
     def _generate_reference(self, x0):
         """
         Use sinusoid with random frequency, amplitude, and bias:
@@ -118,6 +106,25 @@ class Quadrotor14dEnv(gym.Env):
         P = solve_continuous_are(self.A, self.B, Q, R)
         K = np.linalg.inv(R) @ self.B.T @ P
         return (np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
+
+    def _generate_ys(self, x0, refs,K):
+        """
+        Compute desired output sequence given initial state and input sequence.
+        This is computed by applying the true dynamics' feedback linearization.
+        """
+        x = x0.copy()
+        ys = []
+        xs = []
+        for r in refs:
+            y=self._dynamics.linearized_system_state(x)
+            ys.append(y.copy())
+            xs.append(x.copy())
+            diff = self._dynamics.linear_system_state_delta(r, y)
+            v = -K @ diff
+            u = self._dynamics.feedback(x, v)
+            x = self._dynamics.integrate(x, u)
+
+        return ys, xs
 
     def computeReward(self, y_desired, y):
         return -self._reward_scaling * self._dynamics.observation_distance(

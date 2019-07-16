@@ -39,6 +39,9 @@ class Quadrotor14dEnv(gym.Env):
         # TODO!
         #aren't we doing this in rviz already?
         pass
+        
+    def seed(self, s):
+        np.random.seed(0)
 
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):

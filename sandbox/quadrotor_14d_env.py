@@ -129,3 +129,6 @@ class Quadrotor14dEnv(gym.Env):
     def computeReward(self, y_desired, y):
         return -self._reward_scaling * self._dynamics.observation_distance(
             y_desired, y, self._norm)
+
+    def close(self):
+        pass

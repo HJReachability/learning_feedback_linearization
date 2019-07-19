@@ -35,35 +35,42 @@ class Quadrotor14dEnv(gym.Env):
         self._count = 0
         self._xdim = self._dynamics.xdim
         self._udim = self._dynamics.udim
+        self._M1, self._f1 = self._bad_dynamics.feedback_linearize()
 
     def step(self, u):
-        next_y=self._dynamics.linearized_system_state(self._observation)
-        reward = self.computeReward(self._y_desired[self._count], next_y)
-        diff=self._dynamics.linear_system_state_delta(self._reference[self._count],next_y)
-        v=-1*self._K @ (diff)
-
-        #update stuff
+        #compute v based on basic control law
+        diff = self._dynamics.linear_system_state_delta(self._reference[self._count],self._current_y)
+        v = -1*self._K @ (diff)
+    
+        #output of neural network
         m2, f2 = np.split(u,[16])
 
-        M = self._bad_dynamics._M_q(self._observation) + np.reshape(m2,(self._udim, self._udim))
+        M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
 
-        f = self._bad_dynamics._f_q(self._observation) + np.reshape(f2,(self._udim, 1))
+        f = self._bad_dynamics._f_q(self._state) + np.reshape(f2,(self._udim, 1)) 
 
         z = np.matmul(M,v) + f
 
-        self._dynamics.integrate(self._state, z, self._time_step)
+        self._state = self._dynamics.integrate(self._state, z, self._time_step)
+
+        self._current_y = self._dynamics.linearized_system_state(self._state)
+
+        reward = self.computeReward(self._y_desired[self._count], self._current_y)
+
+        #Increasing count
         self._count += 1
 
-        #returns observations, rewards, done, info???
-        self._observation = self._dynamics.linearized_system_state(self._state)
+        #computing observations, rewards, done, info???
         done = False
         if(self._count>=self._num_steps_per_rollout):
             done = True
         
         list = []
-        for x in self._observation:
+        for x in self._state:
             list.append(x[0])
         observation = np.array(list)
+
+        #returning stuff
         return observation, reward, done, {}
 
     def reset(self):
@@ -73,12 +80,12 @@ class Quadrotor14dEnv(gym.Env):
         # (1) Generate a time series for v and corresponding y.
         self._reference, self._K = self._generate_reference(self._state)
         self._y_desired, _ = self._generate_ys(self._state,self._reference,self._K)
-        self._observation = self._dynamics.linearized_system_state(self._state)
+        self._current_y = self._dynamics.linearized_system_state(self._state)
         
 
         self._count = 0
         list = []
-        for x in self._observation:
+        for x in self._state:
             list.append(x[0])
         observation = np.array(list)
         return observation

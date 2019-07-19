@@ -2,6 +2,8 @@
 import numpy as np
 from scipy.linalg import solve_continuous_are
 
+import spinup.algos.vpg.core as core
+import tensorflow as tf
 import sys
 import rospy
 from quads_msgs.msg import AuxiliaryControl
@@ -101,7 +103,8 @@ class FeedbackLinearizingController(object):
 
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
-        pass
+        # change network parameters
+        tf.assign(msg,tf.trainable_variables)
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x
@@ -128,7 +131,7 @@ class FeedbackLinearizingController(object):
         # Determine v.
         if self._y is not None:
             v = -np.dot(self._K, (self._y - self._ref))
-            u = self.feedback(x, v) #.detach().numpy().copy()
+            u = self.feedback(x, v)
 
             # Publish Control msg.
             u_msg = Control()
@@ -179,3 +182,5 @@ class FeedbackLinearizingController(object):
         """ Create params, M2, f2. """
         # TODO!
         pass
+        
+    

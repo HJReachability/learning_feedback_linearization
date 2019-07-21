@@ -19,9 +19,9 @@ class Quadrotor14dEnv(gym.Env):
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self.observation_space = spaces.Box(-high,high,dtype=np.float32)
-        self._num_steps_per_rollout = 25
+        self._num_steps_per_rollout = 1
         self._reward_scaling = 10.0
-        self._norm = 2
+        self._norm = 1
         self._mass = 1.0
         
         Ix = 1.0
@@ -29,7 +29,7 @@ class Quadrotor14dEnv(gym.Env):
         Iz = 1.0
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
-        scaling = 0.33
+        scaling = 0.01
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
         self.A,self.B, C=self._dynamics.linearized_system()
         self._count = 0
@@ -40,14 +40,20 @@ class Quadrotor14dEnv(gym.Env):
     def step(self, u):
         #compute v based on basic control law
         diff = self._dynamics.linear_system_state_delta(self._reference[self._count],self._current_y)
-        v = -1*self._K @ (diff)
-    
+
+        v = -self._K @ (diff)
+       
         #output of neural network
         m2, f2 = np.split(u,[16])
+
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
 
         f = self._bad_dynamics._f_q(self._state) + np.reshape(f2,(self._udim, 1)) 
+
+        # M = self._bad_dynamics._M_q(self._state) 
+     
+        # f = self._bad_dynamics._f_q(self._state) 
 
         z = np.matmul(M,v) + f
 
@@ -56,7 +62,7 @@ class Quadrotor14dEnv(gym.Env):
         self._current_y = self._dynamics.linearized_system_state(self._state)
 
         reward = self.computeReward(self._y_desired[self._count], self._current_y)
-
+    
         #Increasing count
         self._count += 1
 
@@ -79,7 +85,7 @@ class Quadrotor14dEnv(gym.Env):
 
         # (1) Generate a time series for v and corresponding y.
         self._reference, self._K = self._generate_reference(self._state)
-        self._y_desired, _ = self._generate_ys(self._state,self._reference,self._K)
+        self._y_desired = self._generate_ys(self._state,self._reference,self._K)
         self._current_y = self._dynamics.linearized_system_state(self._state)
         
 
@@ -91,7 +97,8 @@ class Quadrotor14dEnv(gym.Env):
         return observation
 
     def seed(self, s):
-        np.random.seed(0)
+        np.random.seed(np.random.randomint())
+        
 
     def render(self):
         # TODO!
@@ -157,18 +164,16 @@ class Quadrotor14dEnv(gym.Env):
         This is computed by applying the true dynamics' feedback linearization.
         """
         x = x0.copy()
+        y=self._dynamics.linearized_system_state(x)
         ys = []
-        xs = []
         for r in refs:
-            y=self._dynamics.linearized_system_state(x)
-            ys.append(y.copy())
-            xs.append(x.copy())
             diff = self._dynamics.linear_system_state_delta(r, y)
             v = -K @ diff
             u = self._dynamics.feedback(x, v)
             x = self._dynamics.integrate(x, u)
-
-        return ys, xs
+            y=self._dynamics.linearized_system_state(x)
+            ys.append(y.copy())
+        return ys
 
     def computeReward(self, y_desired, y):
         return -self._reward_scaling * self._dynamics.observation_distance(

@@ -84,7 +84,7 @@ class Quadrotor14dEnv(gym.Env):
 
         #gradually increase length of rollouts
         self._iter_count +=1 
-        if(self._iter_count%125000 == 0):
+        if(self._iter_count%5000 == 0 and self._num_steps_per_rollout<25):
             self._num_steps_per_rollout += 1
 
         #(0) Sample state using state smapler method

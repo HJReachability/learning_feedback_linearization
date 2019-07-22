@@ -19,7 +19,7 @@ class Quadrotor14dEnv(gym.Env):
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self.observation_space = spaces.Box(-high,high,dtype=np.float32)
-        self._num_steps_per_rollout = 1
+        self._num_steps_per_rollout = 10
         self._reward_scaling = 10.0
         self._norm = 1
         self._mass = 1.0
@@ -29,13 +29,14 @@ class Quadrotor14dEnv(gym.Env):
         Iz = 1.0
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
-        scaling = 0.01
+        scaling = 0.33
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
         self.A,self.B, C=self._dynamics.linearized_system()
         self._count = 0
         self._xdim = self._dynamics.xdim
         self._udim = self._dynamics.udim
         self._M1, self._f1 = self._bad_dynamics.feedback_linearize()
+        self._iter_count = 0
 
     def step(self, u):
         #compute v based on basic control law
@@ -80,6 +81,12 @@ class Quadrotor14dEnv(gym.Env):
         return observation, reward, done, {}
 
     def reset(self):
+
+        #gradually increase length of rollouts
+        self._iter_count +=1 
+        if(self._iter_count%125000 == 0):
+            self._num_steps_per_rollout += 1
+
         #(0) Sample state using state smapler method
         self._state = self.initial_state_sampler()
 
@@ -89,7 +96,10 @@ class Quadrotor14dEnv(gym.Env):
         self._current_y = self._dynamics.linearized_system_state(self._state)
         
 
+        #reset internal count
         self._count = 0
+
+        #convert to format algorithm is expecting
         list = []
         for x in self._state:
             list.append(x[0])

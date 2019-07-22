@@ -15,22 +15,32 @@ class Quadrotor14dEnv(gym.Env):
 
         high = np.array([100,100,100,100,100,
         100,100,100,100,100,100,100,100,100])
-  
+
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self.observation_space = spaces.Box(-high,high,dtype=np.float32)
         self._num_steps_per_rollout = 10
         self._reward_scaling = 10.0
-        self._norm = 1
+        self._norm = 2
+
+        # TODO: these should match what we get from system identification, once
+        # we have reliable numbers there.
         self._mass = 1.0
-        
         Ix = 1.0
         Iy = 1.0
         Iz = 1.0
+
+#        self._mass = 0.04
+#        Ix = 0.02
+#        Iy = 0.02
+#        Iz = 0.05
+
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
-        scaling = 0.33
+
+        scaling = 0.75
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
+
         self.A,self.B, C=self._dynamics.linearized_system()
         self._count = 0
         self._xdim = self._dynamics.xdim
@@ -43,27 +53,31 @@ class Quadrotor14dEnv(gym.Env):
         diff = self._dynamics.linear_system_state_delta(self._reference[self._count],self._current_y)
 
         v = -self._K @ (diff)
-       
+
         #output of neural network
-        m2, f2 = np.split(u,[16])
+        m2, f2 = np.split(0.01 * u,[16])
 
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
 
-        f = self._bad_dynamics._f_q(self._state) + np.reshape(f2,(self._udim, 1)) 
+        f = self._bad_dynamics._f_q(self._state) + np.reshape(f2,(self._udim, 1))
 
-        # M = self._bad_dynamics._M_q(self._state) 
-     
-        # f = self._bad_dynamics._f_q(self._state) 
+#        print("m1: ", self._bad_dynamics._M_q(self._state))
+#        print("m2: ", np.reshape(m2,(self._udim, self._udim)))
+#        print("f1: ", self._bad_dynamics._f_q(self._state))
+#        print("f2: ", np.reshape(f2,(self._udim, 1)))
 
-        z = np.matmul(M,v) + f
+        # M = self._bad_dynamics._M_q(self._state)
+
+        # f = self._bad_dynamics._f_q(self._state)
+
+        z = np.dot(M, v) + f
 
         self._state = self._dynamics.integrate(self._state, z, self._time_step)
-
         self._current_y = self._dynamics.linearized_system_state(self._state)
-
+#        print("state is: ", self._state)
         reward = self.computeReward(self._y_desired[self._count], self._current_y)
-    
+
         #Increasing count
         self._count += 1
 
@@ -71,7 +85,7 @@ class Quadrotor14dEnv(gym.Env):
         done = False
         if(self._count>=self._num_steps_per_rollout):
             done = True
-        
+
         list = []
         for x in self._state:
             list.append(x[0])
@@ -81,20 +95,21 @@ class Quadrotor14dEnv(gym.Env):
         return observation, reward, done, {}
 
     def reset(self):
+#        print("reset - new rollout, presumably")
 
         #gradually increase length of rollouts
-        self._iter_count +=1 
+        self._iter_count +=1
         if(self._iter_count%125000 == 0):
             self._num_steps_per_rollout += 1
 
         #(0) Sample state using state smapler method
         self._state = self.initial_state_sampler()
-
+#        print("initial state is: ", self._state)
         # (1) Generate a time series for v and corresponding y.
         self._reference, self._K = self._generate_reference(self._state)
         self._y_desired = self._generate_ys(self._state,self._reference,self._K)
         self._current_y = self._dynamics.linearized_system_state(self._state)
-        
+
 
         #reset internal count
         self._count = 0
@@ -108,13 +123,13 @@ class Quadrotor14dEnv(gym.Env):
 
     def seed(self, s):
         np.random.seed(np.random.randomint())
-        
+
 
     def render(self):
         # TODO!
         pass
 
-   
+
     def initial_state_sampler(self):
         lower0 = np.array([[-0.25, -0.25, -0.25,
                         -0.1, -0.1, -0.1,
@@ -122,7 +137,7 @@ class Quadrotor14dEnv(gym.Env):
                         -1.0, # This is the thrust acceleration - g.
                         -0.1, -0.1, -0.1, -0.1]]).T
         lower1 = np.array([[-2.5, -2.5, -2.5,
-                        -np.pi, -np.pi / 4.0, -np.pi / 4.0,
+                        -np.pi / 6.0, -np.pi / 6.0, -np.pi,
                         -0.3, -0.3, -0.3,
                         -3.0, # This is the thrust acceleration - g.
                         -0.3, -0.3, -0.3, -0.3]]).T
@@ -131,8 +146,8 @@ class Quadrotor14dEnv(gym.Env):
         lower = frac * lower1 + (1.0 - frac) * lower0
         upper = -lower
 
-        lower[9, 0] = (lower[9, 0] + 9.81) / self._mass
-        upper[9, 0] = (upper[9, 0] + 9.81) / self._mass
+        lower[9, 0] = (lower[9, 0] + 9.81) * self._mass
+        upper[9, 0] = (upper[9, 0] + 9.81) * self._mass
 
         return np.random.uniform(lower, upper)
 
@@ -146,8 +161,13 @@ class Quadrotor14dEnv(gym.Env):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
-        R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
+        #Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        #R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
+        Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0,
+                            1.0, 0.0, 0.0, 0.0,
+                            1.0, 0.0, 0.0, 0.0,
+                            1.0, 0.0])
+        R = 1.0 * np.eye(linsys_udim)
 
         # Initial y.
         y0 = self._dynamics.linearized_system_state(x0)
@@ -186,6 +206,8 @@ class Quadrotor14dEnv(gym.Env):
         return ys
 
     def computeReward(self, y_desired, y):
+#        print("y desired: ", y_desired)
+#        print("y", y)
         return -self._reward_scaling * self._dynamics.observation_distance(
             y_desired, y, self._norm)
 

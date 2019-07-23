@@ -59,6 +59,13 @@ def discount_cumsum(x, discount):
     """
     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
+def polynomial(x, order, u_dim):
+    """ Computes u, a polynomial function of x (for each row of x).
+    Polynomial will be composed of monomials of degree up to and including
+    the specified 'order'.
+    """
+    # TODO(@dfk, @tyler)
+    pass
 
 """
 Policies
@@ -77,6 +84,16 @@ def mlp_categorical_policy(x, a, hidden_sizes, activation, output_activation, ac
 def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation, action_space):
     act_dim = a.shape.as_list()[-1]
     mu = mlp(x, list(hidden_sizes)+[act_dim], activation, output_activation)
+    log_std = tf.get_variable(name='log_std', initializer=-0.5*np.ones(act_dim, dtype=np.float32))
+    std = tf.exp(log_std)
+    pi = mu + tf.random_normal(tf.shape(mu)) * std
+    logp = gaussian_likelihood(a, mu, log_std)
+    logp_pi = gaussian_likelihood(pi, mu, log_std)
+    return pi, logp, logp_pi
+
+def polynomial_gaussian_policy(x, a, order, action_space):
+    act_dim = a.shape.as_list()[-1]
+    mu = polynomial(x, order, act_dim)
     log_std = tf.get_variable(name='log_std', initializer=-0.5*np.ones(act_dim, dtype=np.float32))
     std = tf.exp(log_std)
     pi = mu + tf.random_normal(tf.shape(mu)) * std
@@ -104,4 +121,20 @@ def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
         # zero (for all states).
         # TODO(@eric): figure out how to do this right and not just multiply by zero.
         v = 0.0 * tf.squeeze(mlp(x, list(hidden_sizes)+[1], activation, None), axis=1)
+    return pi, logp, logp_pi, v
+
+def polynomial_actor_critic(x, a, order, policy=None, action_space=None):
+    # default policy builder depends on action space
+    if policy is None and isinstance(action_space, Box):
+        policy = polynomial_gaussian_policy
+    elif policy is None and isinstance(action_space, Discrete):
+        assert(False)
+
+    with tf.variable_scope('pi'):
+        pi, logp, logp_pi = policy(x, a, order, action_space)
+    with tf.variable_scope('v'):
+        # DFK modified: want unbiased gradient estimate, so replacing MLP with
+        # zero (for all states).
+        # TODO(@eric): figure out how to do this right and not just multiply by zero.
+        v = 0.0 * tf.squeeze(mlp(x), axis=1)
     return pi, logp, logp_pi, v

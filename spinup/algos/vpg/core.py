@@ -46,14 +46,14 @@ def discount_cumsum(x, discount):
     """
     magic from rllab for computing discounted cumulative sums of vectors.
 
-    input: 
-        vector x, 
-        [x0, 
-         x1, 
+    input:
+        vector x,
+        [x0,
+         x1,
          x2]
 
     output:
-        [x0 + discount * x1 + discount^2 * x2,  
+        [x0 + discount * x1 + discount^2 * x2,
          x1 + discount * x2,
          x2]
     """
@@ -88,7 +88,7 @@ def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation, actio
 """
 Actor-Critics
 """
-def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh, 
+def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
                      output_activation=None, policy=None, action_space=None):
 
     # default policy builder depends on action space
@@ -100,5 +100,8 @@ def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
     with tf.variable_scope('pi'):
         pi, logp, logp_pi = policy(x, a, hidden_sizes, activation, output_activation, action_space)
     with tf.variable_scope('v'):
-        v = tf.squeeze(mlp(x, list(hidden_sizes)+[1], activation, None), axis=1)
+        # DFK modified: want unbiased gradient estimate, so replacing MLP with
+        # zero (for all states).
+        # TODO(@eric): figure out how to do this right and not just multiply by zero.
+        v = 0.0 * tf.squeeze(mlp(x, list(hidden_sizes)+[1], activation, None), axis=1)
     return pi, logp, logp_pi, v

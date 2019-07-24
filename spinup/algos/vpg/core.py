@@ -64,8 +64,38 @@ def polynomial(x, order, u_dim):
     Polynomial will be composed of monomials of degree up to and including
     the specified 'order'.
     """
-    # TODO(@dfk, @tyler)
-    pass
+    NUM_STATE_DIMS = x.get_shape().as_list()[-1]
+    NUM_MONOMIALS = (order + 1)**NUM_STATE_DIMS
+    NUM_ROWS = x.get_shape().as_list()[0]
+
+    print("Generating monomials...")
+    monomials = []
+    for jj in range(NUM_MONOMIALS):
+        print(jj // 100)
+
+        # Encode 'jj' in base 'order' with 'NUM_STATE_DIMS' places.
+        left = jj
+
+        this_monomial = []
+        for ii in range(NUM_STATE_DIMS):
+            remainder = int(left // (order + 1))
+            left -= remainder
+            left = int(left / (order + 1))
+            this_monomial.append(tf.pow(x[:, ii], remainder))
+
+            if left == 0:
+                break
+
+        monomials.append(tf.reduce_prod(this_monomial))
+
+    print("...done!")
+
+    # Now declare tf variables for the coefficients of all these monomials.
+    coeffs = tf.get_variable("polynomial_coefficients",
+                             initializer=np.zeros((NUM_MONOMIALS, u_dim)))
+
+    # Compute polynomial output for each state.
+    return tf.matmul(tf.stack(values, 0), coeffs)
 
 """
 Policies
@@ -120,6 +150,7 @@ def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
         # DFK modified: want unbiased gradient estimate, so replacing MLP with
         # zero (for all states).
         # TODO(@eric): figure out how to do this right and not just multiply by zero.
+        #v = tf.zeros_like(x)
         v = 0.0 * tf.squeeze(mlp(x, list(hidden_sizes)+[1], activation, None), axis=1)
     return pi, logp, logp_pi, v
 

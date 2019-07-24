@@ -12,7 +12,7 @@ env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0")
 
 spinup.vpg(
     env,
-    ac_kwargs={"hidden_sizes":(64,2)},
+    ac_kwargs={"order" : 1},
     seed = np.random.randint(100),
     steps_per_epoch=1250,
     epochs=2500,

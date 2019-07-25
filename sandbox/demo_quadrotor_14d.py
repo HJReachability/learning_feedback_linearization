@@ -30,10 +30,10 @@ def solve_lqr(A,B,Q,R):
 linear_fb=1
 nominal=0
 ground_truth=1
-T=2500
+T=350
 to_render=1
 check_energy=0
-speed=0.001
+speed=0.01
 
 # Create a quadrotor.
 mass = 1.0
@@ -43,7 +43,7 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.85
+mass_scaling = 0.33
 Ix_scaling = 0.33
 Iy_scaling = 0.33
 Iz_scaling = 0.33
@@ -122,13 +122,14 @@ if linear_fb:
          #output of neural network
         u = u[0]
         m2, f2 = np.split(u,[16])
+        print(m2)
 
         M = bad_dyn._M_q(x) + np.reshape(m2,(4, 4))
 
         f = bad_dyn._f_q(x) + np.reshape(f2,(4, 1))
 
-        control = np.dot(M, v) + f
-
+        control = np.matmul(M, v) + f
+        
         learned_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)
         learned_err[:,t+1]=(diff)[:,0]
@@ -188,8 +189,8 @@ if nominal:
              nominal_path[8,:], '.-b', label="z")
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_path[12,:], '.-k', label="psi")
-    #plt.plot(np.linspace(0, T*time_step, T+1),
-    #         nominal_states[9,:], '.-y', label="zeta")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+            nominal_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_states[4,:], '.-m', label="theta")
     plt.plot(np.linspace(0, T*time_step, T+1),

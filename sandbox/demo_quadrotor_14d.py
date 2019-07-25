@@ -1,29 +1,26 @@
-import torch
 import numpy as np
 from scipy.linalg import solve_continuous_are
 
 from quadrotor_14d import Quadrotor14D
-from reinforce import Reinforce
-from feedback_linearization import FeedbackLinearization
-from logger import *
 import matplotlib.pyplot as plt
 from plotter import Plotter
+import spinup
+import spinup.algos.vpg.core as core
+import tensorflow as tf
+from gym import spaces
 
+#should be in form ./logs/ and then whatever foldername logger dumped
+filename="./logs/ppo-10-0.33/simple_save"
 
-#filename="./logs/quadrotor_14d_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_100_fromzero_False_dyn_1.100000_0.900000_0.900000_0.900000_seed_941_norm_2_smallweights_relu.pkl_3"
-filename="./logs/quadrotor_14d_Reinforce_2x32_std0.150000_lr0.001000_kl-1.000000_25_100_fromzero_False_dyn_0.750000_0.500000_0.500000_0.500000_seed_586_norm_2_smallweights_relu.pkl_6"
+#load tensorflow graph from path
+sess = tf.Session()
+model = spinup.utils.logx.restore_tf_graph(sess,filename)
+print(model)
 
 # Plot everything.
 # plotter = Plotter(filename)
 # plotter.plot_scalar_fields(["mean_return"])
 # plt.pause(0.1)
-
-fp = open(filename, "rb")
-log = dill.load(fp)
-
-fb_law=log['feedback_linearization'][0]
-
-
 def solve_lqr(A,B,Q,R):
     P = solve_continuous_are(A, B, Q, R)
     K = np.linalg.inv(R) @ B.T @ P
@@ -31,10 +28,10 @@ def solve_lqr(A,B,Q,R):
     return K
 
 linear_fb=1
-nominal=1
+nominal=0
 ground_truth=1
 T=2500
-to_render=0
+to_render=1
 check_energy=0
 speed=0.001
 
@@ -46,31 +43,27 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 1.4
-Ix_scaling = 0.75
-Iy_scaling = 0.75
-Iz_scaling = 0.75
+mass_scaling = 0.85
+Ix_scaling = 0.33
+Iy_scaling = 0.33
+Iz_scaling = 0.33
 bad_dyn = Quadrotor14D(
     mass_scaling * mass, Ix_scaling * Ix,
     Iy_scaling * Iy, Iz_scaling * Iz, time_step)
-
-#fb_law._M1 = bad_dyn._M_q
-#fb_law._f1 = bad_dyn._f_q
 
 # LQR Parameters and dynamics
 q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+# Q=10.0 * (np.random.uniform() + 0.1) * np.eye(14)
+
 R=r*np.eye(4)
 
 #Get Linear Feedback policies
 K=solve_lqr(A,B,Q,R)
 
 #Get random initial state
-
-
-
 reference=0.0*np.ones((14,T))
 
 freq=1.0
@@ -125,9 +118,19 @@ if linear_fb:
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
 
-        control= fb_law.feedback(x,v)
-        learned_controls_path[:,t]=control[:,0].detach().numpy()
-        x=dyn.integrate(x,control.detach().numpy())
+        u = sess.run(tf.get_default_graph().get_tensor_by_name('pi/add:0'),{tf.get_default_graph().get_tensor_by_name('Placeholder:0'): x.reshape(1,-1)})
+         #output of neural network
+        u = u[0]
+        m2, f2 = np.split(u,[16])
+
+        M = bad_dyn._M_q(x) + np.reshape(m2,(4, 4))
+
+        f = bad_dyn._f_q(x) + np.reshape(f2,(4, 1))
+
+        control = np.dot(M, v) + f
+
+        learned_controls_path[:,t]=control[:,0]
+        x=dyn.integrate(x,control)
         learned_err[:,t+1]=(diff)[:,0]
         learned_path[:,t+1]=(desired_linear_system_state)[:,0]
         learned_states[:,t+1]=x[:, 0]
@@ -218,6 +221,7 @@ if ground_truth:
         ground_truth_err[:,t+1]=(diff)[:,0]
         ground_truth_path[:,t+1]=(desired_linear_system_state)[:,0]
         ground_truth_states[:,t+1]=x[:, 0]
+   
 
 
     plt.figure()
@@ -251,14 +255,15 @@ if ground_truth:
     plt.legend()
 
 
-#        if to_render:
-#            dyn.render(x,speed)
+       
+from mpl_toolkits import mplot3d
 
-#plt.plot(np.linalg.norm(nominal_path[:5,:], axis=0),'r')
+fig = plt.figure()
+ax = plt.axes(projection="3d")
 
-
-#plt.plot(np.linspace(0, T*time_step, T+1),
-#         np.linalg.norm(learned_path[[0, 4, 8, 12],:], axis=0), 'b')
-#plt.plot(reference[2,:],'b')
+ax.scatter3D(ground_truth_path[0], ground_truth_path[4], ground_truth_path[8],",-g",label = "ground-truth")
+ax.scatter3D(learned_path[0], learned_path[4], learned_path[8],",-r",label = "learned")
 plt.legend()
 plt.show()
+
+

@@ -13,8 +13,15 @@ class Quadrotor14dEnv(gym.Env):
         #calling init method of parent class
         super(Quadrotor14dEnv, self).__init__()
 
-        high = np.array([100,100,100,100,100,
-        100,100,100,100,100,100,100,100,100])
+         #should we preprocess state
+        self._preprocess_state = 1
+
+        if(self._preprocess_state):
+            high = np.array([100,100,100,100,100,
+            100,100,100,100,100,100,100,100,100,100,100,100])
+        else:
+            high = np.array([100,100,100,100,100,
+            100,100,100,100,100,100,100,100,100])
 
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
@@ -38,7 +45,7 @@ class Quadrotor14dEnv(gym.Env):
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
 
-        scaling = 0.75
+        scaling = 0.33
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
 
         self.A,self.B, C=self._dynamics.linearized_system()
@@ -89,10 +96,12 @@ class Quadrotor14dEnv(gym.Env):
         list = []
         for x in self._state:
             list.append(x[0])
-        observation = np.array(list)
+        observation = list
 
+        if(self._preprocess_state):
+            observation = self.preprocess_state(observation)
         #returning stuff
-        return observation, reward, done, {}
+        return np.array(observation), reward, done, {}
 
     def reset(self):
 #        print("reset - new rollout, presumably")
@@ -118,8 +127,10 @@ class Quadrotor14dEnv(gym.Env):
         list = []
         for x in self._state:
             list.append(x[0])
-        observation = np.array(list)
-        return observation
+        observation = list
+        if(self._preprocess_state):
+            observation = self.preprocess_state(observation)
+        return np.array(observation)
 
     def seed(self, s):
         np.random.seed(np.random.randomint())
@@ -213,3 +224,15 @@ class Quadrotor14dEnv(gym.Env):
 
     def close(self):
         pass
+
+    def preprocess_state(self, x):
+        x[3] = np.sin(x[3])
+        x[4] = np.sin(x[4])
+        x[5] = np.sin(x[5])
+        x.append(np.cos(x[3]))
+        x.append(np.cos(x[4]))
+        x.append(np.cos(x[5]))
+        return x
+
+
+

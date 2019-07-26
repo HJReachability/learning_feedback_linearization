@@ -21,11 +21,11 @@ env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0")
 # )
 
 #mlp version
-spinup.vpg(
+spinup.ppo(
     env,
     ac_kwargs={"hidden_sizes":(64,2)},
     seed = np.random.randint(100),
     steps_per_epoch=1250,
     epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/vpg-modified"}
+    logger_kwargs = {"output_dir" : "logs/ppo-10-0.33-5000-v2-preprocess"}
 )

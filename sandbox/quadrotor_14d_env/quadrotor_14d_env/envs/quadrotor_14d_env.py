@@ -226,12 +226,14 @@ class Quadrotor14dEnv(gym.Env):
         pass
 
     def preprocess_state(self, x):
-        x[3] = np.sin(x[3])
-        x[4] = np.sin(x[4])
-        x[5] = np.sin(x[5])
-        x.append(np.cos(x[3]))
-        x.append(np.cos(x[4]))
-        x.append(np.cos(x[5]))
+        x[0] = np.sin(x[3])
+        x[1] = np.sin(x[4])
+        x[2]= np.sin(x[5])
+        x[3] = np.cos(x[3])
+        x[4] = np.cos(x[4])
+        x[5]= np.cos(x[5])
+        x.remove(10)
+        return x
         return x
 
 

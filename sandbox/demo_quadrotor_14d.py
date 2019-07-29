@@ -55,8 +55,8 @@ bad_dyn = Quadrotor14D(
 q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
-Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-# Q=10.0 * (np.random.uniform() + 0.1) * np.eye(14)
+# Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+Q=10.0 * (np.random.uniform() + 0.1) * np.eye(14)
 
 R=r*np.eye(4)
 

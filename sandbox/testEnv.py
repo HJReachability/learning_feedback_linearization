@@ -27,5 +27,5 @@ spinup.ppo(
     seed = np.random.randint(100),
     steps_per_epoch=1250,
     epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/ppo-10-0.33-5000-v2-preprocess-unclipped-constraintpenalty"}
+    logger_kwargs = {"output_dir" : "logs/ppo-10-0-null-v2-preprocess-largerQ-start25-uscaling0.1"}
 )

@@ -27,7 +27,7 @@ class Quadrotor14dEnv(gym.Env):
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self.observation_space = spaces.Box(-high,high,dtype=np.float32)
-        self._num_steps_per_rollout = 10
+        self._num_steps_per_rollout = 25
         self._reward_scaling = 10
         self._norm = 2
 
@@ -38,15 +38,10 @@ class Quadrotor14dEnv(gym.Env):
         Iy = 1.0
         Iz = 1.0
 
-#        self._mass = 0.04
-#        Ix = 0.02
-#        Iy = 0.02
-#        Iz = 0.05
-
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
 
-        scaling = 0.33
+        scaling = 0.001
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
 
         self.A,self.B, C=self._dynamics.linearized_system()
@@ -63,7 +58,7 @@ class Quadrotor14dEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(0.01 * u,[16])
+        m2, f2 = np.split(0.1 * u,[16])
 
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
@@ -85,7 +80,7 @@ class Quadrotor14dEnv(gym.Env):
         self._current_y = self._dynamics.linearized_system_state(self._state)
 #        print("state is: ", self._state)
         reward = self.computeReward(self._y_desired[self._count], self._current_y)
-        reward += self.computePenalty(self._state)
+        # reward += self.computePenalty(self._state)
 
         #Increasing count
         self._count += 1
@@ -109,10 +104,10 @@ class Quadrotor14dEnv(gym.Env):
 #        print("reset - new rollout, presumably")
 
         #gradually increase length of rollouts
-        self._iter_count +=1
-        # if(self._iter_count%150000 == 0 and self._num_steps_per_rollout<25):
-        if(self._iter_count%5000 == 0):
-            self._num_steps_per_rollout += 1
+        # self._iter_count +=1
+        # if(self._iter_count%5000 == 0 and self._num_steps_per_rollout<25):
+        # # if(self._iter_count%5000 == 0):
+        #     self._num_steps_per_rollout += 1
 
         #(0) Sample state using state smapler method
         self._state = self.initial_state_sampler()
@@ -150,11 +145,19 @@ class Quadrotor14dEnv(gym.Env):
                         -0.1, -0.1, -0.1,
                         -1.0, # This is the thrust acceleration - g.
                         -0.1, -0.1, -0.1, -0.1]]).T
+        #scaled pitch based on how many episodes to gradually introduce
         lower1 = np.array([[-2.5, -2.5, -2.5,
                         -np.pi / 6.0, -np.pi / 6.0, -np.pi,
                         -0.3, -0.3, -0.3,
                         -3.0, # This is the thrust acceleration - g.
                         -0.3, -0.3, -0.3, -0.3]]).T
+
+        # zero pitch reference
+        # lower1 = np.array([[-2.5, -2.5, -2.5,
+        #                 -np.pi / 6.0, -np.pi / 6.0, 0,
+        #                 -0.3, -0.3, -0.3,
+        #                 -3.0, # This is the thrust acceleration - g.
+        #                 -0.3, -0.3, -0.3, -0.3]]).T
 
         frac = 1.0
         lower = frac * lower1 + (1.0 - frac) * lower0
@@ -178,6 +181,7 @@ class Quadrotor14dEnv(gym.Env):
 
         #random scaling factor for Q based on how many iterations have been done
         Q= 2*self._num_steps_per_rollout * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        # Q= 5 * np.eye(linsys_xdim)
         
         #fixed Q scaling
         # Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0,

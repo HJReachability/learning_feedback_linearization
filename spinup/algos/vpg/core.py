@@ -29,7 +29,9 @@ def placeholders_from_spaces(*args):
 def mlp(x, hidden_sizes=(32,), activation=tf.tanh, output_activation=None):
     for h in hidden_sizes[:-1]:
         x = tf.layers.dense(x, units=h, activation=activation)
-    return tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation)
+    x = tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation)
+    print(x)
+    return x
 
 def get_vars(scope=''):
     return [x for x in tf.trainable_variables() if scope in x.name]
@@ -59,43 +61,61 @@ def discount_cumsum(x, discount):
     """
     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
+def nextOrderPolynomial(x, length, lastOrderPolynomial, incrementList):
+    #empty list for next order
+    nextOrderPolynomial = []
+    
+    for i in range(length):
+        for j in range(incrementList[i]):
+            nextOrderPolynomial.append(tf.multiply(x[:,i],lastOrderPolynomial[j]))
+
+    return nextOrderPolynomial
+
+def nextIncrementList(incrementList):
+    nextIncrementList = [1]
+    for i in range(len(incrementList)-1):
+        nextIncrementList.append(nextIncrementList[i]+incrementList[i+1])
+    return nextIncrementList
+    
+
 def polynomial(x, order, u_dim):
     """ Computes u, a polynomial function of x (for each row of x).
     Polynomial will be composed of monomials of degree up to and including
     the specified 'order'.
     """
     NUM_STATE_DIMS = x.get_shape().as_list()[-1]
-    NUM_MONOMIALS = (order + 1)**NUM_STATE_DIMS
-    NUM_ROWS = x.get_shape().as_list()[0]
-
+    
     print("Generating monomials...")
-    monomials = []
-    for jj in range(NUM_MONOMIALS):
-        print(jj // 100)
+    FullPolynomial = []
+    z = tf.ones_like(x[:,0])
+    FullPolynomial.append(z)
+    incrementList = []
+    lastPolynomial = []
+    for i in range(NUM_STATE_DIMS):
+        incrementList.append(i+1)
+        lastPolynomial.append(x[:,i])
+    
 
-        # Encode 'jj' in base 'order' with 'NUM_STATE_DIMS' places.
-        left = jj
-
-        this_monomial = []
-        for ii in range(NUM_STATE_DIMS):
-            remainder = int(left // (order + 1))
-            left -= remainder
-            left = int(left / (order + 1))
-            this_monomial.append(tf.pow(x[:, ii], remainder))
-
-            if left == 0:
-                break
-
-        monomials.append(tf.reduce_prod(this_monomial))
-
+    #generate full polynomial
+    FullPolynomial.extend(lastPolynomial)
+    for i in range(order - 1):
+        nextPolynomial = nextOrderPolynomial(x,NUM_STATE_DIMS,lastPolynomial,incrementList)
+        FullPolynomial.extend(nextPolynomial)
+        incrementList = nextIncrementList(incrementList)
+        lastPolynomial = nextPolynomial
+    print("number of monomials: " , len(FullPolynomial))
     print("...done!")
 
+    
     # Now declare tf variables for the coefficients of all these monomials.
     coeffs = tf.get_variable("polynomial_coefficients",
-                             initializer=np.zeros((NUM_MONOMIALS, u_dim)))
+                             initializer=tf.zeros((len(FullPolynomial), u_dim)),dtype=tf.float32)
+    
+    FullPolynomial = tf.transpose(tf.stack(FullPolynomial))
 
     # Compute polynomial output for each state.
-    return tf.matmul(tf.stack(values, 0), coeffs)
+    action = tf.matmul(FullPolynomial,coeffs)
+    return action
 
 """
 Policies
@@ -167,5 +187,5 @@ def polynomial_actor_critic(x, a, order, policy=None, action_space=None):
         # DFK modified: want unbiased gradient estimate, so replacing MLP with
         # zero (for all states).
         # TODO(@eric): figure out how to do this right and not just multiply by zero.
-        v = 0.0 * tf.squeeze(mlp(x), axis=1)
+        v = 0.0 * tf.squeeze(mlp(x, list((1,1))+[1], tf.tanh, None), axis=1)
     return pi, logp, logp_pi, v

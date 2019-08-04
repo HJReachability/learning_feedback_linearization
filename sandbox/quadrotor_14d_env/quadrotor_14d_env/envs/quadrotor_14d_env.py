@@ -41,7 +41,7 @@ class Quadrotor14dEnv(gym.Env):
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
 
-        scaling = 0.001
+        scaling = 0.33
         self._bad_dynamics = Quadrotor14D(scaling*self._mass, scaling*Ix, scaling*Iy, scaling*Iz, self._time_step)
 
         self.A,self.B, C=self._dynamics.linearized_system()
@@ -58,7 +58,7 @@ class Quadrotor14dEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(0.1 * u,[16])
+        m2, f2 = np.split(1 * u,[16])
 
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))

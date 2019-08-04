@@ -13,19 +13,21 @@ env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0")
 #polynomial version
 # spinup.vpg(
 #     env,
-#     ac_kwargs={"order" : 1},
+#     ac_kwargs={"order" : 3},
 #     seed = np.random.randint(100),
 #     steps_per_epoch=1250,
 #     epochs=2500,
-#     logger_kwargs = {"output_dir" : "logs/vpg-modified"}
+#     logger_kwargs = {"output_dir" : "logs/poly-10-0.33-null-v2-preprocess-largerQ-stlart25-uscaling0.1"}
 # )
 
 #mlp version
-spinup.ppo(
+
+
+spinup.vpg(
     env,
     ac_kwargs={"hidden_sizes":(64,2)},
     seed = np.random.randint(100),
     steps_per_epoch=1250,
     epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/ppo-10-0-null-v2-preprocess-largerQ-start25-uscaling0.1"}
+    logger_kwargs = {"output_dir" : "logs/vpgnobaseline-10-0.33-null-v2-preprocess-largerQ-stlart25-uscaling1"}
 )

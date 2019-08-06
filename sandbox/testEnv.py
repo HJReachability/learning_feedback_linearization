@@ -11,23 +11,23 @@ env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0")
     0 dynamics scaling indicates from scratch'''
 
 #polynomial version
-# spinup.vpg(
-#     env,
-#     ac_kwargs={"order" : 3},
-#     seed = np.random.randint(100),
-#     steps_per_epoch=1250,
-#     epochs=2500,
-#     logger_kwargs = {"output_dir" : "logs/poly-10-0.33-null-v2-preprocess-largerQ-stlart25-uscaling0.1"}
-# )
+spinup.vpg(
+    env,
+    ac_kwargs={"order" : 3},
+    seed = np.random.randint(100),
+    steps_per_epoch=1250,
+    epochs=2500,
+    logger_kwargs = {"output_dir" : "logs/poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr2e-5-baselined"}
+)
 
 #mlp version
 
 
-spinup.vpg(
-    env,
-    ac_kwargs={"hidden_sizes":(64,2)},
-    seed = np.random.randint(100),
-    steps_per_epoch=1250,
-    epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/vpgnobaseline-10-0.33-null-v2-preprocess-largerQ-stlart25-uscaling1"}
-)
+# spinup.ppo(
+#     env,
+#     ac_kwargs={"hidden_sizes":(64,2)},
+#     seed = np.random.randint(100),
+#     steps_per_epoch=1250,
+#     epochs=2500,
+#     logger_kwargs = {"output_dir" : "logs/ppo-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1"}
+# )

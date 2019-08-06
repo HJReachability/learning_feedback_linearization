@@ -58,8 +58,7 @@ class Quadrotor14dEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(1 * u,[16])
-
+        m2, f2 = np.split(0.1 * u,[16])
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
 

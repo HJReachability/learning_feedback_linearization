@@ -18,7 +18,7 @@ class Quadrotor14dEnv(gym.Env):
 
         if(self._preprocess_state):
             high = np.array([100,100,100,100,100,
-            100,100,100,100,100,100,100,100,100,100,100,100])
+            100,100,100,100,100,100,100,100])
         else:
             high = np.array([100,100,100,100,100,
             100,100,100,100,100,100,100,100,100])
@@ -234,7 +234,7 @@ class Quadrotor14dEnv(gym.Env):
         x[5]= np.cos(x[5])
         x.remove(10)
         return x
-        return x
+
 
 
 

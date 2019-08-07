@@ -34,7 +34,7 @@ class VPGBuffer:
         self.obs_buf[self.ptr] = obs
         self.act_buf[self.ptr] = act
         self.rew_buf[self.ptr] = rew
-        self.val_buf[self.ptr] = -100
+        self.val_buf[self.ptr] = val
         self.logp_buf[self.ptr] = logp
         self.ptr += 1
 
@@ -188,7 +188,7 @@ def vpg(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=dict(), see
 
     # VPG objectives
     var = [v for v in tf.trainable_variables() if "pi" in v.name][ 0 ]
-    norm_loss = tf.norm(var,1)
+    norm_loss = 0*tf.norm(var,1)
     pi_loss = -tf.reduce_mean(logp * adv_ph)
     v_loss = tf.reduce_mean((ret_ph - v)**2)
 

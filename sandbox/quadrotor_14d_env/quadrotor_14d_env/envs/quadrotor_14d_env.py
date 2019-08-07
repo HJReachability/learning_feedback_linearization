@@ -2,6 +2,7 @@ import numpy as np
 import gym
 import sys
 from dynamics import Dynamics
+import math
 
 from quadrotor_14d import Quadrotor14D
 from scipy.linalg import solve_continuous_are
@@ -26,8 +27,8 @@ class Quadrotor14dEnv(gym.Env):
         #change in order to change dynamics which quadrotor trains from
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self.observation_space = spaces.Box(-high,high,dtype=np.float32)
-        self._num_steps_per_rollout = 10
-        self._reward_scaling = 10.0
+        self._num_steps_per_rollout = 25
+        self._reward_scaling = 10
         self._norm = 2
 
         # TODO: these should match what we get from system identification, once
@@ -36,11 +37,6 @@ class Quadrotor14dEnv(gym.Env):
         Ix = 1.0
         Iy = 1.0
         Iz = 1.0
-
-#        self._mass = 0.04
-#        Ix = 0.02
-#        Iy = 0.02
-#        Iz = 0.05
 
         self._time_step = 0.01
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
@@ -62,8 +58,7 @@ class Quadrotor14dEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(0.01 * u,[16])
-
+        m2, f2 = np.split(0.1 * u,[16])
 
         M = self._bad_dynamics._M_q(self._state) + np.reshape(m2,(self._udim, self._udim))
 
@@ -84,6 +79,7 @@ class Quadrotor14dEnv(gym.Env):
         self._current_y = self._dynamics.linearized_system_state(self._state)
 #        print("state is: ", self._state)
         reward = self.computeReward(self._y_desired[self._count], self._current_y)
+        # reward += self.computePenalty(self._state)
 
         #Increasing count
         self._count += 1
@@ -107,9 +103,10 @@ class Quadrotor14dEnv(gym.Env):
 #        print("reset - new rollout, presumably")
 
         #gradually increase length of rollouts
-        self._iter_count +=1
-        if(self._iter_count%5000 == 0 and self._num_steps_per_rollout<25):
-            self._num_steps_per_rollout += 1
+        # self._iter_count +=1
+        # if(self._iter_count%5000 == 0 and self._num_steps_per_rollout<25):
+        # # if(self._iter_count%5000 == 0):
+        #     self._num_steps_per_rollout += 1
 
         #(0) Sample state using state smapler method
         self._state = self.initial_state_sampler()
@@ -147,11 +144,19 @@ class Quadrotor14dEnv(gym.Env):
                         -0.1, -0.1, -0.1,
                         -1.0, # This is the thrust acceleration - g.
                         -0.1, -0.1, -0.1, -0.1]]).T
+        #scaled pitch based on how many episodes to gradually introduce
         lower1 = np.array([[-2.5, -2.5, -2.5,
                         -np.pi / 6.0, -np.pi / 6.0, -np.pi,
                         -0.3, -0.3, -0.3,
                         -3.0, # This is the thrust acceleration - g.
                         -0.3, -0.3, -0.3, -0.3]]).T
+
+        # zero pitch reference
+        # lower1 = np.array([[-2.5, -2.5, -2.5,
+        #                 -np.pi / 6.0, -np.pi / 6.0, 0,
+        #                 -0.3, -0.3, -0.3,
+        #                 -3.0, # This is the thrust acceleration - g.
+        #                 -0.3, -0.3, -0.3, -0.3]]).T
 
         frac = 1.0
         lower = frac * lower1 + (1.0 - frac) * lower0
@@ -172,12 +177,22 @@ class Quadrotor14dEnv(gym.Env):
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
-        #Q=10.0 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+
+        #random scaling factor for Q based on how many iterations have been done
+        Q= 2*self._num_steps_per_rollout * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+        # Q= 5 * np.eye(linsys_xdim)
+        
+        #fixed Q scaling
+        # Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0,
+        #                     1.0, 0.0, 0.0, 0.0,
+        #                     1.0, 0.0, 0.0, 0.0,
+        #                     1.0, 0.0])
+
+
+        #random R scaling
         #R=1.0 * (np.random.uniform() + 0.1) * np.eye(linsys_udim)
-        Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0,
-                            1.0, 0.0, 0.0, 0.0,
-                            1.0, 0.0, 0.0, 0.0,
-                            1.0, 0.0])
+
+        #fixed R scaling
         R = 1.0 * np.eye(linsys_udim)
 
         # Initial y.
@@ -222,6 +237,19 @@ class Quadrotor14dEnv(gym.Env):
         return -self._reward_scaling * self._dynamics.observation_distance(
             y_desired, y, self._norm)
 
+    #semi quadratic penalty
+    def computePenalty(self,x):
+        penalty = 0
+        if(x[10]<3.0 or x[10]>16.0):
+            penalty -= 3
+        if(abs(x[4])>math.pi/3):
+            penalty -= 3*(abs(x[4][0])**2)
+        if(abs(x[5])>math.pi/3):
+            penalty -= 3*(abs(x[5][0])**2)
+        return penalty
+
+
+
     def close(self):
         pass
 
@@ -232,9 +260,14 @@ class Quadrotor14dEnv(gym.Env):
         x[3] = np.cos(x[3])
         x[4] = np.cos(x[4])
         x[5]= np.cos(x[5])
+<<<<<<< HEAD
         x.remove(10)
         return x
 
+=======
+        x.pop(10)
+        return x
+>>>>>>> 60d5a363556bdc71de77ba66686c67f09b86a189
 
 
 

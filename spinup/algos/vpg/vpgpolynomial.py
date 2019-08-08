@@ -89,10 +89,10 @@ Vanilla Policy Gradient
 (with GAE-Lambda for advantage estimation)
 
 """
-def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
-        steps_per_epoch=4000, epochs=50, gamma=0.99, pi_lr=3e-4,
+def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=dict(), seed=0,
+        steps_per_epoch=4000, epochs=50, gamma=0.99, pi_lr=2e-5,
         vf_lr=1e-3, train_v_iters=80, lam=0.97, max_ep_len=1000,
-        logger_kwargs=dict(), save_freq=10):
+        logger_kwargs=dict(), save_freq=10, l1_scaling = 0.001):
     """
 
     Args:
@@ -187,6 +187,8 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     logger.log('\nNumber of parameters: \t pi: %d, \t v: %d\n'%var_counts)
 
     # VPG objectives
+    var = [v for v in tf.trainable_variables() if "pi" in v.name][ 0 ]
+    norm_loss = l1_scaling*tf.norm(var,1)
     pi_loss = -tf.reduce_mean(logp * adv_ph)
     v_loss = tf.reduce_mean((ret_ph - v)**2)
 
@@ -197,6 +199,7 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     # Optimizers
     pi_optim = MpiAdamOptimizer(learning_rate=pi_lr)
     train_pi = pi_optim.minimize(pi_loss)
+    train_pi_norm = pi_optim.minimize(norm_loss)
     train_v = MpiAdamOptimizer(learning_rate=vf_lr).minimize(v_loss)
 
     sess = tf.Session()
@@ -214,14 +217,20 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
         # Policy gradient step
         sess.run(train_pi, feed_dict=inputs)
-        
+        sess.run(train_pi_norm, feed_dict=inputs)
+
+        #polynomial penalizing number of terms
+        # with tf.variable_scope('pi'):
+        #     grads_and_vars = pi_optim.compute_gradients(tf.norm(tf.trainable_variables(),ord=1))
+        #     pi_optim.apply_gradient(grads_and_vars)
+
         # Value function learning
         for _ in range(train_v_iters):
             sess.run(train_v, feed_dict=inputs)
 
         # Log changes from update
-        pi_l_new, v_l_new, kl= sess.run([pi_loss, v_loss, approx_kl], feed_dict=inputs)
-        logger.store(LossPi=pi_l_old, LossV=v_l_old,
+        pi_l_new, v_l_new, kl, pi_l_norm = sess.run([pi_loss, v_loss, approx_kl,norm_loss], feed_dict=inputs)
+        logger.store(LossNorm = pi_l_norm,LossPi=pi_l_old, LossV=v_l_old,
                      KL=kl, Entropy=ent,
                      DeltaLossPi=(pi_l_new - pi_l_old),
                      DeltaLossV=(v_l_new - v_l_old))
@@ -289,6 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--exp_name', type=str, default='vpg')
     parser.add_argument('--order', type=int, default=2)
+    parser.add_argument('--l1scaling', type=float, default=0.001)
     args = parser.parse_args()
 
     mpi_fork(args.cpu)  # run parallel code with mpi
@@ -296,8 +306,8 @@ if __name__ == '__main__':
     from spinup.utils.run_utils import setup_logger_kwargs
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-    # mlp version
-    vpg(lambda : gym.make(args.env), actor_critic=core.mlp_actor_critic,
-        ac_kwargs=dict(hidden_sizes=[args.hid]*args.l), gamma=args.gamma,
+    #polynomial version
+    vpgpolynomial(lambda : gym.make(args.env), actor_critic=core.polynomial_actor_critic,
+        ac_kwargs=dict(order=args.order), gamma=args.gamma,
         seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,
-        logger_kwargs=logger_kwargs)
+        logger_kwargs=logger_kwargs, l1_scaling = args.l1_scaling)

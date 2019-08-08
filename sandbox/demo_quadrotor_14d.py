@@ -19,9 +19,6 @@ model = spinup.utils.logx.restore_tf_graph(sess,filename)
 print(model)
 
 # Plot everything.
-# plotter = Plotter(filename)
-# plotter.plot_scalar_fields(["mean_return"])
-# plt.pause(0.1)
 def solve_lqr(A,B,Q,R):
     P = solve_continuous_are(A, B, Q, R)
     K = np.linalg.inv(R) @ B.T @ P
@@ -48,20 +45,16 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-mass_scaling = 0.33
-Ix_scaling = 0.33
-Iy_scaling = 0.33
-Iz_scaling = 0.33
+bad_scaling = 0.33
 bad_dyn = Quadrotor14D(
-    mass_scaling * mass, Ix_scaling * Ix,
-    Iy_scaling * Iy, Iz_scaling * Iz, time_step)
+    bad_scaling * mass, bad_scaling * Ix,
+    bad_scaling* Iy, bad_scaling * Iz, time_step)
 
 # LQR Parameters and dynamics
 q=10.0
 r=1.0
 A, B, C = dyn.linearized_system()
 Q=q*np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-# Q= 10 * (np.random.uniform() + 0.1) * np.eye(14)
 R=r*np.eye(4)
 
 #Get Linear Feedback policies
@@ -101,13 +94,6 @@ reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 # reference[4,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))/(freq * np.linspace(0,T*time_step,T)+1)
 # reference[8,:]=5.0-5.0*np.linspace(0,T*time_step,T)/(T*time_step)
 
-
-# # #Test
-# freq=2.0
-# r=2*np.sin(np.linspace(0,T*time_step,T)/(T*time_step)*np.pi)
-# reference[0,:]=r*np.sin(freq*np.linspace(0,T*time_step,T))
-# reference[4,:]=r*np.cos(freq*np.linspace(0,T*time_step,T))
-# reference[8,:]=10.0-9.8*np.linspace(0,T*time_step,T)/(T*time_step)
 
 learned_path=np.zeros((14,T+1))
 learned_states=np.zeros((14,T+1))
@@ -157,7 +143,6 @@ if linear_fb:
          #output of neural network
         u = 0.1*u[0]
         m2, f2 = np.split(u,[16])
-        print(m2)
 
         M = bad_dyn._M_q(x) + np.reshape(m2,(4, 4))
 
@@ -232,9 +217,6 @@ if nominal:
              nominal_states[5,:], '.-c', label="phi")
     plt.title("nominal")
     plt.legend()
-
-#        if to_render:
-#            dyn.render(x,speed)
 
 if ground_truth:
 

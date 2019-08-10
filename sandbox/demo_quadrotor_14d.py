@@ -1,8 +1,12 @@
 import numpy as np
 from scipy.linalg import solve_continuous_are
+import os.path as osp, time, atexit, os
 
 from quadrotor_14d import Quadrotor14D
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+import matplotlib.animation as ani
+from matplotlib.gridspec import GridSpec
 from plotter import Plotter
 import spinup
 import spinup.algos.vpg.core as core
@@ -11,11 +15,12 @@ from gym import spaces
 from matplotlib import cm
 
 #should be in form ./logs/ and then whatever foldername logger dumped
-filename="./logs/poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr5e-5-normscaling0.001/simple_save"
+filename = 'poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr5e-5-normscaling0.001'
+filepath="./logs/{}/simple_save".format(filename)
 
 #load tensorflow graph from path
 sess = tf.Session()
-model = spinup.utils.logx.restore_tf_graph(sess,filename)
+model = spinup.utils.logx.restore_tf_graph(sess,filepath)
 print(model)
 
 # Plot everything.
@@ -34,7 +39,6 @@ make_plot = 1
 make_vid = 1
 show_ref = 1
 to_render=1
-check_energy=0
 speed=0.01
 
 # Create a quadrotor.
@@ -45,7 +49,7 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-bad_scaling = 0.33
+bad_scaling = 0.8
 bad_dyn = Quadrotor14D(
     bad_scaling * mass, bad_scaling * Ix,
     bad_scaling* Iy, bad_scaling * Iz, time_step)
@@ -63,15 +67,14 @@ K=solve_lqr(A,B,Q,R)
 #Get random initial state
 reference=0.0*np.ones((14,T))
 
-testname = "circle"
-freq= 0.5
-reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-reference[4,:]=0.5 * np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
-reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+# testname = "circle"
+# freq= 0.5
+# reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+# reference[4,:]=0.5 * np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
+# reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 # reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
-# testname = "line w/yaw"
-# reference[12, :] = 3.1
+# testname = "line_w/yaw"
 # reference[0,:]=0.1*np.linspace(0,T*time_step,T)
 # reference[1,:]=0.1*time_step
 # reference[4,:]=0.1*np.linspace(0,T*time_step,T)
@@ -81,14 +84,15 @@ reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 # reference[12,:]=0.1*np.linspace(0,T*time_step,T)
 # reference[13,:]=0.1*time_step
 
-# testname = "Figure 8"
-# freq=1.0
-# reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-# reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
-# reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
+testname = "Figure8"
+freq=1.0
+reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
+reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
+reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
 
 
-# testname = "Pointy Corkscrew"
+# testname = "PointyCorkscrew"
 # freq=1.0
 # reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))/(freq * np.linspace(0,T*time_step,T)+1)
 # reference[4,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))/(freq * np.linspace(0,T*time_step,T)+1)
@@ -111,9 +115,9 @@ ground_truth_err=np.zeros((14,T+1))
 ground_truth_controls_path=np.zeros((4,T))
 
 x0=0.0*np.ones((14,1))
-x0[0, 0] = 0.0
-x0[1, 0] = 0.5 * np.pi
-x0[2, 0] = np.pi
+x0[0, 0] = reference[0,0]
+x0[1, 0] = reference[4,0]
+x0[2, 0] = reference[8,0]
 x0[9, 0] = 9.81
 
 def preprocess_state(x):
@@ -125,6 +129,12 @@ def preprocess_state(x):
     x[5]= np.cos(x[5])
     x.pop(10)
     return x
+
+output_dir = './tests/{}/{}/'.format(filename,testname)
+if osp.exists(output_dir):
+    print("Warning: Log dir %s already exists! Storing info there anyway."%output_dir)
+else:
+    os.makedirs(output_dir)
 
 if linear_fb:
     x=x0.copy()
@@ -163,27 +173,23 @@ if linear_fb:
              learned_path[4,:], '.-g', label="y")
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_path[8,:], '.-b', label="z")
-    plt.plot(np.linspace(0, T*time_step, T+1),
-             learned_path[12,:], '.-k', label="psi")
+    
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[4,:], '.-m', label="theta")
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[5,:], '.-c', label="phi")
+    plt.plot(np.linspace(0, T*time_step, T+1),
+             learned_path[12,:], '.-k', label="psi")
     plt.title("learned")
     plt.legend()
+    plt.savefig(output_dir + 'learned_state.png')
 
-
-#        if check_energy:
-#            print(dyn.total_energy(x))
-#        if to_render:
-#            dyn.render(x,speed)
 
 if nominal:
 
     x=x0.copy()
-    dyn.fig=None
 
     for t in range(T):
         desired_linear_system_state=dyn.linearized_system_state(x)
@@ -216,12 +222,11 @@ if nominal:
     plt.plot(np.linspace(0, T*time_step, T+1),
              nominal_states[5,:], '.-c', label="phi")
     plt.title("nominal")
-    plt.legend()
+    plt.savefig(output_dir + 'nominal_state.png')
 
 if ground_truth:
 
     x=x0.copy()
-    dyn.fig=None
 
     for t in range(T):
         desired_linear_system_state=dyn.linearized_system_state(x)
@@ -259,46 +264,33 @@ if ground_truth:
              ground_truth_states[5,:], '.-c', label="phi")
     plt.legend()
     plt.title("ground truth")
+    plt.savefig(output_dir + 'ground_truth_state.png')
 
-    plt.figure()
-    plt.plot(np.linspace(0, T*time_step, T),
-             ground_truth_controls_path[0,:], '.-r', label="u1")
-    plt.plot(np.linspace(0, T*time_step, T),
-             ground_truth_controls_path[1,:], '.-g', label="u2")
-    plt.plot(np.linspace(0, T*time_step, T),
-             ground_truth_controls_path[2,:], '.-b', label="u3")
-    plt.plot(np.linspace(0, T*time_step, T),
-             ground_truth_controls_path[3,:], '.-k', label="u4")
-    plt.title("ground truth controls")
-    plt.legend()
-
-
-       
-from mpl_toolkits import mplot3d
-
-# fig = plt.figure()
-# ax = plt.axes(projection="3d")
+    # plt.figure()
+    # plt.plot(np.linspace(0, T*time_step, T),
+    #          ground_truth_controls_path[0,:], '.-r', label="u1")
+    # plt.plot(np.linspace(0, T*time_step, T),
+    #          ground_truth_controls_path[1,:], '.-g', label="u2")
+    # plt.plot(np.linspace(0, T*time_step, T),
+    #          ground_truth_controls_path[2,:], '.-b', label="u3")
+    # plt.plot(np.linspace(0, T*time_step, T),
+    #          ground_truth_controls_path[3,:], '.-k', label="u4")
+    # plt.title("ground truth controls")
+    # plt.legend()
 
 
-# ax.scatter3D(learned_path[0], learned_path[4], learned_path[8],",-r",label = "learned")
-# ax.scatter3D(reference[0,:], reference[4,:], reference[8,:],",-b",label = "reference")
-# ax.scatter3D(ground_truth_path[0], ground_truth_path[4], ground_truth_path[8],",-g",label = "ground-truth")
-# # ax.scatter3D(nominal_path[0], nominal_path[4], nominal_path[8],",-y",label = "bad-dyn")
-# plt.legend()
-# plt.title(filename)
-# plt.show()
-
-import matplotlib.animation as ani
+    
 if show or make_vid:
 
-    fig=plt.figure()
-    plt.title(testname)
-
+    fig=plt.figure(figsize=(10,6))
+    fig.suptitle(filename + ' ' + testname)
     if make_vid:
-        writer = ani.FFMpegWriter(fps=15)
-        writer.setup(fig, "polynomialCircle.mp4", dpi=100)
-
-    ax = fig.add_subplot(111,projection = '3d')
+        writer = ani.FFMpegWriter(fps=10)
+        writer.setup(fig, output_dir + filename + testname + '.mp4', dpi=100)
+    
+    gs=GridSpec(1,3)
+    ax = fig.add_subplot(gs[0,0:2],projection = '3d')
+    states = fig.add_subplot(gs[0,2])
     skip=10
 
 
@@ -316,22 +308,30 @@ if show or make_vid:
             if linear_fb:
                 ax.plot(learned_path[0,last:i],learned_path[4,last:i],learned_path[8,last:i],'g')
                 p2=ax.scatter(learned_path[0,i],learned_path[4,i],learned_path[8,i],c='g',label='Learned policy')
-            
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[3,last:i], '.-y', label="learned-theta")
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[4,last:i], '.-g', label="learned-phi")
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[5,last:i], '.-b', label="learned-psi")
+    
             if ground_truth:
                 ax.plot(ground_truth_path[0,last:i],ground_truth_path[4,last:i],ground_truth_path[8,last:i],'b')
                 p3=ax.scatter(ground_truth_path[0,i],ground_truth_path[4,i],ground_truth_path[8,i],c='b',label='Ground Truth')
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), ground_truth_states[3,last:i], ':y', label="ground-truth-theta")
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), ground_truth_states[4,last:i], ':g', label="ground-truth-phi")
+                states.plot(np.linspace(last*time_step, i*time_step, i-last), ground_truth_states[5,last:i], ':b', label="ground-truth-psi")
 
             if show_ref:
                 ax.plot(reference[0,last:i],reference[4,last:i],reference[8,last:i],'k')
                 p4=ax.scatter(reference[0,i],reference[4,i],reference[8,i],c='k',label='Reference')
         
             if show:
-                plt.pause(0.1)
+                plt.pause(0.01)
 
             if make_vid:
                 writer.grab_frame()
-
-            ax.legend(loc='lower left', bbox_to_anchor=(0, 0.9))
+            ax.legend(loc=0,bbox_to_anchor=(0, 0.9))
+            plt.tight_layout(pad = 3, h_pad = 3, w_pad = 3)
+            if(i == 0):
+                states.legend(loc=0,bbox_to_anchor=(0, 0.9))
             if i<len(ground_truth_path[0,:])-skip-2:
                 if nominal:
                     p1.remove()
@@ -373,8 +373,11 @@ if make_plot:
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     ax.legend(loc='lower left', bbox_to_anchor=(0, 0.9))
-
+    ax.savefig(output_dir + '3dpathsummary.png')
     plt.show()
+
+
+
 
 
 

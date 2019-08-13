@@ -16,6 +16,11 @@ from matplotlib import cm
 
 #should be in form ./logs/ and then whatever foldername logger dumped
 filename = 'poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr5e-5-normscaling0.001'
+# filename = 'ppo-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1'
+# filename = 'poly-v3-continuousrollout-originreturn'
+# filename = 'poly-v3-continuousrollout-originreturn-dynamicsScaling0.6'
+# filename = 'ppo-v3-continuousrollout-originreturn-dynamicsScaling0.6-zeroweights'
+
 filepath="./logs/{}/simple_save".format(filename)
 
 #load tensorflow graph from path
@@ -49,7 +54,7 @@ Iz = 1.0
 time_step = 0.01
 dyn = Quadrotor14D(mass, Ix, Iy, Iz, time_step)
 
-bad_scaling = 0.8
+bad_scaling = 0.33
 bad_dyn = Quadrotor14D(
     bad_scaling * mass, bad_scaling * Ix,
     bad_scaling* Iy, bad_scaling * Iz, time_step)
@@ -72,7 +77,6 @@ reference=0.0*np.ones((14,T))
 # reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
 # reference[4,:]=0.5 * np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
 # reference[8,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))
-# reference[3,:]=0.1*np.pi*np.linspace(0, T*time_step, T)
 
 # testname = "line_w/yaw"
 # reference[0,:]=0.1*np.linspace(0,T*time_step,T)
@@ -84,19 +88,20 @@ reference=0.0*np.ones((14,T))
 # reference[12,:]=0.1*np.linspace(0,T*time_step,T)
 # reference[13,:]=0.1*time_step
 
-testname = "Figure8"
-freq=1.0
-reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
-reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
-reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
+# testname = "Figure8"
+# freq=1.0
+# reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+# reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
+# reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
+# reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
 
 
 # testname = "PointyCorkscrew"
-# freq=1.0
+# freq=2.0
 # reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))/(freq * np.linspace(0,T*time_step,T)+1)
 # reference[4,:]=np.pi*np.cos(freq * np.linspace(0,T*time_step,T))/(freq * np.linspace(0,T*time_step,T)+1)
 # reference[8,:]=5.0-5.0*np.linspace(0,T*time_step,T)/(T*time_step)
+# reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
 
 
 learned_path=np.zeros((14,T+1))
@@ -281,7 +286,6 @@ if ground_truth:
 
     
 if show or make_vid:
-
     fig=plt.figure(figsize=(10,6))
     fig.suptitle(filename + ' ' + testname)
     if make_vid:
@@ -303,7 +307,7 @@ if show or make_vid:
 
             if nominal:
                 ax.plot(nominal_path[0,last:i],nominal_path[4,last:i],nominal_path[8,last:i],'r')
-                p1=ax.scatter(nominal_path[0,i],nominal_path[4,i],nominal_path[8,i],c='r')
+                p1=ax.scatter(nominal_path[0,i],nominal_path[4,i],nominal_path[8,i],c='r', label = 'nominal')
             
             if linear_fb:
                 ax.plot(learned_path[0,last:i],learned_path[4,last:i],learned_path[8,last:i],'g')
@@ -323,15 +327,15 @@ if show or make_vid:
                 ax.plot(reference[0,last:i],reference[4,last:i],reference[8,last:i],'k')
                 p4=ax.scatter(reference[0,i],reference[4,i],reference[8,i],c='k',label='Reference')
         
-            if show:
-                plt.pause(0.01)
+            # if show:
+            #     plt.pause(0.01)
 
             if make_vid:
                 writer.grab_frame()
-            ax.legend(loc=0,bbox_to_anchor=(0, 0.9))
+            ax.legend(loc=0)
             plt.tight_layout(pad = 3, h_pad = 3, w_pad = 3)
             if(i == 0):
-                states.legend(loc=0,bbox_to_anchor=(0, 0.9))
+                states.legend(loc=0)
             if i<len(ground_truth_path[0,:])-skip-2:
                 if nominal:
                     p1.remove()
@@ -373,8 +377,7 @@ if make_plot:
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     ax.legend(loc='lower left', bbox_to_anchor=(0, 0.9))
-    ax.savefig(output_dir + '3dpathsummary.png')
-    plt.show()
+    ax.figure.savefig(output_dir + '3dpathsummary.png')
 
 
 

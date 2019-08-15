@@ -2,6 +2,7 @@ from __future__ import division
 from __future__ import absolute_import
 import numpy as np
 import tensorflow as tf
+import rospy
 import gym
 import time
 import spinup2.algos.ppo.core as core
@@ -168,6 +169,10 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             the current policy and value function.
 
     """
+    #ros stuff
+    name = rospy.get_name() + "/ppo_rl_agent"
+    params_topic = rospy.get_param("~topics/params")
+    params_pub = rospy.Publisher(params_topic, Parameters)
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -250,6 +255,10 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
                      KL=kl, Entropy=ent, ClipFrac=cf,
                      DeltaLossPi=(pi_l_new - pi_l_old),
                      DeltaLossV=(v_l_new - v_l_old))
+
+        #publish ros parameters
+        #todo
+        params_msg = Parameters()
 
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0

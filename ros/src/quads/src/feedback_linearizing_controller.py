@@ -1,8 +1,7 @@
-#import torch
 import numpy as np
 from scipy.linalg import solve_continuous_are
-
-import spinup.algos.vpg.core as core
+import spinup2.algos.ppo.core as core
+from gym import spaces
 import tensorflow as tf
 import sys
 import rospy
@@ -23,7 +22,7 @@ class FeedbackLinearizingController(object):
         if not self.register_callbacks(): sys.exit(1)
 
         self._M1, self._f1 = self._dynamics.feedback_linearize()
-        self._params, self._M2, self._f2 = self._construct_learned_parameters()
+        # self._params, self._M2, self._f2 = self._construct_learned_parameters()
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
@@ -47,6 +46,19 @@ class FeedbackLinearizingController(object):
         # Linear system state.
         self._ylin = None
 
+        #define placeholders
+        observation_space = spaces.Box(low=-100,high=100,shape=(13,),dtype=np.float32)
+        action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
+        self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
+
+        #define actor critic
+        #TODO add in central way to accept arguments
+        pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph)
+
+        #start up tensorflow graph
+        self._sess = tf.Session()
+        self._sess.run(tf.global_variables_initializer())
+
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):
             return False
@@ -55,6 +67,10 @@ class FeedbackLinearizingController(object):
         if not rospy.has_param("~topics/x"):
             return False
         self._state_topic = rospy.get_param("~topics/x")
+
+        if not rospy.has_param("~topics/params"):
+            return False
+        self._params_topic = rospy.get_param("~topics/params")
 
         if not rospy.has_param("~topics/u"):
             return False
@@ -104,7 +120,8 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
-        tf.assign(msg,tf.trainable_variables)
+        #msg probably needs to be formatted
+        tf.assign(msg,tf.trainable_variables())
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x
@@ -174,13 +191,25 @@ class FeedbackLinearizingController(object):
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (4, 1))
+        x = self.preprocess_state(x)
+        a = self._sess.run(self._pi, feed_dict={self._x_ph: v.reshape(1,-1)})
+
+        #creating m2, ft
+        m2, f2 = np.split(self._uscaling * u,[16])
 
         # TODO: make sure this works with tf stuff.
-        return np.dot(self._M1(x) + self._M2(x), v) + self._f1(x) + self.f2(x)
+        return np.dot(self._M1(x) + m2, v) + f2 + self.f2(x)
 
-    def _construct_learned_parameters(self):
-        """ Create params, M2, f2. """
-        # TODO!
-        pass
-        
+    # def _construct_learned_parameters(self):
+    #     """ Create params, M2, f2. """
+    #     pass
+    def preprocess_state(self, x):
+        x[0] = np.sin(x[3])
+        x[1] = np.sin(x[4])
+        x[2]= np.sin(x[5])
+        x[3] = np.cos(x[3])
+        x[4] = np.cos(x[4])
+        x[5]= np.cos(x[5])
+        x.pop(10)
+        return x
     

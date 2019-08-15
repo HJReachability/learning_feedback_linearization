@@ -122,8 +122,7 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
-        #msg probably needs to be formatted
-        tf.assign(msg,tf.trainable_variables())
+        tf.assign(msg.params, tf.trainable_variables())
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x
@@ -197,7 +196,8 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: v.reshape(1,-1)})
 
         #creating m2, ft
-        m2, f2 = np.split(self._uscaling * u,[16])
+        U_SCALING = 0.1
+        m2, f2 = np.split(U_SCALING * a,[16])
 
         # TODO: make sure this works with tf stuff.
         return np.dot(self._M1(x) + m2, v) + f2 + self.f2(x)

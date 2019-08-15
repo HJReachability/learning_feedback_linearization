@@ -1,0 +1,275 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- Topics. -->
+  <arg name="output_derivs_topic" default="/output_derivs" />
+  <arg name="reference_topic" default="/ref"/>
+  <arg name="linear_system_reference_topic" default="/ref/linear"/>
+  <arg name="state_topic" default="/state"/>
+  <arg name="lqr_state_topic" default="/lqr_state"/>
+  <arg name="raw_control_topic" default="/control/raw"/>
+  <arg name="crazyflie_control_topic" default="/control/integrated"/>
+  <arg name="takeoff_control_topic" default="/control/takeoff"/>
+  <arg name="raw_takeoff_control_topic" default="/control/raw_takeoff"/>
+  <arg name="open_loop_takeoff_control_topic" default="/control/open_loop_takeoff" />
+  <arg name="merged_control_topic" default="/control/merged" />
+  <arg name="final_control_topic" default="/control/final" />
+  <arg name="in_flight_topic" default="/in_flight" />
+
+  <arg name="merger_mode" default="PRIORITIZED" />
+
+  <!-- System ID params. -->
+  <arg name="mass" default="0.04" />
+  <arg name="Ix" default="0.1" />
+  <arg name="Iy" default="0.1" />
+  <arg name="Iz" default="0.1" />
+
+  <!-- Frames of reference. -->
+  <arg name="fixed_frame" default="world" />
+  <arg name="robot_frame" default="crazyflie" />
+
+  <!-- Takeoff hover point. -->
+  <arg name="takeoff_hover_x" default="0.5" />
+  <arg name="takeoff_hover_y" default="0.5" />
+  <arg name="takeoff_hover_z" default="1.5" />
+
+  <!-- Control parameters. -->
+  <arg name="lqr_x_dim" default="7" />
+  <arg name="lqr_u_dim" default="4" />
+  <arg name="lqr_K_file" default="$(find crazyflie_lqr)/references/K_manual.txt" />
+  <arg name="lqr_u_ref_file" default="$(find crazyflie_lqr)/references/u_ref_hover.txt" />
+
+  <!-- Time steps. -->
+  <arg name="estimator_dt" default="0.01" />
+  <arg name="output_smoother_dt" default="0.01" />
+  <arg name="simulator_dt" default="0.001" />
+
+  <!-- Dimensions. -->
+  <arg name="x_dim" default="7" />
+  <arg name="u_dim" default="4" />
+
+  <!-- Record? -->
+  <arg name="record" default="false" />
+
+  <!-- Record a rosbag. -->
+  <node pkg="rosbag"
+	      type="record"
+	      name="recorder"
+	      args="-a -o $(find quads)/bagfiles/recording.bag"
+	      if="$(arg record)">
+  </node>
+
+  <!-- Simulator. -->
+  <node pkg="crazyflie_simulator"
+        type="near_hover_simulator_coupled_7d_node"
+        name="simulator">
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
+    <param name="frames/robot" value="$(arg robot_frame)" />
+    <param name="time_step" value="$(arg output_smoother_dt)" />
+    <param name="topics/control" value="$(arg final_control_topic)" />
+    <param name="init/x" value="1.0" />
+    <param name="init/y" value="1.0" />
+    <param name="init/z" value="0.0" />
+  </node>
+
+  <!--
+  <node pkg="quads"
+        type="simulator_14d_node"
+        name="simulator"
+        output="screen"
+        required="true">
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
+    <param name="frames/robot" value="$(arg robot_frame)" />
+    <param name="time_step" value="$(arg simulator_dt)" />
+    <param name="topics/control" value="$(arg raw_control_topic)" />
+    <param name="init/x" value="0.0" />
+    <param name="init/y" value="0.1" />
+    <param name="init/z" value="0.0" />
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
+  </node>
+  -->
+
+
+  <!-- Output smoother.
+  <node pkg="quads"
+        name="output_smoother"
+        type="output_smoother_node"
+        output="screen"
+        required="true">
+    <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
+    <param name="dt" value="$(arg output_smoother_dt)" />
+  </node>
+  -->
+
+  <!-- Reference publisher. -->
+  <node pkg="quads"
+        name="reference_generator"
+        type="reference_generator_node"
+        output="screen"
+        required="true">
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+    <param name="dt" value="0.01" />
+    <param name="freq/x" value="1.0" />
+    <param name="freq/y" value="0.5" />
+    <param name="freq/z" value="1.0" />
+    <param name="freq/psi" value="0.25" />
+  </node>
+
+
+  <!-- Quad control conversion. -->
+  <node pkg="quads"
+        name="control_integrator"
+        type="control_integrator_node"
+        output="screen"
+        required="true">
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="topics/raw_control" value="$(arg raw_control_topic)" />
+    <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
+    <param name="prioritized" value="true" /> <!-- HACK -->
+  </node>
+
+  <!-- Feedback linearizing controller + LQR. -->
+  <node pkg="quads"
+        name="controller"
+        type="feedback_linearizing_controller_node.py"
+        output="screen"
+        required="true">
+    <param name="topics/u" value="$(arg raw_control_topic)" />
+    <param name="topics/x" value="$(arg state_topic)" />
+    <param name="topics/y" value="$(arg output_derivs_topic)" />
+
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
+  </node>
+
+  <!-- TF static publisher to create a base_link frame for the crazyflie. -->
+  <node pkg="tf"
+        type="static_transform_publisher"
+        name="robot_base_link_publisher"
+        args="0 0 0 0 0 0 1 $(arg robot_frame) $(arg robot_frame)/base_link 100">
+  </node>
+
+  <!-- Takeoff server node. -->
+  <node name="takeoff_server"
+        pkg="crazyflie_takeoff"
+        type="takeoff_server_node"
+        output="screen">
+
+    <param name="topics/reference" value="$(arg reference_topic)" />
+    <param name="topics/control" value="$(arg open_loop_takeoff_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="duration/hover" value="5.0" />
+
+    <param name="hover/x" value="$(arg takeoff_hover_x)" />
+    <param name="hover/y" value="$(arg takeoff_hover_y)" />
+    <param name="hover/z" value="$(arg takeoff_hover_z)" />
+  </node>
+
+  <!-- Takeoff server node. -->
+  <node name="takeoff_control_filter"
+        pkg="crazyflie_takeoff"
+        type="takeoff_control_filter_node"
+        output="screen">
+
+    <param name="topics/takeoff_control" value="$(arg open_loop_takeoff_control_topic)" />
+    <param name="topics/commanded_control" value="$(arg merged_control_topic)" />
+    <param name="topics/final_control" value="$(arg final_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+
+    <param name="hover/x" value="$(arg takeoff_hover_x)" />
+    <param name="hover/y" value="$(arg takeoff_hover_y)" />
+    <param name="hover/z" value="$(arg takeoff_hover_z)" />
+  </node>
+
+  <!-- Merger node.  -->
+  <node name="merger"
+        pkg="crazyflie_control_merger"
+        type="regular_control_merger_node"
+        output="screen">
+
+    <param name="mode" value="$(arg merger_mode)" />
+
+    <param name="topics/control" value="$(arg takeoff_control_topic)" />
+    <param name="topics/prioritized_control" value="$(arg crazyflie_control_topic)" />
+    <param name="topics/merged" value="$(arg merged_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+  </node>
+
+  <!-- State estimator. -->
+  <node name="state_estimator"
+        pkg="quads"
+        type="state_estimator_node"
+        output="screen">
+
+    <param name="dt" value="$(arg estimator_dt)" />
+
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
+
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="topics/state" value="$(arg state_topic)" />
+    <param name="topics/control" value="$(arg raw_control_topic)" />
+    <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
+
+    <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
+  </node>
+
+  <!-- Takeoff controller. -->
+  <node name="position_velocity_yaw_state_estimator"
+        pkg="crazyflie_state_estimator"
+        type="position_velocity_yaw_state_estimator_node"
+        output="screen">
+
+    <param name="x_dim" value="$(arg lqr_x_dim)" />
+    <param name="time_step" value="$(arg estimator_dt)" />
+
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
+    <param name="frames/robot" value="$(arg robot_frame)" />
+
+    <param name="topics/state" value="$(arg lqr_state_topic)" />
+  </node>
+
+  <node name="takeoff_controller"
+        pkg="crazyflie_lqr"
+        type="position_velocity_yaw_state_lift_lqr_node"
+        output="screen">
+    <param name="x_dim" value="$(arg lqr_x_dim)" />
+    <param name="u_dim" value="$(arg lqr_u_dim)" />
+
+    <param name="K_file" value="$(arg lqr_K_file)" />
+    <param name="u_ref_file" value="$(arg lqr_u_ref_file)" />
+
+    <param name="topics/reference" value="$(arg reference_topic)" />
+    <param name="topics/state" value="$(arg lqr_state_topic)" />
+    <param name="topics/control" value="$(arg takeoff_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+  </node>
+
+  <!-- Launch RViz with the proper config file robot descriptor.
+  <node name="rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(find crazyflie_simulator)/rviz/crazyflie_simulator.rviz"
+        required="true">
+
+    <param name="robot_description"
+           command="$(find xacro)/xacro.py
+                    $(find crazyflie_description)/urdf/crazyflie.urdf.xacro" />
+                    </node>
+  -->
+</launch>

@@ -114,11 +114,13 @@ class StateEstimator {
   ros::Subscriber control_sub_;
   ros::Publisher state_pub_;
   ros::Publisher output_derivs_pub_;
+  ros::Publisher transitions_pub_;
 
   std::string output_derivs_topic_;
   std::string in_flight_topic_;
   std::string control_topic_;
   std::string state_topic_;
+  std::string transitions_pub_;
 
   // Tf parser.
   TfParser tf_parser_;

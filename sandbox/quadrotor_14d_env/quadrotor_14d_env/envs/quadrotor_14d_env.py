@@ -25,7 +25,7 @@ class Quadrotor14dEnv(gym.Env):
 
         #setting action space dimensions so agent knows output size
         self.action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
-        
+
         #setting observation space dimensions so agent knows input size
         if(self._preprocess_state):
             self.observation_space = spaces.Box(low=-100,high=100,shape=(13,),dtype=np.float32)
@@ -81,7 +81,7 @@ class Quadrotor14dEnv(gym.Env):
         done = False
         if(self._count>=self._num_steps_per_rollout):
             done = True
-        
+
         #formatting observation
         list = []
         for x in self._state:
@@ -122,7 +122,7 @@ class Quadrotor14dEnv(gym.Env):
         #preprocessing state
         if(self._preprocess_state):
             observation = self.preprocess_state(observation)
-        
+
         return np.array(observation)
 
     def seed(self, s):
@@ -179,13 +179,12 @@ class Quadrotor14dEnv(gym.Env):
             Q= 50 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
         else:
             Q= 10 * np.eye(linsys_xdim)
-        
+
         #fixed Q scaling
         # Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0,
         #                     1.0, 0.0, 0.0, 0.0,
         #                     1.0, 0.0, 0.0, 0.0,
         #                     1.0, 0.0])
-
         #fixed R scaling
         R = 1.0 * np.eye(linsys_udim)
 
@@ -251,6 +250,3 @@ class Quadrotor14dEnv(gym.Env):
         x[5]= np.cos(x[5])
         x.pop(10)
         return x
-
-
-

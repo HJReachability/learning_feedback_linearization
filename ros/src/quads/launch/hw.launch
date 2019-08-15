@@ -33,7 +33,7 @@
   <arg name="mass" default="0.04" />
   <arg name="Ix" default="0.1" />
   <arg name="Iy" default="0.1" />
-  <arg name="Iz" default="0.02" />
+  <arg name="Iz" default="0.1" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />

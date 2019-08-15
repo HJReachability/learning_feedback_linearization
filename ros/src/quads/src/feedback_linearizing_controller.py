@@ -24,7 +24,7 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         A, B, C = self._dynamics.linearized_system()
-        Q = 1.0e-2 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        Q = 1.0 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
         R = 1.0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
@@ -34,7 +34,9 @@ class FeedbackLinearizingController(object):
 
         self._K = solve_lqr(A, B, Q, R)
         self._ref = np.zeros((14, 1))
-        self._ref[8, 0] = 1.0
+        self._ref[0, 0] = 2.0
+        self._ref[4, 0] = 2.0
+        self._ref[8, 0] = 2.0
 
         #self._K[:, [2, 3, 6, 7, 10, 11]] = 0.0
         #print self._K

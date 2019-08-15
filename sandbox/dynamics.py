@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 
 class Dynamics(object):

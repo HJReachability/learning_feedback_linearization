@@ -14,7 +14,7 @@ from plotter import Plotter
 #'double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl'
 
 #filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_417.pkl_4'
-filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_689_fromzero_False.pkl_2'
+filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.010000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_895_fromzero_True.pkl_0'
 
 # Plot everything.
 # plotter = Plotter(filename)
@@ -142,8 +142,8 @@ if linear_fb:
         v=-1*K @ (diff)
 
         control= fb_law.feedback(x,v)
-        learned_controls_path[:,t]=control[:,0].detach().numpy()
-        x=dyn.integrate(x,control.detach().numpy())
+        learned_controls_path[:,t]=control[:,0].numpy()
+        x=dyn.integrate(x,control.numpy())
         learned_path[:,t+1]=(diff)[:,0]
         if check_energy:
             print(dyn.total_energy(x))

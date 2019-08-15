@@ -1,4 +1,4 @@
-import torch
+import tensorflow as tf
 import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.patches import ConnectionPatch
@@ -172,10 +172,10 @@ class DoublePendulum(Dynamics):
 
     def preprocess_state(self, x):
         """ Preprocess states for input to learned components. """
-        if isinstance(x, torch.Tensor):
-            preprocessed_x = torch.zeros(self.preprocessed_xdim)
-            cos = torch.cos
-            sin = torch.sin
+        if isinstance(x, tf.Tensor):
+            preprocessed_x = tf.zeros(self.preprocessed_xdim)
+            cos = tf.cos
+            sin = tf.sin
         else:
             preprocessed_x = np.zeros(self.preprocessed_xdim)
             cos = np.cos
@@ -187,6 +187,9 @@ class DoublePendulum(Dynamics):
         preprocessed_x[3] = cos(x[2])
         preprocessed_x[4] = sin(x[2])
         preprocessed_x[5] = x[3]
+
+        preprocessed_x = tf.convert_to_tensor(preprocessed_x[None, :])
+
         return preprocessed_x
 
     def observation_distance(self, y1, y2,norm):

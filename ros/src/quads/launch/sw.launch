@@ -4,6 +4,7 @@
   <!-- Topics. -->
   <arg name="output_derivs_topic" default="/output_derivs" />
   <arg name="reference_topic" default="/ref"/>
+  <arg name="linear_system_reference_topic" default="/ref/linear"/>
   <arg name="state_topic" default="/state"/>
   <arg name="lqr_state_topic" default="/lqr_state"/>
   <arg name="raw_control_topic" default="/control/raw"/>
@@ -104,6 +105,22 @@
     <param name="dt" value="$(arg output_smoother_dt)" />
   </node>
   -->
+
+  <!-- Reference publisher. -->
+  <node pkg="quads"
+        name="reference_generator"
+        type="reference_generator_node"
+        output="screen"
+        required="true">
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+    <param name="dt" value="0.01" />
+    <param name="freq/x" value="1.0" />
+    <param name="freq/y" value="0.5" />
+    <param name="freq/z" value="1.0" />
+    <param name="freq/psi" value="0.25" />
+  </node>
+
 
   <!-- Quad control conversion. -->
   <node pkg="quads"

@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 from scipy.linalg import block_diag
 import math
@@ -31,17 +30,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
@@ -60,9 +59,9 @@ class Quadrotor14D(Dynamics):
             [dx],
             [dy],
             [dz],
-            [p],
             [q],
             [r],
+            [p],
             [g17 * zeta],
             [g18 * zeta],
             [g19 * zeta - g],
@@ -82,74 +81,28 @@ class Quadrotor14D(Dynamics):
         control_coefficient_matrix[12, 2] = 1.0 / self._Iy
         control_coefficient_matrix[13, 3] = 1.0 / self._Iz
 
-        xdot = control_coefficient_matrix @ u + drift_term
+        #control_coefficient_matrix[11, 2] = 1.0 / self._Iy
+        #control_coefficient_matrix[12, 1] = 1.0 / self._Ix
+        #control_coefficient_matrix[13, 3] = 1.0 / self._Iz
+
+        xdot = np.dot(control_coefficient_matrix, u) + drift_term
         return xdot
 
     def observation(self, x):
         """ Compute y from x. """
-        return np.array([[x[0, 0]], [x[1, 0]], [x[2, 0]], [x[3, 0]]])
+        return np.array([[x[0, 0]], [x[1, 0]], [x[2, 0]], [x[5, 0]]])
 
     def wrap_angles(self, x):
         """ Wrap angles to [-pi, pi]. """
-        psi = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
-        theta = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
-        phi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        psi = (x[5, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        theta = (x[3, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        phi = (x[4, 0] + np.pi) % (2.0 * np.pi) - np.pi
 
         wrapped_x = x.copy()
-        wrapped_x[3, 0] = psi
-        wrapped_x[4, 0] = theta
-        wrapped_x[5, 0] = phi
+        wrapped_x[5, 0] = psi
+        wrapped_x[3, 0] = theta
+        wrapped_x[4, 0] = phi
         return wrapped_x
-
-    def preprocess_state(self, x):
-        """ Preprocess states for input to learned components. """
-        if isinstance(x, torch.Tensor):
-            preprocessed_x = torch.zeros(self.preprocessed_xdim)
-            cos = torch.cos
-            sin = torch.sin
-        else:
-            preprocessed_x = np.zeros(self.preprocessed_xdim)
-            cos = np.cos
-            sin = np.sin
-
-
-        preprocessed_x[0] = cos(x[3])
-        preprocessed_x[1] = sin(x[3])
-        preprocessed_x[2] = cos(x[4])
-        preprocessed_x[3] = sin(x[4])
-        preprocessed_x[4] = cos(x[5])
-        preprocessed_x[5] = sin(x[5])
-        preprocessed_x[6] = x[6]
-        preprocessed_x[7] = x[7]
-        preprocessed_x[8] = x[8]
-        preprocessed_x[9] = x[9]
-        preprocessed_x[10] = x[10]
-        preprocessed_x[11] = x[11]
-        preprocessed_x[12] = x[12]
-        preprocessed_x[13] = x[13]
-
-
-        """
-        preprocessed_x[0] = x[0]
-        preprocessed_x[1] = x[1]
-        preprocessed_x[2] = x[2]
-        preprocessed_x[3] = cos(x[3])
-        preprocessed_x[4] = sin(x[3])
-        preprocessed_x[5] = cos(x[4])
-        preprocessed_x[6] = sin(x[4])
-        preprocessed_x[7] = cos(x[5])
-        preprocessed_x[8] = sin(x[5])
-        preprocessed_x[9] = x[6]
-        preprocessed_x[10] = x[7]
-        preprocessed_x[11] = x[8]
-        preprocessed_x[12] = x[9]
-        preprocessed_x[13] = x[10]
-        preprocessed_x[14] = x[11]
-        preprocessed_x[15] = x[12]
-        preprocessed_x[16] = x[13]
-        """
-
-        return preprocessed_x
 
     def observation_distance(self, y1, y2, norm):
         """ Compute a distance metric on the observation space. """
@@ -213,17 +166,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Gravity.
         g = 9.81
@@ -295,7 +248,7 @@ class Quadrotor14D(Dynamics):
 
     def _f_q(self, x0):
         """ This is \alpha(x) on pp. 31. """
-        return -np.linalg.inv(self._Delta_q(x0)) @ self._b_q(x0)
+        return -np.dot(np.linalg.inv(self._Delta_q(x0)), self._b_q(x0))
 
     def _M_q(self, x0):
         """ This is \beta(x) on pp. 31. """
@@ -316,28 +269,27 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin
         cos = np.cos
         tan = math.tan
 
-        return np.array([
-            [  (sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, (zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(psi)*cos(theta))/(Iy*m),  (zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Iz*m)],
-            [ -(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, (zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/(Ix*m), (zeta*cos(phi)*cos(theta)*sin(psi))/(Iy*m), -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Iz*m)],
-            [                               (cos(phi)*cos(theta))/m,                                                                0,         -(zeta*cos(phi)*sin(theta))/(Iy*m),                                -(zeta*cos(theta)*sin(phi))/(Iz*m)],
-            [                                                     0,                                                             1/Ix,                                          0,                                                                 0],
+        return np.array([[  (sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta))/m, (zeta*cos(phi)*cos(psi)*cos(theta))/(Ix*m),  (zeta*(cos(phi)*sin(psi) - cos(psi)*sin(phi)*sin(theta)))/(Iy*m), (zeta*(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta)))/(Iz*m)],
+                         [ -(cos(psi)*sin(phi) - cos(phi)*sin(psi)*sin(theta))/m, (zeta*cos(phi)*cos(theta)*sin(psi))/(Ix*m), -(zeta*(cos(phi)*cos(psi) + sin(phi)*sin(psi)*sin(theta)))/(Iy*m), (zeta*(sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta)))/(Iz*m)],
+                         [                               (cos(phi)*cos(theta))/m,         -(zeta*cos(phi)*sin(theta))/(Ix*m),                                -(zeta*cos(theta)*sin(phi))/(Iy*m),                                                                0],
+                         [                                                     0,                                          0,                                                                 0,                                                             1/Iz]
         ])
 
     def _b_q(self, x0):
@@ -355,17 +307,17 @@ class Quadrotor14D(Dynamics):
         x = x0[0, 0]
         y = x0[1, 0]
         z = x0[2, 0]
-        psi = x0[3, 0]
-        theta = x0[4, 0]
-        phi = x0[5, 0]
+        theta = x0[3, 0]
+        phi = x0[4, 0]
+        psi = x0[5, 0]
         dx = x0[6, 0]
         dy = x0[7, 0]
         dz = x0[8, 0]
         zeta = x0[9, 0]
         xi = x0[10, 0]
-        p = x0[11, 0]
-        q = x0[12, 0]
-        r = x0[13, 0]
+        q = x0[11, 0]
+        r = x0[12, 0]
+        p = x0[13, 0]
 
         # Fix sines, cosines, and tangents.
         sin = np.sin

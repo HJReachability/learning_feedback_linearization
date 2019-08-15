@@ -30,7 +30,7 @@
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="0.04" />
+  <arg name="mass" default="0.049" />
   <arg name="Ix" default="0.1" />
   <arg name="Iy" default="0.1" />
   <arg name="Iz" default="0.1" />

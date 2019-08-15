@@ -172,7 +172,7 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
     # Inputs to computation graph
     x_ph, a_ph = core.placeholders_from_spaces(env.observation_space, env.action_space)
     adv_ph, ret_ph, logp_old_ph = core.placeholders(None, None, None)
-    
+
     # Main outputs from computation graph
     pi, logp, logp_pi, v = actor_critic(x_ph, a_ph, **ac_kwargs)
 

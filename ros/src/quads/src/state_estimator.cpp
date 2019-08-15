@@ -48,6 +48,7 @@
 #include <quads_msgs/Output.h>
 #include <quads_msgs/State.h>
 
+
 #include <crazyflie_msgs/ControlStamped.h>
 
 #include <geometry_msgs/TransformStamped.h>
@@ -158,6 +159,7 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/state", state_topic_)) return false;
   if (!nl.getParam("topics/output_derivs", output_derivs_topic_)) return false;
   if (!nl.getParam("topics/control", control_topic_)) return false;
+  if (!nl.getParam("topics/transitions", transitions_topic_)) return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {

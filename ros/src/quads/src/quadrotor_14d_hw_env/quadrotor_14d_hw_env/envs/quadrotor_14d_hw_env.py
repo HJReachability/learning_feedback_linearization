@@ -3,12 +3,12 @@ import gym
 import sys
 import rospy
 
-from quads_msgs.msg import StateTransition
+from quads_msgs.msg import Transition
 
-class Quadrotor14dEnv(gym.Env):
+class Quadrotor14dHwEnv(gym.Env):
     def __init__(self):
         # Calling init method of parent class.
-        super(Quadrotor14dEnv, self).__init__()
+        super(Quadrotor14dHwEnv, self).__init__()
 
         # Setting name of ros node.
         self._name = rospy.get_name() + "/Environment"
@@ -27,14 +27,14 @@ class Quadrotor14dEnv(gym.Env):
             return None, None, None, None, True
 
         transition = self._transitions.pop(0)
-        x = transition.x
-        v = transition.v
-        u = transition.u
+        x = np.array(transition.x)
+#        v = transition.v
+#        u = transition.u
         r = transition.r
-        return x, v, u, r, False
+        return x, r, False, {}
 
     def reset(self):
-        pass
+        self.clear()
 
     def render(self):
         # TODO!

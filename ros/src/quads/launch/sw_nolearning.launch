@@ -15,8 +15,6 @@
   <arg name="merged_control_topic" default="/control/merged" />
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
-  <arg name="learned_params_topic" default="/params" />
-  <arg name="transitions_topic" default="/transitions" />
 
   <arg name="merger_mode" default="PRIORITIZED" />
 
@@ -108,16 +106,6 @@
   </node>
   -->
 
-  <!-- Learning node. -->
-  <node pkg="quads"
-        name="learning"
-        type="ppo_node"
-        output="screen"
-        required="true">
-    <param name="topics/transition" value="$(arg transition_topic)" />
-    <param name="topics/params" value="$(arg learned_params_topic)" />
-  </node>
-
   <!-- Reference publisher. -->
   <node pkg="quads"
         name="reference_generator"
@@ -159,7 +147,6 @@
     <param name="topics/u" value="$(arg raw_control_topic)" />
     <param name="topics/x" value="$(arg state_topic)" />
     <param name="topics/y" value="$(arg output_derivs_topic)" />
-    <param name="topics/params" value="$(arg learned_params_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
@@ -235,7 +222,6 @@
     <param name="topics/state" value="$(arg state_topic)" />
     <param name="topics/control" value="$(arg raw_control_topic)" />
     <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
-    <param name="topics/transitions" value="$(arg transitions_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

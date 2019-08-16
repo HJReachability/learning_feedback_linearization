@@ -1,3 +1,4 @@
 # State and reward.
-float64[] x
+quads_msgs/State x
+quads_msgs/Control u
 float64 r

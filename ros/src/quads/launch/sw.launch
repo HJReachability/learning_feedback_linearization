@@ -236,6 +236,8 @@
     <param name="topics/control" value="$(arg raw_control_topic)" />
     <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
     <param name="topics/transitions" value="$(arg transitions_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/reference" value="$(arg reference_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

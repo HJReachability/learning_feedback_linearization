@@ -51,8 +51,10 @@
 #include <quads_msgs/Control.h>
 #include <quads_msgs/Output.h>
 #include <quads_msgs/OutputDerivatives.h>
+#include <quads_msgs/Transition.h>
 
 #include <crazyflie_msgs/ControlStamped.h>
+#include <std_msgs/Empty.h>
 
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
@@ -62,13 +64,22 @@
 
 namespace quads {
 
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
+
 class StateEstimator {
  public:
   ~StateEstimator() {}
   StateEstimator()
-      : thrust_(9.81),
+      : linear_system_state_(
+            VectorXd::Constant(14, std::numeric_limits<double>::quiet_NaN())),
+        reference_(
+            VectorXd::Constant(14, std::numeric_limits<double>::quiet_NaN())),
+        thrust_(9.81),
         thrustdot_(0.0),
         last_control_time_(std::numeric_limits<double>::quiet_NaN()),
+        last_linear_system_state_update_time_(
+            std::numeric_limits<double>::quiet_NaN()),
         in_flight_(false),
         initialized_(false) {}
 
@@ -85,6 +96,10 @@ class StateEstimator {
     in_flight_ = true;
   }
 
+  // Callbacks for reset linear system state and references.
+  void LinearSystemResetCallback(const std_msgs::Empty::ConstPtr& msg);
+  void ReferenceCallback(const quads_msgs::OutputDerivatives::ConstPtr& msg);
+
   // Callback to process new control msgs.
   void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
@@ -94,6 +109,12 @@ class StateEstimator {
   // Are we in flight?
   bool in_flight_;
 
+  // Current linear system state and reference.
+  VectorXd linear_system_state_;
+  VectorXd reference_;
+  double last_linear_system_state_update_time_;
+  quads_msgs::OutputDerivatives::ConstPtr last_linear_system_state_estimate_;
+
   // Polynomial fits.
   PolynomialFit<4, 100> smoother_x_, smoother_y_, smoother_z_;
   PolynomialFit<2, 10> smoother_psi_, smoother_theta_, smoother_phi_;
@@ -101,6 +122,10 @@ class StateEstimator {
   // Numerical integration for thrust.
   double thrust_, thrustdot_;
   double last_control_time_;
+  quads_msgs::Control::ConstPtr last_control_;
+
+  // Linear feedback controller, and A/B.
+  MatrixXd K_, A_, B_;
 
   // Dynamics.
   Quadrotor14D dynamics_;
@@ -112,6 +137,8 @@ class StateEstimator {
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;
   ros::Subscriber control_sub_;
+  ros::Subscriber linear_system_reset_sub_;
+  ros::Subscriber reference_sub_;
   ros::Publisher state_pub_;
   ros::Publisher output_derivs_pub_;
   ros::Publisher transitions_pub_;
@@ -120,7 +147,9 @@ class StateEstimator {
   std::string in_flight_topic_;
   std::string control_topic_;
   std::string state_topic_;
-  std::string transitions_pub_;
+  std::string transitions_topic_;
+  std::string linear_system_reset_topic_;
+  std::string reference_topic_;
 
   // Tf parser.
   TfParser tf_parser_;

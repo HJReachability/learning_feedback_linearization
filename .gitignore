@@ -14,7 +14,10 @@ tests
 ros/devel
 ros/build
 ros/src/CMakeLists.txt
+ros/src/quads/bagfiles
 ros/.catkin_workspace
+
+frames.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

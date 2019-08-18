@@ -21,8 +21,8 @@ class Quadrotor14dHwEnv(gym.Env):
         # Queue of state transitions observed in real system with current policy.
         self._transitions = []
 
-    def step(self, u):
-        """ Return x, v, u, r, done """
+    def step(self):
+        """ Return x, r, u, done. """
         if len(self._transitions) == 0:
             rospy.logerr("%s: Out of transitions.", self._name)
             return None, None, None, None, True
@@ -38,7 +38,7 @@ class Quadrotor14dHwEnv(gym.Env):
         u = np.array([transition.u.thrustdot2, transition.u.pitchdot2,
                       transition.u.rolldot2, transition.u.yawdot2])
         r = transition.r
-        return x, r, u, False, {}
+        return self.preprocess_state(x), r, u, False, {}
 
     def preprocess_state(self, x):
         x[0] = np.sin(x[3])

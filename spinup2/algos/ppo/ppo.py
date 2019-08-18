@@ -199,8 +199,8 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     # Need all placeholders in *this* order later (to zip with data from buffer)
     all_phs = [x_ph, a_ph, adv_ph, ret_ph, logp_old_ph]
 
-    # Every step, get: action, value, and logprob
-    get_action_ops = [pi, v, logp_pi]
+    # Every step, get: value and logprob (we'll get action from the env)
+    get_action_ops = [v, logp] # logp instead of logp_pi since we know a
 
     # Experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
@@ -263,20 +263,22 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
         params_pub.publish(params_msg)
 
     start_time = time.time()
-    o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+    env.reset()
+    #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in xrange(epochs):
         for t in xrange(local_steps_per_epoch):
-            a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
+            o, r, a, d, _ = env.step()
+            ep_ret += r
+            ep_len += 1
+
+            # get log prob
+            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
 
             # save and log
             buf.store(o, a, r, v_t, logp_t)
             logger.store(VVals=v_t)
-
-            o, r, d, _ = env.step(a[0])
-            ep_ret += r
-            ep_len += 1
 
             terminal = d or (ep_len == max_ep_len)
             if terminal or (t==local_steps_per_epoch-1):
@@ -288,7 +290,10 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
-                o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+
+                # NOTE: check this call
+                #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+                env.reset()
 
         # Save model
         if (epoch % save_freq == 0) or (epoch == epochs-1):

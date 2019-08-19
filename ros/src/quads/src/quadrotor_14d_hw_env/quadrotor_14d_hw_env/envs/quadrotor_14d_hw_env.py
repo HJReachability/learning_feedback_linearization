@@ -29,9 +29,9 @@ class Quadrotor14dHwEnv(gym.Env):
 
     def step(self):
         """ Return x, r, u, done. """
-        if len(self._transitions) == 0:
+        while len(self._transitions) == 0:
             rospy.logerr_throttle(1.0, "%s: Out of transitions." % self._name)
-            return None, None, None, True, {}
+            rospy.sleep(0.01)
 
         transition = self._transitions.pop(0)
         x = np.array([transition.x.x, transition.x.y,
@@ -54,7 +54,7 @@ class Quadrotor14dHwEnv(gym.Env):
         x[5]= np.cos(x[5])
 
         # Remove xi.
-        x.pop(10)
+        x = np.delete(x, 10)
 
         # TODO: think about removing p, q, r?
         return x

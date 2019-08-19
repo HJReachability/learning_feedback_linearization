@@ -18,28 +18,6 @@ class FeedbackLinearizingController(object):
     def __init__(self):
         self._name = rospy.get_name() + "/feedback_linearizing_controller"
 
-        if not self.load_parameters():
-            print("fuck")
-            sys.exit(1)
-        if not self.register_callbacks():
-            print("fuckfuck")
-            sys.exit(1)
-
-        self._M1, self._f1 = self._dynamics.feedback_linearize()
-        # self._params, self._M2, self._f2 = self._construct_learned_parameters()
-
-        # LQR.
-        self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 1.0e-2 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-        R = 1.0 * np.eye(4)
-
-        def solve_lqr(A, B, Q, R):
-            P = solve_continuous_are(A, B, Q, R)
-            K = np.dot(np.dot(np.linalg.inv(R), B.T), P)
-            return K
-
-        self._K = solve_lqr(self._A, self._B, Q, R)
-
         # Initial reference is just a hover, but will be overwritten by msgs as we receive them.
         self._ref = np.zeros((14, 1))
         self._ref[0, 0] = 2.0
@@ -60,11 +38,31 @@ class FeedbackLinearizingController(object):
 
         #define actor critic
         #TODO add in central way to accept arguments
-        self._pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph)
+        self._pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph, action_space=action_space)
 
         #start up tensorflow graph
         self._sess = tf.Session()
         self._sess.run(tf.global_variables_initializer())
+
+        if not self.load_parameters():
+            sys.exit(1)
+        if not self.register_callbacks():
+            sys.exit(1)
+
+        self._M1, self._f1 = self._dynamics.feedback_linearize()
+        # self._params, self._M2, self._f2 = self._construct_learned_parameters()
+
+        # LQR.
+        self._A, self._B, _ = self._dynamics.linearized_system()
+        Q = 1.0e-2 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        R = 1.0 * np.eye(4)
+
+        def solve_lqr(A, B, Q, R):
+            P = solve_continuous_are(A, B, Q, R)
+            K = np.dot(np.dot(np.linalg.inv(R), B.T), P)
+            return K
+
+        self._K = solve_lqr(self._A, self._B, Q, R)
 
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):
@@ -161,7 +159,7 @@ class FeedbackLinearizingController(object):
         # Determine v.
         if self._y is not None:
             v = -np.dot(self._K, (self._y - self._ref))
-            u = self.feedback(x, v)
+            u, a = self.feedback(x, v)
 
             # Publish Control msg.
             u_msg = Control()
@@ -172,8 +170,6 @@ class FeedbackLinearizingController(object):
             self._control_pub.publish(u_msg)
 
             # Publish Transition msg.
-            a = self._sess.run(self._pi, feed_dict={self._x_ph : x.flatten()})
-
             t_msg = Transition()
             t_msg.x = list(x.flatten())
             t_msg.a = list(a.flatten())
@@ -208,15 +204,16 @@ class FeedbackLinearizingController(object):
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """
         v = np.reshape(v, (4, 1))
-        x = self.preprocess_state(x)
-        a = self._sess.run(self._pi, feed_dict={self._x_ph: v.reshape(1,-1)})
+        preprocessed_x = self.preprocess_state(x)
+        a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        U_SCALING = 0.1
-        m2, f2 = np.split(U_SCALING * a,[16])
+        U_SCALING = 0.0
+        m2, f2 = np.split(U_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.
-        return np.dot(self._M1(x) + m2, v) + f2 + self.f2(x)
+        return np.dot(self._M1(x.reshape((-1, 1))) + m2.reshape((4, 4)), v) + \
+            f2.reshape((4, 1)) + self._f1(x.reshape((-1, 1))), a
 
     # def _construct_learned_parameters(self):
     #     """ Create params, M2, f2. """
@@ -228,5 +225,7 @@ class FeedbackLinearizingController(object):
         x[3] = np.cos(x[3])
         x[4] = np.cos(x[4])
         x[5]= np.cos(x[5])
-        x.pop(10)
+
+        x = np.delete(x, 10)
+
         return x

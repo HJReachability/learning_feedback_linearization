@@ -9,17 +9,21 @@ from quads_msgs.msg import AuxiliaryControl
 from quads_msgs.msg import OutputDerivatives
 from quads_msgs.msg import Control
 from quads_msgs.msg import State
-from quads_msgs.msg import StateTransition
+from quads_msgs.msg import Transition
 from quads_msgs.msg import LearnedParameters
-
+from std_msgs.msg import Empty
 from quadrotor_14d import Quadrotor14D
 
 class FeedbackLinearizingController(object):
     def __init__(self):
         self._name = rospy.get_name() + "/feedback_linearizing_controller"
 
-        if not self.load_parameters(): sys.exit(1)
-        if not self.register_callbacks(): sys.exit(1)
+        if not self.load_parameters():
+            print("fuck")
+            sys.exit(1)
+        if not self.register_callbacks():
+            print("fuckfuck")
+            sys.exit(1)
 
         self._M1, self._f1 = self._dynamics.feedback_linearize()
         # self._params, self._M2, self._f2 = self._construct_learned_parameters()
@@ -53,9 +57,10 @@ class FeedbackLinearizingController(object):
         action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
 
+
         #define actor critic
         #TODO add in central way to accept arguments
-        pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph)
+        self._pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph)
 
         #start up tensorflow graph
         self._sess = tf.Session()
@@ -81,6 +86,10 @@ class FeedbackLinearizingController(object):
         if not rospy.has_param("~topics/ref"):
             return False
         self._ref_topic = rospy.get_param("~topics/ref")
+
+        if not rospy.has_param("~topics/linear_system_reset"):
+            return False
+        self._reset_topic = rospy.get_param("~topics/linear_system_reset")
 
         if not rospy.has_param("~dynamics/m"):
             return False
@@ -114,6 +123,9 @@ class FeedbackLinearizingController(object):
 
         self._ref_sub = rospy.Subscriber(
             self._ref_topic, OutputDerivatives, self.ref_callback)
+
+        self._reset_sub = rospy.Subscriber(
+            self._reset_topic, Empty, self.linear_system_reset_callback)
 
         self._control_pub = rospy.Publisher(self._control_topic, Control)
 
@@ -159,11 +171,12 @@ class FeedbackLinearizingController(object):
             u_msg.yawdot2 = u[3, 0]
             self._control_pub.publish(u_msg)
 
-            # Publish StateTransition msg.
-            t_msg = StateTransition()
-            t_msg.x = x.flatten()
-            t_msg.u = u.flatten()
-            t_msg.v = v.flatten()
+            # Publish Transition msg.
+            a = self._sess.run(self._pi, feed_dict={self._x_ph : x.flatten()})
+
+            t_msg = Transition()
+            t_msg.x = list(x.flatten())
+            t_msg.a = list(a.flatten())
             t_msg.r = -self._dynamics.observation_distance(self._y, self._ylin, norm=2)
 
     def output_callback(self, msg):
@@ -177,10 +190,6 @@ class FeedbackLinearizingController(object):
             self._ylin = self._y
             self._last_ylin_reset_time = rospy.Time.now().to_sec()
             self._last_ylin_integration_time = self._last_ylin_reset_time
-        elif rospy.Time.now().to_sec() - self._last_ylin_reset_time > 0.5:
-            # Been too long. Reset.
-            self._ylin = self._y
-            self._last_ylin_integration_time = rospy.Time.now().to_sec()
         else:
             # Integrate forward.
             dt = rospy.Time.now().to_sec() - self._last_ylin_integration_time
@@ -188,6 +197,13 @@ class FeedbackLinearizingController(object):
 
             v = -np.dot(self._K, (self._ylin - self._ref))
             self._ylin += dt * (np.dot(self._A, self._ylin) + np.dot(self._B, v))
+
+    def linear_system_reset_callback(self, msg):
+        self._ylin = self._y
+
+        t = rospy.Time.now().to_sec()
+        self._last_ylin_integration_time = t
+        self._last_ylin_reset_time = t
 
     def feedback(self, x, v):
         """ Compute u from x, v (np.arrays). See above comment for details. """

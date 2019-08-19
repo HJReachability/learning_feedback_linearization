@@ -18,14 +18,20 @@ class Quadrotor14dHwEnv(gym.Env):
         if not self.load_parameters(): sys.exit(1)
         if not self.register_callbacks(): sys.exit(1)
 
+        # Set up observation space and action space.
+        NUM_PREPROCESSED_STATES = 13
+        NUM_ACTION_DIMS = 20
+        self.observation_space = gym.spaces.Box(-np.inf, np.inf, (NUM_PREPROCESSED_STATES,))
+        self.action_space = gym.spaces.Box(-np.inf, np.inf, (NUM_ACTION_DIMS,))
+
         # Queue of state transitions observed in real system with current policy.
         self._transitions = []
 
     def step(self):
         """ Return x, r, u, done. """
         if len(self._transitions) == 0:
-            rospy.logerr("%s: Out of transitions.", self._name)
-            return None, None, None, None, True
+            rospy.logerr_throttle(1.0, "%s: Out of transitions." % self._name)
+            return None, None, None, True, {}
 
         transition = self._transitions.pop(0)
         x = np.array([transition.x.x, transition.x.y,
@@ -35,10 +41,9 @@ class Quadrotor14dHwEnv(gym.Env):
                       transition.x.dz, transition.x.zeta,
                       transition.x.xi, transition.x.q,
                       transition.x.r, transition.x.p])
-        u = np.array([transition.u.thrustdot2, transition.u.pitchdot2,
-                      transition.u.rolldot2, transition.u.yawdot2])
+        a = np.array(transition.a)
         r = transition.r
-        return self.preprocess_state(x), r, u, False, {}
+        return self.preprocess_state(x), r, a, False, {}
 
     def preprocess_state(self, x):
         x[0] = np.sin(x[3])
@@ -79,7 +84,7 @@ class Quadrotor14dHwEnv(gym.Env):
 
     def register_callbacks(self):
         self._transition_sub = rospy.Subscriber(
-            self._transition_topic, StateTransition, self.transition_callback)
+            self._transition_topic, Transition, self.transition_callback)
 
         self._linear_system_reset_pub = rospy.Publisher(self._linear_system_reset_topic, Empty)
 

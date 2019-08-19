@@ -156,12 +156,14 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   const double r =
       -(linear_system_state_ - our_linear_system_state).squaredNorm();
 
+  /*
   quads_msgs::Transition transition_msg;
   transition_msg.x = state_msg;
   transition_msg.u = *last_control_;
   transition_msg.r = r;
 
   transitions_pub_.publish(transition_msg);
+  */
 }
 
 bool StateEstimator::Initialize(const ros::NodeHandle& n) {

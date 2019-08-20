@@ -45,7 +45,8 @@ class Quadrotor14dHwEnv(gym.Env):
         r = transition.r
         return self.preprocess_state(x), r, a, False, {}
 
-    def preprocess_state(self, x):
+    def preprocess_state(self, x0):
+        x = x0.copy()
         x[0] = np.sin(x[3])
         x[1] = np.sin(x[4])
         x[2]= np.sin(x[5])

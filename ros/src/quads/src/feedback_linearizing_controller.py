@@ -20,9 +20,6 @@ class FeedbackLinearizingController(object):
 
         # Initial reference is just a hover, but will be overwritten by msgs as we receive them.
         self._ref = np.zeros((14, 1))
-        self._ref[0, 0] = 2.0
-        self._ref[4, 0] = 2.0
-        self._ref[8, 0] = 2.0
 
         # Output derivates are none for now.
         self._y = None
@@ -38,7 +35,8 @@ class FeedbackLinearizingController(object):
 
         #define actor critic
         #TODO add in central way to accept arguments
-        self._pi, logp, logp_pi, v = core.mlp_actor_critic(self._x_ph, self._u_ph, action_space=action_space)
+        self._pi, logp, logp_pi, v = core.mlp_actor_critic(
+            self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
 
         #start up tensorflow graph
         self._sess = tf.Session()
@@ -63,6 +61,17 @@ class FeedbackLinearizingController(object):
             return K
 
         self._K = solve_lqr(self._A, self._B, Q, R)
+
+        # Kill derivatives.
+        print("A is: ", self._A)
+        print("B is: ", self._B)
+
+        print("K is: ", self._K)
+#        self._K[0, 1:] = 0.0
+#        self._K[1, 4:] = 0.0
+#        self._K[2, 8:] = 0.0
+#        self._K[3, 12:] = 0.0
+#        print("K is now: ", self._K)
 
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):
@@ -132,6 +141,7 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
+        rospy.loginfo("Updated tf params in controller.")
         tf.assign(msg.params, tf.trainable_variables())
 
     def ref_callback(self, msg):
@@ -208,17 +218,20 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        U_SCALING = 0.0
-        m2, f2 = np.split(U_SCALING * a[0],[16])
+        A_SCALING = 0.01
+        m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.
-        return np.dot(self._M1(x.reshape((-1, 1))) + m2.reshape((4, 4)), v) + \
-            f2.reshape((4, 1)) + self._f1(x.reshape((-1, 1))), a
+        return np.dot(self._M1(x) + m2.reshape((4, 4)), v) + \
+            f2.reshape((4, 1)) + self._f1(x), a
+
+#        return np.dot(self._M1(x), v) + self._f1(x), a
 
     # def _construct_learned_parameters(self):
     #     """ Create params, M2, f2. """
     #     pass
-    def preprocess_state(self, x):
+    def preprocess_state(self, x0):
+        x = x0.copy()
         x[0] = np.sin(x[3])
         x[1] = np.sin(x[4])
         x[2]= np.sin(x[5])

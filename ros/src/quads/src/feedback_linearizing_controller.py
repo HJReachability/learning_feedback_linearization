@@ -143,8 +143,10 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
+        tf_vars = [v for v in tf.trainable_variables() if u"pi" in v.name]
+        for p, v in zip(msg.params, tf_vars):
+            self._sess.run(tf.assign(np.array(p), v))
         rospy.loginfo("Updated tf params in controller.")
-        tf.assign(msg.params, tf.trainable_variables())
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x

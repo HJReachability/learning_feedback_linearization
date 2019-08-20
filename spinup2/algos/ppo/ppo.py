@@ -11,6 +11,7 @@ from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_s
 from itertools import izip
 
 from quads_msgs.msg import LearnedParameters
+from quads_msgs.msg import Parameters
 import rospy
 
 class PPOBuffer(object):
@@ -263,12 +264,17 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
         # Publish ros parameters
         params_msg = LearnedParameters()
 
-        # BUG: this is wrong. @shreyas @eric can you fix this?
         params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
-        print params
-#        params_msg.params = params
-#        params_pub.publish(params_msg)
+        for p in params:
+            msg = Parameters()
+            if isinstance(p, np.ndarray):
+                msg.params = list(p)
+            else:
+                msg.params = [p]
+            params_msg.params.append(msg)
+        params_pub.publish(params_msg)
 
+    # RUN THIS THING!
     start_time = time.time()
     env.reset()
     #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0

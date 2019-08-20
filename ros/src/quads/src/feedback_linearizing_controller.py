@@ -52,8 +52,8 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 1.0e-2 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-        R = 1.0 * np.eye(4)
+        Q = 1.0e1 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        R = 1.0e0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
             P = solve_continuous_are(A, B, Q, R)
@@ -62,11 +62,7 @@ class FeedbackLinearizingController(object):
 
         self._K = solve_lqr(self._A, self._B, Q, R)
 
-        # Kill derivatives.
-        print("A is: ", self._A)
-        print("B is: ", self._B)
 
-        print("K is: ", self._K)
 #        self._K[0, 1:] = 0.0
 #        self._K[1, 4:] = 0.0
 #        self._K[2, 8:] = 0.0
@@ -218,7 +214,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        A_SCALING = 0.01
+        A_SCALING = 0.00
         m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.

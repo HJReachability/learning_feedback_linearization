@@ -78,10 +78,13 @@ class PPOBuffer(object):
         the buffer, with advantages appropriately normalized (shifted to have
         mean zero and std one). Also, resets some pointers in the buffer.
         """
+        if (self.ptr != self.max_size):
+            print "ptr, max = (%d, %d)" % (self.ptr, self.max_size)
         assert self.ptr == self.max_size    # buffer has to be full before you can get
         self.ptr, self.path_start_idx = 0, 0
         # the next two lines implement the advantage normalization trick
         adv_mean, adv_std = mpi_statistics_scalar(self.adv_buf)
+        print "mean = %f, stddev = %f" % (adv_mean, adv_std)
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
         return [self.obs_buf, self.act_buf, self.adv_buf,
                 self.ret_buf, self.logp_buf]
@@ -273,15 +276,27 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     for epoch in xrange(epochs):
         for t in xrange(local_steps_per_epoch):
             o, r, a, d, _ = env.step()
+
+            ep_ret += r
             ep_len += 1
 
+            # get log prob
+            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1),
+                                                              a_ph: a.reshape(1, -1)})
+
+            # save and log
+            buf.store(o, a, r, v_t, logp_t)
+            logger.store(VVals=v_t)
+
             terminal = d or (ep_len == max_ep_len)
-            if terminal or (t==local_steps_per_epoch-1):
+            if terminal or (t > local_steps_per_epoch-1):
                 if not(terminal):
                     print u'Warning: trajectory cut off by epoch at %d steps.'%ep_len
+
                 # if trajectory didn't reach terminal state, bootstrap value target
-#                last_val = r if d else sess.run(v, feed_dict={x_ph: o.reshape(1,-1)})
-#                buf.finish_path(last_val)
+                last_val = r if d else sess.run(v, feed_dict={x_ph: o.reshape(1,-1)})
+                buf.finish_path(last_val)
+
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
@@ -291,18 +306,6 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
                 env.reset()
                 ep_ret = 0
                 ep_len = 0
-            else:
-                if r is None:
-                    print("done:", d)
-                ep_ret += r
-
-                # get log prob
-                v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
-
-                # save and log
-                buf.store(o, a, r, v_t, logp_t)
-                logger.store(VVals=v_t)
-
 
         # Save model
         if (epoch % save_freq == 0) or (epoch == epochs-1):

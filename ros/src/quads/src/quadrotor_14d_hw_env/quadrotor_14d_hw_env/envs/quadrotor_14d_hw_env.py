@@ -35,13 +35,7 @@ class Quadrotor14dHwEnv(gym.Env):
             rospy.sleep(0.01)
 
         transition = self._transitions.pop(0)
-        x = np.array([transition.x.x, transition.x.y,
-                      transition.x.z, transition.x.theta,
-                      transition.x.phi, transition.x.psi,
-                      transition.x.dx, transition.x.dy,
-                      transition.x.dz, transition.x.zeta,
-                      transition.x.xi, transition.x.q,
-                      transition.x.r, transition.x.p])
+        x = np.array(transition.x)
         a = np.array(transition.a)
         r = transition.r
 
@@ -49,7 +43,6 @@ class Quadrotor14dHwEnv(gym.Env):
         if self._num_steps > 25:
             self._num_steps = 0
             done = True
-            print "done"
 
         self._num_steps += 1
 

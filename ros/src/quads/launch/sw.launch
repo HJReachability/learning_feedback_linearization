@@ -26,6 +26,10 @@
   <arg name="Ix" default="0.1" />
   <arg name="Iy" default="0.1" />
   <arg name="Iz" default="0.1" />
+  <arg name="bad_mass" default="0.03" />
+  <arg name="bad_Ix" default="0.08" />
+  <arg name="bad_Iy" default="0.08" />
+  <arg name="bad_Iz" default="0.08" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
@@ -167,10 +171,10 @@
     <param name="topics/transitions" value="$(arg transition_topic)" />
 
 
-    <param name="dynamics/m" value="$(arg mass)" />
-    <param name="dynamics/Ix" value="$(arg Ix)" />
-    <param name="dynamics/Iy" value="$(arg Iy)" />
-    <param name="dynamics/Iz" value="$(arg Iz)" />
+    <param name="dynamics/m" value="$(arg bad_mass)" />
+    <param name="dynamics/Ix" value="$(arg bad_Ix)" />
+    <param name="dynamics/Iy" value="$(arg bad_Iy)" />
+    <param name="dynamics/Iz" value="$(arg bad_Iz)" />
   </node>
 
   <!-- TF static publisher to create a base_link frame for the crazyflie. -->

@@ -108,9 +108,9 @@ bool ReferenceGenerator::RegisterCallbacks(const ros::NodeHandle& n) {
 void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
   quads_msgs::OutputDerivatives msg;
 
-  constexpr double kLateralAmplitude = 0.0;
+  constexpr double kLateralAmplitude = 1.0;
   constexpr double kAverageHeight = 1.5;
-  constexpr double kPsiAmplitude = 0.0;  // M_PI_2;
+  constexpr double kPsiAmplitude = 0.25;  // M_PI_2;
 
   const double t = ros::Time::now().toSec();
   msg.x = kLateralAmplitude * std::sin(x_freq_ * t);
@@ -125,10 +125,10 @@ void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
   msg.ydot3 =
       kLateralAmplitude * y_freq_ * y_freq_ * y_freq_ * std::sin(y_freq_ * t);
 
-  msg.z = kAverageHeight;  // - std::sin(z_freq_ * t);
-  msg.zdot1 = 0.0;         //-z_freq_ * std::cos(z_freq_ * t);
-  msg.zdot2 = 0.0;         // z_freq_ * z_freq_ * std::sin(z_freq_ * t);
-  msg.zdot3 = 0.0;  // z_freq_ * z_freq_ * z_freq_ * std::cos(z_freq_ * t);
+  msg.z = kAverageHeight - std::sin(z_freq_ * t);
+  msg.zdot1 = -z_freq_ * std::cos(z_freq_ * t);
+  msg.zdot2 = z_freq_ * z_freq_ * std::sin(z_freq_ * t);
+  msg.zdot3 = z_freq_ * z_freq_ * z_freq_ * std::cos(z_freq_ * t);
 
   msg.psi = kPsiAmplitude * std::cos(psi_freq_ * t);
   msg.psidot1 = -kPsiAmplitude * psi_freq_ * std::sin(psi_freq_ * t);

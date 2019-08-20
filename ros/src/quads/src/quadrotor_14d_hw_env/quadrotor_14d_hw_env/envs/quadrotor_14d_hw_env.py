@@ -31,7 +31,7 @@ class Quadrotor14dHwEnv(gym.Env):
     def step(self):
         """ Return x, r, u, done. """
         while len(self._transitions) == 0:
-            rospy.logerr_throttle(1.0, "%s: Out of transitions." % self._name)
+            rospy.logwarn_throttle(10.0, "%s: Out of transitions." % self._name)
             rospy.sleep(0.01)
 
         transition = self._transitions.pop(0)

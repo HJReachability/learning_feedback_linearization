@@ -223,7 +223,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        A_SCALING = 0.00
+        A_SCALING = 0.01
         m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.

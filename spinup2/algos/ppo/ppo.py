@@ -262,7 +262,8 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
         # Publish ros parameters
         params_msg = LearnedParameters()
-        params_msg.params = [sess.run(v) for v in tf.trainable_variables() if u"pi" in v.name][ 0 ]
+        params_msg.params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        print params_msg.params
         params_pub.publish(params_msg)
 
     start_time = time.time()

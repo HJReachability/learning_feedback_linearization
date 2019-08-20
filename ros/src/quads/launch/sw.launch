@@ -18,6 +18,7 @@
   <arg name="learned_params_topic" default="/params" />
   <arg name="transition_topic" default="/transitions" />
   <arg name="linear_system_reset_topic" default="/reset" />
+  <arg name="reference_viz_topic" default="/viz/ref" />
 
   <arg name="merger_mode" default="PRIORITIZED" />
 
@@ -169,7 +170,8 @@
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/params" value="$(arg learned_params_topic)" />
     <param name="topics/transitions" value="$(arg transition_topic)" />
-
+    <param name="viz/reference" value="$(arg reference_viz_topic)" />
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
 
     <param name="dynamics/m" value="$(arg bad_mass)" />
     <param name="dynamics/Ix" value="$(arg bad_Ix)" />

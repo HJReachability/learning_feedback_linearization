@@ -13,6 +13,7 @@ from quads_msgs.msg import Transition
 from quads_msgs.msg import LearnedParameters
 from std_msgs.msg import Empty
 from quadrotor_14d import Quadrotor14D
+from visualization_msgs.msg import Marker
 
 class FeedbackLinearizingController(object):
     def __init__(self):
@@ -62,6 +63,8 @@ class FeedbackLinearizingController(object):
 
         self._K = solve_lqr(self._A, self._B, Q, R)
 
+        # id of reference viz msg.
+        self._ref_viz_last_id = 0
 
 #        self._K[0, 1:] = 0.0
 #        self._K[1, 4:] = 0.0
@@ -97,6 +100,14 @@ class FeedbackLinearizingController(object):
         if not rospy.has_param("~topics/linear_system_reset"):
             return False
         self._reset_topic = rospy.get_param("~topics/linear_system_reset")
+
+        if not rospy.has_param("~frames/fixed"):
+            return False
+        self._fixed_frame = rospy.get_param("~frames/fixed")
+
+        if not rospy.has_param("~viz/reference"):
+            return False
+        self._ref_viz_topic = rospy.get_param("~viz/reference")
 
         if not rospy.has_param("~dynamics/m"):
             return False
@@ -136,6 +147,8 @@ class FeedbackLinearizingController(object):
 
         self._control_pub = rospy.Publisher(self._control_topic, Control)
 
+        self._ref_viz_pub = rospy.Publisher(self._ref_viz_topic, Marker)
+
         self._transitions_pub = rospy.Publisher(self._transitions_topic, Transition)
 
         return True
@@ -163,6 +176,32 @@ class FeedbackLinearizingController(object):
         self._ref[11, 0] = msg.zdot3
         self._ref[12, 0] = msg.psi
         self._ref[13, 0] = msg.psidot1
+
+        # Can mess with the viz later.
+        marker = Marker()
+        marker.header.frame_id = self._fixed_frame
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "reference"
+        marker.id = self._ref_viz_last_id
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+        marker.pose.position.x = msg.x
+        marker.pose.position.y = msg.y
+        marker.pose.position.z = msg.z
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.25
+        marker.scale.y = 0.25
+        marker.scale.z = 0.25
+        marker.color.a = 1.0
+        marker.color.r = 0.0
+        marker.color.g = 0.75
+        marker.color.b = 1.0
+        self._ref_viz_pub.publish(marker)
+
+        self._ref_viz_last_id += 1
 
     def state_callback(self, msg):
         # Update x.

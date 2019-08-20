@@ -62,6 +62,7 @@ class FeedbackLinearizingController(object):
             return K
 
         self._K = solve_lqr(self._A, self._B, Q, R)
+        # print(self._K)
 
         # id of reference viz msg.
         self._ref_viz_last_id = 0
@@ -192,13 +193,14 @@ class FeedbackLinearizingController(object):
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
         marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.25
-        marker.scale.y = 0.25
-        marker.scale.z = 0.25
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
         marker.color.a = 1.0
         marker.color.r = 0.0
         marker.color.g = 0.75
         marker.color.b = 1.0
+        marker.lifetime = rospy.Duration(5)
         self._ref_viz_pub.publish(marker)
 
         self._ref_viz_last_id += 1
@@ -262,7 +264,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        A_SCALING = 0.01
+        A_SCALING = 0.005
         m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.

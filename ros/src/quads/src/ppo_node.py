@@ -11,14 +11,25 @@ from std_msgs.msg import Empty
 
 def run(msg):
     env = lambda : gym.make("Quadrotor14dHwEnv-v0")
-    spinup2.ppo(
+    # spinup2.ppo(
+    #     env,
+    #     ac_kwargs={"hidden_sizes":(64,2)},
+    #     seed = np.random.randint(100),
+    #     steps_per_epoch=1250,
+    #     pi_lr=3e-4,
+    #     epochs=2500,
+    #     logger_kwargs = {"output_dir" : "./logs/ppo-log-dir-betterwork"}
+    # )
+    #polynomials
+    spinup2.vpgpolynomial(
         env,
-        ac_kwargs={"hidden_sizes":(64,2)},
+        ac_kwargs={"order":3},
         seed = np.random.randint(100),
         steps_per_epoch=1250,
-        pi_lr=3e-4,
         epochs=2500,
-        logger_kwargs = {"output_dir" : "logs/ppo-randomtest"}
+        pi_lr=2e-5,
+        l1_scaling=0.001,
+        logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
     )
 
 

@@ -90,6 +90,10 @@ class FeedbackLinearizingController(object):
             return False
         self._ref_topic = rospy.get_param("~topics/ref")
 
+        if not rospy.has_param("~topics/transitions"):
+            return False
+        self._transitions_topic = rospy.get_param("~topics/transitions")
+
         if not rospy.has_param("~topics/linear_system_reset"):
             return False
         self._reset_topic = rospy.get_param("~topics/linear_system_reset")
@@ -131,6 +135,8 @@ class FeedbackLinearizingController(object):
             self._reset_topic, Empty, self.linear_system_reset_callback)
 
         self._control_pub = rospy.Publisher(self._control_topic, Control)
+
+        self._transitions_pub = rospy.Publisher(self._transitions_topic, Transition)
 
         return True
 
@@ -180,6 +186,7 @@ class FeedbackLinearizingController(object):
             t_msg.x = list(x.flatten())
             t_msg.a = list(a.flatten())
             t_msg.r = -self._dynamics.observation_distance(self._y, self._ylin, norm=2)
+            self._transitions_pub.publish(t_msg)
 
     def output_callback(self, msg):
         self._y = np.array([[msg.x], [msg.xdot1], [msg.xdot2], [msg.xdot3],

@@ -26,6 +26,7 @@ class Quadrotor14dHwEnv(gym.Env):
 
         # Queue of state transitions observed in real system with current policy.
         self._transitions = []
+        self._num_steps = 0
 
     def step(self):
         """ Return x, r, u, done. """
@@ -43,7 +44,16 @@ class Quadrotor14dHwEnv(gym.Env):
                       transition.x.r, transition.x.p])
         a = np.array(transition.a)
         r = transition.r
-        return self.preprocess_state(x), r, a, False, {}
+
+        done = False
+        if self._num_steps > 25:
+            self._num_steps = 0
+            done = True
+            print "done"
+
+        self._num_steps += 1
+
+        return self.preprocess_state(x), r, a, done, {}
 
     def preprocess_state(self, x0):
         x = x0.copy()

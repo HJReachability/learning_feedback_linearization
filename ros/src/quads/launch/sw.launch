@@ -164,6 +164,8 @@
     <param name="topics/ref" value="$(arg linear_system_reference_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/params" value="$(arg learned_params_topic)" />
+    <param name="topics/transitions" value="$(arg transition_topic)" />
+
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

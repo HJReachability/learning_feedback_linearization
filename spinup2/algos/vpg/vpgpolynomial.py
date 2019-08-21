@@ -10,6 +10,11 @@ from spinup2.utils.mpi_tf import MpiAdamOptimizer, sync_all_params
 from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_scalar, num_procs
 from itertools import izip
 
+from quads_msgs.msg import LearnedParameters
+from quads_msgs.msg import Parameters
+import rospy
+
+
 
 class VPGBuffer(object):
     u"""
@@ -154,6 +159,10 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
             the current policy and value function.
 
     """
+    #ros stuff
+    name = rospy.get_name() + "/ppo_rl_agent"
+    params_topic = rospy.get_param("~topics/params")
+    params_pub = rospy.Publisher(params_topic, LearnedParameters)
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -179,8 +188,8 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
     # Need all placeholders in *this* order later (to zip with data from buffer)
     all_phs = [x_ph, a_ph, adv_ph, ret_ph, logp_old_ph]
 
-    # Every step, get: action, value, and logprob
-    get_action_ops = [pi, v, logp_pi]
+    # Every step, get: value and logprob (we'll get action from the env)
+    get_action_ops = [v, logp] # logp instead of logp_pi since we know a
 
     # Experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
@@ -239,21 +248,37 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
                      DeltaLossPi=(pi_l_new - pi_l_old),
                      DeltaLossV=(v_l_new - v_l_old))
 
+        # Publish ros parameters
+        params_msg = LearnedParameters()
+
+        params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        for p in params:
+            msg = Parameters()
+            if isinstance(p, np.ndarray):
+                msg.params = list(p)
+            else:
+                msg.params = [p]
+            params_msg.params.append(msg)
+        params_pub.publish(params_msg)
+
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in xrange(epochs):
         for t in xrange(local_steps_per_epoch):
-            a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
+            o, r, a, d, _ = env.step()
+
+            ep_ret += r
+            ep_len += 1
+
+            # get log prob
+            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1),
+                                                              a_ph: a.reshape(1, -1)})
 
             # save and log
             buf.store(o, a, r, v_t, logp_t)
             logger.store(VVals=v_t)
-
-            o, r, d, _ = env.step(a[0])
-            ep_ret += r
-            ep_len += 1
 
             terminal = d or (ep_len == max_ep_len)
             if terminal or (t==local_steps_per_epoch-1):

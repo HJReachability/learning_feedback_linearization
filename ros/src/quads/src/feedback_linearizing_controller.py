@@ -20,7 +20,7 @@ class FeedbackLinearizingController(object):
         self._name = rospy.get_name() + "/feedback_linearizing_controller"
 
         # Initial reference is just a hover, but will be overwritten by msgs as we receive them.
-        self._ref = np.zeros((14, 1))
+        self._ref = np.zeros((14,1))
 
         # Output derivates are none for now.
         self._y = None
@@ -62,9 +62,14 @@ class FeedbackLinearizingController(object):
             return K
 
         self._K = solve_lqr(self._A, self._B, Q, R)
+        # print(self._K)
 
         # id of reference viz msg.
         self._ref_viz_last_id = 0
+
+        self._num_steps_per_rollout = 1000
+        self._time_step = 0.01
+        self._ref_list = []
 
 #        self._K[0, 1:] = 0.0
 #        self._K[1, 4:] = 0.0
@@ -156,30 +161,29 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
-<<<<<<< HEAD
-        tf.assign(msg.params, tf.trainable_variables())
-=======
         tf_vars = [v for v in tf.trainable_variables() if u"pi" in v.name]
         for p, v in zip(msg.params, tf_vars):
             self._sess.run(tf.assign(np.array(p), v))
         rospy.loginfo("Updated tf params in controller.")
->>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 
     def ref_callback(self, msg):
-        self._ref[0, 0] = msg.x
-        self._ref[1, 0] = msg.xdot1
-        self._ref[2, 0] = msg.xdot2
-        self._ref[3, 0] = msg.xdot3
-        self._ref[4, 0] = msg.y
-        self._ref[5, 0] = msg.ydot1
-        self._ref[6, 0] = msg.ydot2
-        self._ref[7, 0] = msg.ydot3
-        self._ref[8, 0] = msg.z
-        self._ref[9, 0] = msg.zdot1
-        self._ref[10, 0] = msg.zdot2
-        self._ref[11, 0] = msg.zdot3
-        self._ref[12, 0] = msg.psi
-        self._ref[13, 0] = msg.psidot1
+        if(len(self._ref_list)==0):
+            self._ref[0,0] = msg.x
+            self._ref[1,0] = msg.xdot1
+            self._ref[2,0] = msg.xdot2
+            self._ref[3,0] = msg.xdot3
+            self._ref[4,0] = msg.y
+            self._ref[5,0] = msg.ydot1
+            self._ref[6,0] = msg.ydot2
+            self._ref[7,0] = msg.ydot3
+            self._ref[8,0] = msg.z
+            self._ref[9,0] = msg.zdot1
+            self._ref[10,0] = msg.zdot2
+            self._ref[11,0] = msg.zdot3
+            self._ref[12,0] = msg.psi
+            self._ref[13,0] = msg.psidot1
+        else:
+            self._ref[:,0] = np.squeeze(self._ref_list.pop(0))
 
         # Can mess with the viz later.
         marker = Marker()
@@ -189,20 +193,21 @@ class FeedbackLinearizingController(object):
         marker.id = self._ref_viz_last_id
         marker.type = Marker.SPHERE
         marker.action = Marker.ADD
-        marker.pose.position.x = msg.x
-        marker.pose.position.y = msg.y
-        marker.pose.position.z = msg.z
+        marker.pose.position.x = self._ref[0,0]
+        marker.pose.position.y = self._ref[4,0]
+        marker.pose.position.z = self._ref[8,0]
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
         marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.25
-        marker.scale.y = 0.25
-        marker.scale.z = 0.25
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
         marker.color.a = 1.0
         marker.color.r = 0.0
         marker.color.g = 0.75
         marker.color.b = 1.0
+        marker.lifetime = rospy.Duration(5)
         self._ref_viz_pub.publish(marker)
 
         self._ref_viz_last_id += 1
@@ -254,6 +259,7 @@ class FeedbackLinearizingController(object):
 
     def linear_system_reset_callback(self, msg):
         self._ylin = self._y
+        self._ref_list = self._generate_reference(self._y)
 
         t = rospy.Time.now().to_sec()
         self._last_ylin_integration_time = t
@@ -267,10 +273,14 @@ class FeedbackLinearizingController(object):
 
         #creating m2, ft
 <<<<<<< HEAD
+<<<<<<< HEAD
         U_SCALING = 0.1
         m2, f2 = np.split(U_SCALING * a,[16])
 =======
         A_SCALING = 0.01
+=======
+        A_SCALING = 0.005
+>>>>>>> 47e71d6c3b68b4fbabfe6b9bce313f284bd1ed95
         m2, f2 = np.split(A_SCALING * a[0],[16])
 >>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 
@@ -295,3 +305,26 @@ class FeedbackLinearizingController(object):
         x = np.delete(x, 10)
 
         return x
+    def _generate_reference(self, y0):
+        """
+        Use sinusoid with random frequency, amplitude, and bias:
+              ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
+        """
+        MAX_CONTINUOUS_TIME_FREQ = 0.1
+        MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._time_step
+
+        linsys_xdim=14
+        linsys_udim=4
+
+
+        y = np.empty((linsys_xdim, self._num_steps_per_rollout))
+        for ii in range(linsys_xdim):
+            y[ii, :] = np.linspace(
+                0, self._num_steps_per_rollout * self._time_step,
+                self._num_steps_per_rollout)
+            y[ii, :] = y0[ii, 0] + 1.0 * np.random.uniform() * (1.0 - np.cos(
+                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
+                np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
+
+
+        return np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1)

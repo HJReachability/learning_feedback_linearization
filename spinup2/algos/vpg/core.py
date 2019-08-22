@@ -11,11 +11,13 @@ EPS = 1e-8
 def combined_shape(length, shape=None):
     if shape is None:
         return (length,)
-    if(np.isscalar):
+    if(np.isscalar(shape)):
         return (length, shape)
     else: 
-        tp = (length, shape)
-        return convert([element for tupl in tp for element in tupl])
+        l = list(shape)
+        l.insert(0, length)
+        l = tuple(l)
+        return l
 
 def placeholder(dim=None):
     return tf.placeholder(dtype=tf.float32, shape=combined_shape(None,dim))

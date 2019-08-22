@@ -145,9 +145,9 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="1.0" />
-    <param name="freq/y" value="0.5" />
-    <param name="freq/z" value="1.0" />
+    <param name="freq/x" value="0.5" />
+    <param name="freq/y" value="0.25" />
+    <param name="freq/z" value="0.5" />
     <param name="freq/psi" value="0.25" />
   </node>
 

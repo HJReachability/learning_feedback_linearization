@@ -188,7 +188,7 @@ class DoublePendulum(Dynamics):
         preprocessed_x[4] = sin(x[2])
         preprocessed_x[5] = x[3]
 
-        preprocessed_x = tf.convert_to_tensor(preprocessed_x[None, :])
+        #preprocessed_x = tf.convert_to_tensor(preprocessed_x[None, :])
 
         return preprocessed_x
 

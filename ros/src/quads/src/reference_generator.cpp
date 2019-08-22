@@ -108,20 +108,22 @@ bool ReferenceGenerator::RegisterCallbacks(const ros::NodeHandle& n) {
 void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
   quads_msgs::OutputDerivatives msg;
 
-  constexpr double kLateralAmplitude = 2.0;
+  constexpr double kLateralAmplitude = 1.0;
   constexpr double kAverageHeight = 1.5;
-  constexpr double kPsiAmplitude = M_PI_2;
+  constexpr double kPsiAmplitude = 0.25;  // M_PI_2;
 
   const double t = ros::Time::now().toSec();
   msg.x = kLateralAmplitude * std::sin(x_freq_ * t);
   msg.xdot1 = kLateralAmplitude * x_freq_ * std::cos(x_freq_ * t);
   msg.xdot2 = -kLateralAmplitude * x_freq_ * x_freq_ * std::sin(x_freq_ * t);
-  msg.xdot3 = -kLateralAmplitude * x_freq_ * x_freq_ * x_freq_ * std::cos(x_freq_ * t);
+  msg.xdot3 =
+      -kLateralAmplitude * x_freq_ * x_freq_ * x_freq_ * std::cos(x_freq_ * t);
 
   msg.y = kLateralAmplitude * std::cos(y_freq_ * t);
   msg.ydot1 = -kLateralAmplitude * y_freq_ * std::sin(y_freq_ * t);
   msg.ydot2 = -kLateralAmplitude * y_freq_ * y_freq_ * std::cos(y_freq_ * t);
-  msg.ydot3 = kLateralAmplitude * y_freq_ * y_freq_ * y_freq_ * std::sin(y_freq_ * t);
+  msg.ydot3 =
+      kLateralAmplitude * y_freq_ * y_freq_ * y_freq_ * std::sin(y_freq_ * t);
 
   msg.z = kAverageHeight - std::sin(z_freq_ * t);
   msg.zdot1 = -z_freq_ * std::cos(z_freq_ * t);

@@ -13,12 +13,12 @@ def combined_shape(length, shape=None):
         return (length,)
     if(np.isscalar(shape)):
         return (length, shape)
-    else: 
+    else:
         l = list(shape)
         l.insert(0, length)
         l = tuple(l)
         return l
-    
+
 def placeholder(dim=None):
     return tf.placeholder(dtype=tf.float32, shape=combined_shape(None,dim))
 
@@ -37,8 +37,8 @@ def placeholders_from_spaces(*args):
 
 def mlp(x, hidden_sizes=(32,), activation=tf.tanh, output_activation=None):
     for h in hidden_sizes[:-1]:
-        x = tf.layers.dense(x, units=h, activation=activation)
-    return tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation)
+        x = tf.layers.dense(x, units=h, activation=activation, kernel_initializer=tf.zeros_initializer())
+    return tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation, kernel_initializer=tf.zeros_initializer())
 
 def get_vars(scope=u''):
     return [x for x in tf.trainable_variables() if scope in x.name]
@@ -55,14 +55,14 @@ def discount_cumsum(x, discount):
     u"""
     magic from rllab for computing discounted cumulative sums of vectors.
 
-    input: 
-        vector x, 
-        [x0, 
-         x1, 
+    input:
+        vector x,
+        [x0,
+         x1,
          x2]
 
     output:
-        [x0 + discount * x1 + discount^2 * x2,  
+        [x0 + discount * x1 + discount^2 * x2,
          x1 + discount * x2,
          x2]
     """
@@ -98,7 +98,7 @@ def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation, actio
 u"""
 Actor-Critics
 """
-def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh, 
+def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
                      output_activation=None, policy=None, action_space=None):
 
     # default policy builder depends on action space
@@ -108,6 +108,7 @@ def mlp_actor_critic(x, a, hidden_sizes=(64,64), activation=tf.tanh,
         policy = mlp_categorical_policy
 
     with tf.variable_scope(u'pi'):
+        print(policy)
         pi, logp, logp_pi = policy(x, a, hidden_sizes, activation, output_activation, action_space)
     with tf.variable_scope(u'v'):
         v = tf.squeeze(mlp(x, list(hidden_sizes)+[1], activation, None), axis=1)

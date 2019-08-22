@@ -7,7 +7,7 @@ import numpy as np
 envargs = {"uscaling": 0.1}
 
 #making environment lambda function
-env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0", uscaling=0.01, dynamicsScaling = 0.8)
+env = lambda : gym.make("quadrotor_14d_env:DoublePendulumEnv-v0", uscaling = 1)
 
 #vpg
 # spinup.vpg(
@@ -26,9 +26,9 @@ spinup.ppo(
     ac_kwargs={"hidden_sizes":(64,2)},
     seed = np.random.randint(100),
     steps_per_epoch=1250,
-    pi_lr=3e-4,
+    pi_lr=3e-3,
     epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/ppo-realistic-mass-test-dynamics0.8-u0.1-zeroweights"}
+    logger_kwargs = {"output_dir" : "logs/ppo-dptest-uscaling1-lr3e3"}
 )
 
 #polynomials

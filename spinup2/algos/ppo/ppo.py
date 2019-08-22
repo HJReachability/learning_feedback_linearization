@@ -11,6 +11,10 @@ from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_s
 from itertools import izip
 
 from quads_msgs.msg import LearnedParameters
+<<<<<<< HEAD
+=======
+from quads_msgs.msg import Parameters
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 import rospy
 
 class PPOBuffer(object):
@@ -78,10 +82,13 @@ class PPOBuffer(object):
         the buffer, with advantages appropriately normalized (shifted to have
         mean zero and std one). Also, resets some pointers in the buffer.
         """
+        if (self.ptr != self.max_size):
+            print "ptr, max = (%d, %d)" % (self.ptr, self.max_size)
         assert self.ptr == self.max_size    # buffer has to be full before you can get
         self.ptr, self.path_start_idx = 0, 0
         # the next two lines implement the advantage normalization trick
         adv_mean, adv_std = mpi_statistics_scalar(self.adv_buf)
+        print "mean = %f, stddev = %f" % (adv_mean, adv_std)
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
         return [self.obs_buf, self.act_buf, self.adv_buf,
                 self.ret_buf, self.logp_buf]
@@ -199,8 +206,8 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     # Need all placeholders in *this* order later (to zip with data from buffer)
     all_phs = [x_ph, a_ph, adv_ph, ret_ph, logp_old_ph]
 
-    # Every step, get: action, value, and logprob
-    get_action_ops = [pi, v, logp_pi]
+    # Every step, get: value and logprob (we'll get action from the env)
+    get_action_ops = [v, logp] # logp instead of logp_pi since we know a
 
     # Experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
@@ -259,36 +266,63 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
         # Publish ros parameters
         params_msg = LearnedParameters()
+<<<<<<< HEAD
         params_msg.params = [sess.run(v) for v in tf.trainable_variables() if u"pi" in v.name][ 0 ]
+=======
+
+        params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        for p in params:
+            msg = Parameters()
+            if isinstance(p, np.ndarray):
+                msg.params = list(p)
+            else:
+                msg.params = [p]
+            params_msg.params.append(msg)
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
         params_pub.publish(params_msg)
 
+    # RUN THIS THING!
     start_time = time.time()
-    o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+    env.reset()
+    #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+
+    ep_ret = 0
+    ep_len = 0
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in xrange(epochs):
         for t in xrange(local_steps_per_epoch):
-            a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
+            o, r, a, d, _ = env.step()
+
+            ep_ret += r
+            ep_len += 1
+
+            # get log prob
+            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1),
+                                                              a_ph: a.reshape(1, -1)})
 
             # save and log
             buf.store(o, a, r, v_t, logp_t)
             logger.store(VVals=v_t)
 
-            o, r, d, _ = env.step(a[0])
-            ep_ret += r
-            ep_len += 1
-
             terminal = d or (ep_len == max_ep_len)
-            if terminal or (t==local_steps_per_epoch-1):
+            if terminal or (t > local_steps_per_epoch-1):
                 if not(terminal):
                     print u'Warning: trajectory cut off by epoch at %d steps.'%ep_len
+
                 # if trajectory didn't reach terminal state, bootstrap value target
                 last_val = r if d else sess.run(v, feed_dict={x_ph: o.reshape(1,-1)})
                 buf.finish_path(last_val)
+
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
-                o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+
+                # NOTE: check this call
+                #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+                env.reset()
+                ep_ret = 0
+                ep_len = 0
 
         # Save model
         if (epoch % save_freq == 0) or (epoch == epochs-1):

@@ -1,30 +1,22 @@
-import torch
 import numpy as np
 #import control
 from scipy.linalg import solve_continuous_are
 from double_pendulum import DoublePendulum
-from reinforce import Reinforce
-from feedback_linearization import FeedbackLinearization
-from logger import *
+import tensorflow as tf
+import spinup
 import matplotlib.pyplot as plt
 from plotter import Plotter
 
+#should be in form ./logs/ and then whatever foldername logger dumped
+filename = 'ppo-dptest-uscaling1'
 
-#'double_pendulum_3_10_0.100000_0.001000_25_25_dyn_1.050000_0.950000_1.000000_1.000000.pkl',
-#'double_pendulum_3_10_0.100000_0.001000_50_20_dyn_1.050000_0.950000_1.000000_1.000000.pkl'
 
-#filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.001000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_417.pkl_4'
-filename='./logs/double_pendulum_Reinforce_2x32_std1.000000_lr0.010000_kl-1.000000_50_25_norm2.000000_dyn_0.660000_0.660000_1.000000_1.000000_1.000000_seed_895_fromzero_True.pkl_0'
+filepath="./logs/{}/simple_save".format(filename)
 
-# Plot everything.
-# plotter = Plotter(filename)
-# plotter.plot_scalar_fields(["mean_return"])
-# plt.pause(0.1)
-
-fp =  open(filename, "rb")
-log = dill.load(fp)
-
-fb_law=log['feedback_linearization'][0]
+#load tensorflow graph from path
+sess = tf.Session()
+model = spinup.utils.logx.restore_tf_graph(sess,filepath)
+print(model)
 
 
 def get_Linear_System():
@@ -65,10 +57,10 @@ mass1 = 1.0
 mass2 = 1.0
 length1 = 1.0
 length2 = 1.0
-time_step = 0.02
+time_step = 0.01
 friction_coeff=0.5
 dyn = DoublePendulum(mass1, mass2, length1, length2, time_step, friction_coeff)
-bad_dyn = DoublePendulum(0.66*mass1, 0.66*mass2, length1, length2, time_step,friction_coeff)
+bad_dyn = DoublePendulum(0.33*mass1, 0.33*mass2, 0.33*length1, 0.33*length2, time_step,friction_coeff)
 
 
 # LQR Parameters and dynamics
@@ -86,8 +78,8 @@ K=solve_lqr(A,B,Q,R)
 
 
 reference=np.zeros((4,T))
-reference[0,:]=2*np.pi *np.sin(np.linspace(0,T*time_step,T))
-reference[2,:]=np.pi *np.cos(np.linspace(0,T*time_step,T))
+reference[0,:]=np.pi #*np.sin(np.linspace(0,T*time_step,T))
+reference[2,:]=np.pi #*np.cos(np.linspace(0,T*time_step,T))
 
 learned_path=np.zeros((4,T+1))
 learned_controls_path=np.zeros((2,T))
@@ -141,9 +133,22 @@ if linear_fb:
 
         v=-1*K @ (diff)
 
-        control= fb_law.feedback(x,v)
-        learned_controls_path[:,t]=control[:,0].numpy()
-        x=dyn.integrate(x,control.numpy())
+        obs = np.array(dyn.preprocess_state(x))
+        # obs = x
+    
+        u = sess.run(tf.get_default_graph().get_tensor_by_name('pi/add:0'),{tf.get_default_graph().get_tensor_by_name('Placeholder:0'): obs.reshape(1,-1)})
+         #output of neural network
+        u = u[0]
+        m2, f2 = np.split(u,[4])
+
+        M = bad_dyn._M_q(x) + np.reshape(m2,(2, 2))
+
+        f = bad_dyn._f_q(x) + np.reshape(f2,(2, 1))
+
+        control = np.matmul(M, v) + f
+        
+        learned_controls_path[:,t]=control[:,0]
+        x=dyn.integrate(x,control)
         learned_path[:,t+1]=(diff)[:,0]
         if check_energy:
             print(dyn.total_energy(x))

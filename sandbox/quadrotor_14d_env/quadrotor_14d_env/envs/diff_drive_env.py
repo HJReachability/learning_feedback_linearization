@@ -43,7 +43,7 @@ class DiffDriveEnv(gym.Env):
         self._xdim = self._dynamics.xdim
         self._udim = self._dynamics.udim
         self._iter_count = 0
-
+        self._M1, self._f1 = self._dynamics.feedback_linearize()
     def step(self, u):
         #compute v based on basic control law
         diff = self._dynamics.linear_system_state_delta(self._reference[self._count],self._current_y)
@@ -51,11 +51,11 @@ class DiffDriveEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(self._uscaling * u,[4])
+        m2, f2 = np.split(self._uscaling*0*u,[4])
 
-        M = np.reshape(m2,(self._udim, self._udim))
+        M = np.reshape(m2,(self._udim, self._udim)) + self._M1(self._state)
 
-        f = np.reshape(f2,(self._udim, 1))
+        f = np.reshape(f2,(self._udim, 1)) + self._f1(self._state)
 
         z = np.dot(M, v) + f
 

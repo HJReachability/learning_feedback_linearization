@@ -20,13 +20,15 @@ class DiffDrive(Dynamics):
             
             Method returns xdot'''
         x = x0.copy()
+        cos = np.cos
+        sin = np.sin
 
-        xdot = []
-        xdot.append(x[3]*np.cos(x[2]))
-        xdot.append(x[3]*np.sin(x[2]))
-        xdot.append(u[1])
-        xdot.append(u[0])
-            
+        xdot = np.zeros((4,1))
+        xdot[0] = x[3,0]*cos(x[2,0])
+        xdot[1] = x[3,0]*sin(x[2,0])
+        xdot[2] = u[1,0]
+        xdot[3] = u[0,0]
+        
         return np.array(xdot)
 
     def wrap_angles(self, x0):
@@ -149,17 +151,24 @@ class DiffDrive(Dynamics):
     
         theta = x[2]
         velocity = x[3]
+        cos = np.cos
+        sin = np.sin
 
-        Q = np.array([[0,0],[0,0],[cos(theta), -velocity*sin(theta)],[sin(theta), velocity*cos(theta)]])
+        # Q = np.array([[cos(theta), -velocity*sin(theta)],[sin(theta), velocity*cos(theta)]])
+        Q = np.zeros((2,2))
+        Q[0,0] = cos(theta)
+        Q[0,1] = -velocity*sin(theta)
+        Q[1,0] = sin(theta)
+        Q[1,1] = velocity*cos(theta)
         return Q
 
-    def _b_q(self, x):
+    def _b_q(self, x0):
         """
         Drift term in feedback linearization controller. Please refer to
         the file `quad_sym.m` in which we use MATLAB's symbolic toolkit to
         derive this ungodly mess.
         """
         x = x0.copy()
-        b = np.array([0,0])
+        b = np.zeros((2,1))
         return b
         

@@ -42,7 +42,6 @@ class DiffDriveEnv(gym.Env):
         self._count = 0
         self._xdim = self._dynamics.xdim
         self._udim = self._dynamics.udim
-        self._M1, self._f1 = self._bad_dynamics.feedback_linearize()
         self._iter_count = 0
 
     def step(self, u):

@@ -19,17 +19,17 @@ class DiffDrive(Dynamics):
             xdot: vcos(theta), vsin(theta), w, a
             
             Method returns xdot'''
-            x = x0.copy()
+        x = x0.copy()
 
-            xdot = []
-            xdot.append(x[3]*np.cos(x[2]))
-            xdot.append(x[3]*np.sin(x[2]))
-            xdot.append(u[1])
-            xdot.append(u[0])
+        xdot = []
+        xdot.append(x[3]*np.cos(x[2]))
+        xdot.append(x[3]*np.sin(x[2]))
+        xdot.append(u[1])
+        xdot.append(u[0])
             
-            return np.array(xdot)
+        return np.array(xdot)
 
-    def wrap_angles(self, x):
+    def wrap_angles(self, x0):
         """ Makes sure theta is between (-pi,pi] """
         x = x0.copy()
         x[2] = x[2]%np.pi
@@ -56,7 +56,6 @@ class DiffDrive(Dynamics):
     def linear_system_state_delta(self, y_ref, y_obs):
         """ Compute a distance metric on the linear system state space. """
         delta = y_obs - y_ref
-        delta[12, 0] = (delta[12, 0] + np.pi) % (2.0 * np.pi) - np.pi
         return delta
 
     def observation_delta(self, y_ref, y_obs):
@@ -95,7 +94,7 @@ class DiffDrive(Dynamics):
         the file `quad_sym.m` in which we use MATLAB's symbolic toolkit to
         derive this ungodly mess.
         """
-        x = x0.copy
+        x = x0.copy()
         y = []
 
         theta = x[2]

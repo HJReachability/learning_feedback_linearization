@@ -119,7 +119,7 @@ class DiffDriveEnv(gym.Env):
 
 
     def initial_state_sampler(self):
-        lower = np.array([[-np.pi], [-0.5], [-np.pi], [-0.5]])
+        lower = np.array([[-72], [-72], [-np.pi], [-50]])
         upper = -lower
         return np.random.uniform(lower, upper)
 

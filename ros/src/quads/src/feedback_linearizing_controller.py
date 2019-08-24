@@ -43,6 +43,9 @@ class FeedbackLinearizingController(object):
         self._sess = tf.Session()
         self._sess.run(tf.global_variables_initializer())
 
+        # id of reference viz msg.
+        self._ref_viz_last_id = 0
+
         if not self.load_parameters():
             sys.exit(1)
         if not self.register_callbacks():
@@ -64,8 +67,6 @@ class FeedbackLinearizingController(object):
         self._K = solve_lqr(self._A, self._B, Q, R)
         # print(self._K)
 
-        # id of reference viz msg.
-        self._ref_viz_last_id = 0
 
         self._num_steps_per_rollout = 1250
         self._ref_list = []

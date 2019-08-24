@@ -13,7 +13,7 @@ def combined_shape(length, shape=None):
         return (length,)
     if(np.isscalar(shape)):
         return (length, shape)
-    else: 
+    else:
         l = list(shape)
         l.insert(0, length)
         l = tuple(l)
@@ -72,7 +72,7 @@ def discount_cumsum(x, discount):
 def nextOrderPolynomial(x, length, lastOrderPolynomial, incrementList):
     #empty list for next order
     nextOrderPolynomial = []
-    
+
     for i in xrange(length):
         for j in xrange(incrementList[i]):
             nextOrderPolynomial.append(tf.multiply(x[:,i],lastOrderPolynomial[j]))
@@ -84,7 +84,7 @@ def nextIncrementList(incrementList):
     for i in xrange(len(incrementList)-1):
         nextIncrementList.append(nextIncrementList[i]+incrementList[i+1])
     return nextIncrementList
-    
+
 
 def polynomial(x, order, u_dim):
     u""" Computes u, a polynomial function of x (for each row of x).
@@ -92,7 +92,7 @@ def polynomial(x, order, u_dim):
     the specified 'order'.
     """
     NUM_STATE_DIMS = x.get_shape().as_list()[-1]
-    
+
     print u"Generating monomials..."
     FullPolynomial = []
     z = tf.ones_like(x[:,0])
@@ -102,7 +102,7 @@ def polynomial(x, order, u_dim):
     for i in xrange(NUM_STATE_DIMS):
         incrementList.append(i+1)
         lastPolynomial.append(x[:,i])
-    
+
 
     #generate full polynomial
     FullPolynomial.extend(lastPolynomial)
@@ -114,11 +114,11 @@ def polynomial(x, order, u_dim):
     print u"number of monomials: ", len(FullPolynomial)
     print u"...done!"
 
-    
+
     # Now declare tf variables for the coefficients of all these monomials.
     coeffs = tf.get_variable(u"polynomial_coefficients",
                              initializer=tf.zeros((len(FullPolynomial), u_dim)),dtype=tf.float32)
-    
+
     FullPolynomial = tf.transpose(tf.stack(FullPolynomial))
 
     # Compute polynomial output for each state.

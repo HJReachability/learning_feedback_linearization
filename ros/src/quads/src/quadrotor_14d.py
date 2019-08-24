@@ -119,6 +119,13 @@ class Quadrotor14D(Dynamics):
     def linear_system_state_delta(self, y_ref, y_obs):
         """ Compute a distance metric on the linear system state space. """
         delta = y_obs - y_ref
+        #don't penalize higher order derivs
+        delta[2] = 0
+        delta[3] = 0
+        delta[6] = 0
+        delta[7] = 0
+        delta[10] = 0
+        delta[11] = 0
         delta[12, 0] = (delta[12, 0] + np.pi) % (2.0 * np.pi) - np.pi
         return delta
 

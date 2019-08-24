@@ -72,8 +72,8 @@ class OutputSmoother {
   void TimerCallback(const ros::TimerEvent& e);
 
   // One filter for each output channel since all are decoupled.
-  PolynomialFit<5, 100> smoother_x_, smoother_y_, smoother_z_;
-  PolynomialFit<4, 100> smoother_psi_;
+  PolynomialFit<4, 10> smoother_x_, smoother_y_, smoother_z_;
+  PolynomialFit<3, 10> smoother_psi_;
 
   // Publishers and subscribers.
   ros::Publisher output_derivs_pub_;

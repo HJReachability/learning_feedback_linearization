@@ -27,7 +27,7 @@
   <arg name="Ix" default="0.1" />
   <arg name="Iy" default="0.1" />
   <arg name="Iz" default="0.1" />
-  <arg name="bad_mass" default="0.03" />
+  <arg name="bad_mass" default="0.032" />
   <arg name="bad_Ix" default="0.08" />
   <arg name="bad_Iy" default="0.08" />
   <arg name="bad_Iz" default="0.08" />
@@ -134,10 +134,10 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="0.5" />
-    <param name="freq/y" value="0.25" />
-    <param name="freq/z" value="0.5" />
-    <param name="freq/psi" value="0.25" />
+    <param name="freq/x" value="0.25" />
+    <param name="freq/y" value="0.125" />
+    <param name="freq/z" value="0.25" />
+    <param name="freq/psi" value="0.125" />
   </node>
 
 

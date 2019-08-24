@@ -67,9 +67,11 @@ class FeedbackLinearizingController(object):
         # id of reference viz msg.
         self._ref_viz_last_id = 0
 
-        self._num_steps_per_rollout = 1000
-        self._time_step = 0.01
+        self._num_steps_per_rollout = 1250
         self._ref_list = []
+
+        self._randcount = 0
+        self._time_step = 0.01
 
 #        self._K[0, 1:] = 0.0
 #        self._K[1, 4:] = 0.0
@@ -167,7 +169,7 @@ class FeedbackLinearizingController(object):
         rospy.loginfo("Updated tf params in controller.")
 
     def ref_callback(self, msg):
-        if(len(self._ref_list)==0):
+        if(len(self._ref_list)==0 or True):
             self._ref[0,0] = msg.x
             self._ref[1,0] = msg.xdot1
             self._ref[2,0] = msg.xdot2
@@ -183,8 +185,9 @@ class FeedbackLinearizingController(object):
             self._ref[12,0] = msg.psi
             self._ref[13,0] = msg.psidot1
         else:
+            #update reference
             self._ref[:,0] = np.squeeze(self._ref_list.pop(0))
-
+            # print(self._ref)
         # Can mess with the viz later.
         marker = Marker()
         marker.header.frame_id = self._fixed_frame
@@ -229,6 +232,7 @@ class FeedbackLinearizingController(object):
             u_msg.pitchdot2 = u[1, 0]
             u_msg.rolldot2 = u[2, 0]
             u_msg.yawdot2 = u[3, 0]
+
             self._control_pub.publish(u_msg)
 
             # Publish Transition msg.
@@ -259,6 +263,9 @@ class FeedbackLinearizingController(object):
 
     def linear_system_reset_callback(self, msg):
         self._ylin = self._y
+
+        # self._randcount += 1
+        # if(self._randcount%10 == 0):
         self._ref_list = self._generate_reference(self._y)
 
         t = rospy.Time.now().to_sec()
@@ -272,7 +279,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        A_SCALING = 0.005
+        A_SCALING = 0.01
         m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.
@@ -302,20 +309,52 @@ class FeedbackLinearizingController(object):
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
         """
         MAX_CONTINUOUS_TIME_FREQ = 0.1
+        MAX_AMPLITUDE =0.0* 1e-4
         MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._time_step
 
         linsys_xdim=14
         linsys_udim=4
 
 
-        y = np.empty((linsys_xdim, self._num_steps_per_rollout))
-        for ii in range(linsys_xdim):
-            y[ii, :] = np.linspace(
-                0, self._num_steps_per_rollout * self._time_step,
+        y = [np.zeros((linsys_xdim, self._num_steps_per_rollout))]
+        y=[]
+        v = np.zeros((linsys_udim, self._num_steps_per_rollout))
+        #random sinusoid trajectory from simulation code
+        # for ii in range(linsys_xdim):
+        for ii in range(linsys_udim):
+            # y[ii, :] = np.linspace(
+            #     0, self._num_steps_per_rollout * self._time_step,
+            #     self._num_steps_per_rollout)
+            # y[ii, :] = y0[ii][0] + 0.01 * np.random.uniform() * (1.0 - np.cos(
+            #     2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
+            #     np.random.uniform() * np.linspace(
+            #     0, self._num_steps_per_rollout * self._time_step,
+            #     self._num_steps_per_rollout))) #+ 0.1 * np.random.normal()
+            # if(ii == 0 or ii == 4 or ii == 8):
+            #     y[ii, :] = y0[ii][0] + 1 * np.random.uniform() * (np.sin(np.linspace(
+            #         0, self._num_steps_per_rollout * self._time_step,
+            #         self._num_steps_per_rollout))) 
+            v[ii, :] =  np.linspace(0, self._num_steps_per_rollout * self._time_step,
                 self._num_steps_per_rollout)
-            y[ii, :] = y0[ii, 0] + 1.0 * np.random.uniform() * (1.0 - np.cos(
-                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
-                np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
+            v[ii, :] =  MAX_AMPLITUDE*np.sin(6.28*MAX_DISCRETE_TIME_FREQ*(v[ii,:]))
+        yprev = 0*y0
+        yprev = np.array(yprev)
+        for i in range(self._num_steps_per_rollout):
+            ydot  = np.dot(self._A, yprev) + np.expand_dims(np.dot(self._B,v[:,i]),0).T
+            yprev += ydot*self._time_step
+            y.append(yprev)
 
 
-        return np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1)
+
+        # assert(np.allclose(y[:, 0].flatten(), y0.flatten(), 1e-5))
+        # print(y[:,0],y0)
+
+        #point to point trajectory
+        # y[0,:] = np.ones(self._num_steps_per_rollout)*(np.random.rand()-0.5)*1
+        # y[4,:] = np.ones(self._num_steps_per_rollout)*(np.random.rand()-0.5)*1
+        # y[8,:] = np.ones(self._num_steps_per_rollout)*(np.random.rand())*1 + 1
+
+        #sinusoid of control inputs trajectory for dynamic feasibility
+
+        # return np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1)
+        return y

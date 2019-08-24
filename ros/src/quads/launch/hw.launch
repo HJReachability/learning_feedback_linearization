@@ -35,14 +35,23 @@
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="0.051" />
-  <arg name="Ix" default="0.065" />
-  <arg name="Iy" default="0.072" />
-  <arg name="Iz" default="0.019" />
-  <arg name="bad_mass" default="0.051" />
-  <arg name="bad_Ix" default="0.065" />
-  <arg name="bad_Iy" default="0.072" />
-  <arg name="bad_Iz" default="0.019" />
+  <!-- <arg name="mass" default="0.051" /> -->
+  <!-- <arg name="Ix" default="0.065" /> -->
+  <!-- <arg name="Iy" default="0.072" /> -->
+  <!-- <arg name="Iz" default="0.019" /> -->
+  <!-- <arg name="bad_mass" default="0.051" /> -->
+  <!-- <arg name="bad_Ix" default="0.065" /> -->
+  <!-- <arg name="bad_Iy" default="0.072" /> -->
+  <!-- <arg name="bad_Iz" default="0.019" /> -->
+
+  <arg name="mass" default="0.04" />
+  <arg name="Ix" default="0.1" />
+  <arg name="Iy" default="0.1" />
+  <arg name="Iz" default="0.1" />
+  <arg name="bad_mass" default="0.04" />
+  <arg name="bad_Ix" default="0.1" />
+  <arg name="bad_Iy" default="0.1" />
+  <arg name="bad_Iz" default="0.1" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
@@ -52,7 +61,7 @@
   <!-- Takeoff hover point. -->
   <arg name="takeoff_hover_x" default="0.0" />
   <arg name="takeoff_hover_y" default="0.0" />
-  <arg name="takeoff_hover_z" default="1.0" />
+  <arg name="takeoff_hover_z" default="2.0" />
 
   <!-- Control parameters. -->
   <arg name="lqr_x_dim" default="7" />
@@ -110,9 +119,12 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="0.5" />
-    <param name="freq/y" value="0.25" />
-    <param name="freq/z" value="0.5" />
+    <param name="freq/x" value="0.0" />
+    <param name="freq/y" value="0.0" />
+    <param name="freq/z" value="0.0" />
+    <param name="hover/x" value="$(arg takeoff_hover_x)" />
+    <param name="hover/y" value="$(arg takeoff_hover_y)" />
+    <param name="hover/z" value="$(arg takeoff_hover_z)" />
     <param name="freq/psi" value="0.25" />
   </node>
 

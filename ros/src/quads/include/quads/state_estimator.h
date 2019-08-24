@@ -116,7 +116,7 @@ class StateEstimator {
   quads_msgs::OutputDerivatives::ConstPtr last_linear_system_state_estimate_;
 
   // Polynomial fits.
-  PolynomialFit<4, 50> smoother_x_, smoother_y_, smoother_z_;
+  PolynomialFit<4, 20> smoother_x_, smoother_y_, smoother_z_;
   PolynomialFit<2, 10> smoother_psi_, smoother_theta_, smoother_phi_;
 
   // Numerical integration for thrust.

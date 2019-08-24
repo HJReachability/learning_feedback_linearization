@@ -110,9 +110,11 @@ void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
 
   constexpr double kLateralAmplitude = 1.0;
   constexpr double kAverageHeight = 1.5;
-  constexpr double kPsiAmplitude = 0.25;  // M_PI_2;
+  constexpr double kPsiAmplitude = 0.25; //M_PI_2;
 
-  const double t = ros::Time::now().toSec();
+  if (!in_flight_) return;
+
+  const double t = ros::Time::now().toSec() - in_flight_time_;
   msg.x = kLateralAmplitude * std::sin(x_freq_ * t);
   msg.xdot1 = kLateralAmplitude * x_freq_ * std::cos(x_freq_ * t);
   msg.xdot2 = -kLateralAmplitude * x_freq_ * x_freq_ * std::sin(x_freq_ * t);

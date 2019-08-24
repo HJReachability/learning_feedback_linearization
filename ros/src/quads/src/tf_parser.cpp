@@ -83,7 +83,7 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
 
   // Maybe add noise?
   // NOTE: only for debugging!!!
-  constexpr bool kAddNoise = true;
+  constexpr bool kAddNoise = false;
   constexpr double kNoiseStddev = 0.0005;
   if (kAddNoise) {
     std::normal_distribution<double> normal(0.0, 1.0);

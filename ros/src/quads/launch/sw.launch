@@ -67,6 +67,13 @@
 	      if="$(arg record)">
   </node>
 
+  <!-- Data collector. -->
+  <node pkg="quads"
+        type="data_collector_node.py"
+        name="collector"
+        output="screen"
+        required="true" />
+
   <!-- Simulator. -->
   <node pkg="crazyflie_simulator"
         type="near_hover_simulator_coupled_7d_node"

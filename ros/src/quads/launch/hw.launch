@@ -27,14 +27,22 @@
   <arg name="merged_control_topic" default="/control/merged" />
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
+  <arg name="learned_params_topic" default="/params" />
+  <arg name="transition_topic" default="/transitions" />
+  <arg name="linear_system_reset_topic" default="/reset" />
+  <arg name="reference_viz_topic" default="/viz/ref" />
 
   <arg name="merger_mode" default="PRIORITIZED" />
 
   <!-- System ID params. -->
-  <arg name="mass" default="0.049" />
-  <arg name="Ix" default="0.1" />
-  <arg name="Iy" default="0.1" />
-  <arg name="Iz" default="0.1" />
+  <arg name="mass" default="0.051" />
+  <arg name="Ix" default="0.065" />
+  <arg name="Iy" default="0.072" />
+  <arg name="Iz" default="0.019" />
+  <arg name="bad_mass" default="0.051" />
+  <arg name="bad_Ix" default="0.065" />
+  <arg name="bad_Iy" default="0.072" />
+  <arg name="bad_Iz" default="0.019" />
 
   <!-- Frames of reference. -->
   <arg name="fixed_frame" default="world" />
@@ -74,16 +82,23 @@
 	      if="$(arg record)">
   </node>
 
-  <!-- Output smoother. -->
+  <!-- Data collector. -->
   <node pkg="quads"
-        name="output_smoother"
-        type="output_smoother_node"
+        type="data_collector_node.py"
+        name="collector"
+        output="screen"
+        required="true" />
+
+
+  <!-- Learning node. -->
+  <node pkg="quads"
+        name="learning"
+        type="ppo_node.py"
         output="screen"
         required="true">
-    <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
-    <param name="frames/world" value="$(arg fixed_frame)" />
-    <param name="frames/quad" value="$(arg robot_frame)" />
-    <param name="dt" value="$(arg output_smoother_dt)" />
+    <param name="topics/transition" value="$(arg transition_topic)" />
+    <param name="topics/params" value="$(arg learned_params_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
   </node>
 
   <!-- Reference publisher. -->
@@ -95,9 +110,9 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="1.0" />
-    <param name="freq/y" value="0.5" />
-    <param name="freq/z" value="1.0" />
+    <param name="freq/x" value="0.5" />
+    <param name="freq/y" value="0.25" />
+    <param name="freq/z" value="0.5" />
     <param name="freq/psi" value="0.25" />
   </node>
 
@@ -109,12 +124,14 @@
         output="screen"
         required="true">
     <param name="dynamics/m" value="$(arg mass)" />
+    <param name="dynamics/Ix" value="$(arg Ix)" />
+    <param name="dynamics/Iy" value="$(arg Iy)" />
+    <param name="dynamics/Iz" value="$(arg Iz)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
-    <param name="prioritized" value="true" />
+    <param name="prioritized" value="true" /> <!-- HACK -->
   </node>
-
 
   <!-- Feedback linearizing controller + LQR. -->
   <node pkg="quads"
@@ -125,11 +142,17 @@
     <param name="topics/u" value="$(arg raw_control_topic)" />
     <param name="topics/x" value="$(arg state_topic)" />
     <param name="topics/y" value="$(arg output_derivs_topic)" />
+    <param name="topics/ref" value="$(arg linear_system_reference_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/params" value="$(arg learned_params_topic)" />
+    <param name="topics/transitions" value="$(arg transition_topic)" />
+    <param name="viz/reference" value="$(arg reference_viz_topic)" />
+    <param name="frames/fixed" value="$(arg fixed_frame)" />
 
-    <param name="dynamics/m" value="$(arg mass)" />
-    <param name="dynamics/Ix" value="$(arg Ix)" />
-    <param name="dynamics/Iy" value="$(arg Iy)" />
-    <param name="dynamics/Iz" value="$(arg Iz)" />
+    <param name="dynamics/m" value="$(arg bad_mass)" />
+    <param name="dynamics/Ix" value="$(arg bad_Ix)" />
+    <param name="dynamics/Iy" value="$(arg bad_Iy)" />
+    <param name="dynamics/Iz" value="$(arg bad_Iz)" />
   </node>
 
   <!-- TF static publisher to create a base_link frame for the crazyflie. -->
@@ -146,27 +169,6 @@
         args="0 0 0 0 0 0 1 $(arg mocap_frame) $(arg robot_frame) 100">
   </node>
 
-  <!-- Crazyflie interface. -->
-  <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
-
-  <group ns="crazyflie">
-    <include file="$(find crazyflie_driver)/launch/crazyflie_add.launch">
-      <arg name="uri" value="$(arg uri)" />
-      <arg name="tf_prefix" value="$(arg robot_frame)" />
-      <arg name="enable_logging" value="True" />
-    </include>
-
-<!--
-    <node name="joy" pkg="joy" type="joy_node" output="screen">
-      <param name="dev" value="$(arg joy_dev)" />
-    </node>
-
-    <node name="joystick_controller" pkg="crazyflie_demo" type="controller.py" output="screen">
-      <param name="use_crazyflie_controller" value="True" />
-    </node>
--->
-  </group>
-
   <!-- Takeoff server node. -->
   <node name="takeoff_server"
         pkg="crazyflie_takeoff"
@@ -176,6 +178,7 @@
     <param name="topics/reference" value="$(arg reference_topic)" />
     <param name="topics/control" value="$(arg open_loop_takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="duration/hover" value="5.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />
@@ -192,24 +195,13 @@
     <param name="topics/commanded_control" value="$(arg merged_control_topic)" />
     <param name="topics/final_control" value="$(arg final_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
-    <param name="duration/hover" value="20.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />
     <param name="hover/z" value="$(arg takeoff_hover_z)" />
   </node>
 
-  <!-- Converter for custom command velocity messages. -->
-  <node name="cmd_vel_converter"
-        pkg="crazyflie_control_merger"
-        type="cmd_vel_converter_node"
-        output="screen">
-
-    <param name="topics/control" value="$(arg final_control_topic)" />
-    <param name="topics/cmd_vel" value="/$(arg robot_frame)/cmd_vel" />
-  </node>
-
-  <!-- Merger node. -->
+  <!-- Merger node.  -->
   <node name="merger"
         pkg="crazyflie_control_merger"
         type="regular_control_merger_node"
@@ -237,6 +229,10 @@
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/state" value="$(arg state_topic)" />
     <param name="topics/control" value="$(arg raw_control_topic)" />
+    <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
+    <param name="topics/transitions" value="$(arg transition_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />
@@ -273,6 +269,38 @@
     <param name="topics/state" value="$(arg lqr_state_topic)" />
     <param name="topics/control" value="$(arg takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+  </node>
+
+
+  <!-- Crazyflie interface. -->
+  <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
+
+  <group ns="crazyflie">
+    <include file="$(find crazyflie_driver)/launch/crazyflie_add.launch">
+      <arg name="uri" value="$(arg uri)" />
+      <arg name="tf_prefix" value="$(arg robot_frame)" />
+      <arg name="enable_logging" value="True" />
+    </include>
+
+<!--
+    <node name="joy" pkg="joy" type="joy_node" output="screen">
+      <param name="dev" value="$(arg joy_dev)" />
+    </node>
+
+    <node name="joystick_controller" pkg="crazyflie_demo" type="controller.py" output="screen">
+      <param name="use_crazyflie_controller" value="True" />
+    </node>
+-->
+  </group>
+
+  <!-- Converter for custom command velocity messages. -->
+  <node name="cmd_vel_converter"
+        pkg="crazyflie_control_merger"
+        type="cmd_vel_converter_node"
+        output="screen">
+
+    <param name="topics/control" value="$(arg final_control_topic)" />
+    <param name="topics/cmd_vel" value="/$(arg robot_frame)/cmd_vel" />
   </node>
 
 

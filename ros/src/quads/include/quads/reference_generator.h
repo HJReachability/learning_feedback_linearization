@@ -71,10 +71,12 @@ class ReferenceGenerator {
   // In flight?
   void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
     in_flight_ = true;
+    in_flight_time_ = ros::Time::now().toSec();
   }
 
   // Are we in flight?
   bool in_flight_;
+  double in_flight_time_;
 
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;

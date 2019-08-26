@@ -28,7 +28,7 @@ def run(msg):
         steps_per_epoch=1250,
         epochs=2500,
         pi_lr=2e-5,
-        l1_scaling=0.001,
+        l1_scaling=0.01,
         logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
     )
 

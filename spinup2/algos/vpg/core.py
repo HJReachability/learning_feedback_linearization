@@ -155,7 +155,7 @@ def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation, actio
 def polynomial_gaussian_policy(x, a, order, action_space):
     act_dim = a.shape.as_list()[-1]
     mu = polynomial(x, order, act_dim)
-    log_std = tf.get_variable(name=u'log_std', initializer=-0.5*np.ones(act_dim, dtype=np.float32))
+    log_std = tf.get_variable(name=u'log_std', initializer=-2.0*np.ones(act_dim, dtype=np.float32))
     std = tf.exp(log_std)
     pi = mu + tf.random_normal(tf.shape(mu)) * std
     logp = gaussian_likelihood(a, mu, log_std)

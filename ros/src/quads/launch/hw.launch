@@ -121,8 +121,8 @@
     <param name="frames/world" value="$(arg fixed_frame)" />
     <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="0.1" />
-    <param name="freq/y" value="0.15" />
+    <param name="freq/x" value="0.0" />
+    <param name="freq/y" value="0.0" />
     <param name="freq/z" value="0.0" />
     <param name="freq/psi" value="0.0" />
   </node>
@@ -277,7 +277,7 @@
     <param name="u_ref_file" value="$(arg lqr_u_ref_file)" />
     <param name="integrator/thresh/x" value="0.0" />
     <param name="integrator/thresh/y" value="0.0" />
-    <param name="integrator/thresh/z" value="0.1" />
+    <param name="integrator/thresh/z" value="0.5" />
     <param name="integrator/k/x" value="-0.0" />
     <param name="integrator/k/y" value="-0.0" />
     <param name="integrator/k/z" value="-0.5" />

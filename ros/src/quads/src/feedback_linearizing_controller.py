@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.linalg import solve_continuous_are
-import spinup2.algos.ppo.core as core
 from gym import spaces
 import tensorflow as tf
 import sys
@@ -14,6 +13,9 @@ from quads_msgs.msg import LearnedParameters
 from std_msgs.msg import Empty
 from quadrotor_14d import Quadrotor14D
 from visualization_msgs.msg import Marker
+
+#import spinup2.algos.ppo.core as core
+import spinup2.algos.vpg.core as core
 
 class FeedbackLinearizingController(object):
     def __init__(self):
@@ -36,8 +38,10 @@ class FeedbackLinearizingController(object):
 
         #define actor critic
         #TODO add in central way to accept arguments
-        self._pi, logp, logp_pi, v = core.mlp_actor_critic(
-            self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
+        #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
+        #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
+        self._pi, logp, logp_pi, v = core.polynomial_actor_critic(
+            self._x_ph, self._u_ph, 3, action_space=action_space)
 
         #start up tensorflow graph
         self._sess = tf.Session()
@@ -54,7 +58,7 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 1.0e0 * np.diag([1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 3.0, 1.0, 0.0, 0.0, 2.0, 2.0])
+        Q = 1.0e-1 * np.diag([1.5, 1.0, 0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 2.0, 1.5, 0.0, 0.0, 2.0, 2.0])
         R = 1.0e0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):

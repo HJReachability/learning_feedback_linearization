@@ -41,6 +41,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <quads/reference_generator.h>
+#include <quads/tf_parser.h>
 #include <quads_msgs/OutputDerivatives.h>
 
 #include <ros/ros.h>
@@ -55,6 +56,8 @@ bool ReferenceGenerator::Initialize(const ros::NodeHandle& n) {
     ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
     return false;
   }
+
+  if (!tf_parser_.Initialize(n)) return false;
 
   if (!RegisterCallbacks(n)) {
     ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
@@ -77,22 +80,6 @@ bool ReferenceGenerator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("freq/y", y_freq_)) return false;
   if (!nl.getParam("freq/z", z_freq_)) return false;
   if (!nl.getParam("freq/psi", psi_freq_)) return false;
-
-  // Hover point.
-  if (!nl.getParam("hover/x", hover_x_)) {
-    hover_x_ = 0.0;
-    ROS_WARN("%s: hover/x unset.", name_.c_str());
-  }
-
-  if (!nl.getParam("hover/y", hover_y_)) {
-    hover_y_ = 0.0;
-    ROS_WARN("%s: hover/y unset.", name_.c_str());
-  }
-
-  if (!nl.getParam("hover/z", hover_z_)) {
-    hover_z_ = 0.0;
-    ROS_WARN("%s: hover/z unset.", name_.c_str());
-  }
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {

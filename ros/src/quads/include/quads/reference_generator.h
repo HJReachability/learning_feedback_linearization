@@ -44,6 +44,7 @@
 #define QUADS_REFERENCE_GENERATOR_H
 
 #include <quads/quadrotor14d.h>
+#include <quads/tf_parser.h>
 
 #include <quads_msgs/OutputDerivatives.h>
 
@@ -70,7 +71,12 @@ class ReferenceGenerator {
 
   // In flight?
   void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
-    if (!in_flight_) in_flight_time_ = ros::Time::now().toSec();
+    if (!in_flight_) {
+      double phi, theta, psi;
+      tf_parser_.GetXYZRPY(&hover_x_, &hover_y_, &hover_z_, &phi, &theta, &psi);
+      in_flight_time_ = ros::Time::now().toSec();
+    }
+
     in_flight_ = true;
   }
 
@@ -84,6 +90,9 @@ class ReferenceGenerator {
 
   std::string in_flight_topic_;
   std::string reference_topic_;
+
+  // TF parser.
+  TfParser tf_parser_;
 
   // Timer stuff.
   ros::Timer timer_;

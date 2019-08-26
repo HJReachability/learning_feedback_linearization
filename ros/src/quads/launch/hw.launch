@@ -118,14 +118,13 @@
         required="true">
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="0.01" />
     <param name="freq/x" value="0.1" />
     <param name="freq/y" value="0.15" />
     <param name="freq/z" value="0.0" />
-    <param name="hover/x" value="$(arg takeoff_hover_x)" />
-    <param name="hover/y" value="$(arg takeoff_hover_y)" />
-    <param name="hover/z" value="$(arg takeoff_hover_z)" />
-    <param name="freq/psi" value="0.25" />
+    <param name="freq/psi" value="0.0" />
   </node>
 
 

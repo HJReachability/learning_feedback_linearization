@@ -75,6 +75,31 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   smoother_phi_.Update(phi, t);
   smoother_psi_.Update(psi, t);
 
+  // Now handle output derivatives.
+  quads_msgs::OutputDerivatives derivs_msg;
+  derivs_msg.x = smoother_x_.Interpolate(t, 0);
+  derivs_msg.xdot1 = smoother_x_.Interpolate(t, 1);
+  derivs_msg.xdot2 = smoother_x_.Interpolate(t, 2);
+  derivs_msg.xdot3 = smoother_x_.Interpolate(t, 3);
+
+  derivs_msg.y = smoother_y_.Interpolate(t, 0);
+  derivs_msg.ydot1 = smoother_y_.Interpolate(t, 1);
+  derivs_msg.ydot2 = smoother_y_.Interpolate(t, 2);
+  derivs_msg.ydot3 = smoother_y_.Interpolate(t, 3);
+
+  derivs_msg.z = smoother_z_.Interpolate(t, 0);
+  derivs_msg.zdot1 = smoother_z_.Interpolate(t, 1);
+  derivs_msg.zdot2 = smoother_z_.Interpolate(t, 2);
+  derivs_msg.zdot3 = smoother_z_.Interpolate(t, 3);
+
+  derivs_msg.psi = smoother_psi_.Interpolate(t, 0);
+  derivs_msg.psidot1 = smoother_psi_.Interpolate(t, 1);
+
+  output_derivs_pub_.publish(derivs_msg);
+
+  last_linear_system_state_estimate_.reset(
+      new quads_msgs::OutputDerivatives(derivs_msg));
+
   if (!in_flight_) {
     ROS_WARN_THROTTLE(1.0,
                       "%s: Waiting to estimate state until we are in flight.",
@@ -104,31 +129,6 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   if (state_msg.zeta <= 0.0) state_msg.zeta = std::min(-1e-1, state_msg.zeta);
 
   state_pub_.publish(state_msg);
-
-  // Now handle output derivatives.
-  quads_msgs::OutputDerivatives derivs_msg;
-  derivs_msg.x = smoother_x_.Interpolate(t, 0);
-  derivs_msg.xdot1 = smoother_x_.Interpolate(t, 1);
-  derivs_msg.xdot2 = smoother_x_.Interpolate(t, 2);
-  derivs_msg.xdot3 = smoother_x_.Interpolate(t, 3);
-
-  derivs_msg.y = smoother_y_.Interpolate(t, 0);
-  derivs_msg.ydot1 = smoother_y_.Interpolate(t, 1);
-  derivs_msg.ydot2 = smoother_y_.Interpolate(t, 2);
-  derivs_msg.ydot3 = smoother_y_.Interpolate(t, 3);
-
-  derivs_msg.z = smoother_z_.Interpolate(t, 0);
-  derivs_msg.zdot1 = smoother_z_.Interpolate(t, 1);
-  derivs_msg.zdot2 = smoother_z_.Interpolate(t, 2);
-  derivs_msg.zdot3 = smoother_z_.Interpolate(t, 3);
-
-  derivs_msg.psi = smoother_psi_.Interpolate(t, 0);
-  derivs_msg.psidot1 = smoother_psi_.Interpolate(t, 1);
-
-  output_derivs_pub_.publish(derivs_msg);
-
-  last_linear_system_state_estimate_.reset(
-      new quads_msgs::OutputDerivatives(derivs_msg));
 
   // Compute reward.
   // This is the norm of the difference between the linear system state we just

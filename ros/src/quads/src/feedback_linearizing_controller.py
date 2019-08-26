@@ -48,15 +48,13 @@ class FeedbackLinearizingController(object):
 
         if not self.load_parameters():
             sys.exit(1)
-        if not self.register_callbacks():
-            sys.exit(1)
 
         self._M1, self._f1 = self._dynamics.feedback_linearize()
         # self._params, self._M2, self._f2 = self._construct_learned_parameters()
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 1.0e1 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        Q = 1.0e0 * np.diag([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 10.0, 0.0])
         R = 1.0e0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
@@ -68,11 +66,14 @@ class FeedbackLinearizingController(object):
         # print(self._K)
 
 
+
 #        self._K[0, 1:] = 0.0
 #        self._K[1, 4:] = 0.0
 #        self._K[2, 8:] = 0.0
 #        self._K[3, 12:] = 0.0
 #        print("K is now: ", self._K)
+        if not self.register_callbacks():
+            sys.exit(1)
 
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):
@@ -158,10 +159,12 @@ class FeedbackLinearizingController(object):
     def params_callback(self, msg):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
+        t = rospy.Time.now().to_sec()
         tf_vars = [v for v in tf.trainable_variables() if u"pi" in v.name]
         for p, v in zip(msg.params, tf_vars):
             self._sess.run(tf.assign(np.array(p), v))
         rospy.loginfo("Updated tf params in controller.")
+        print "Params callback took %f seconds." % (rospy.Time.now().to_sec() - t)
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x

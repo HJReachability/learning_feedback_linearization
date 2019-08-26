@@ -70,8 +70,8 @@ class ReferenceGenerator {
 
   // In flight?
   void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
+    if (!in_flight_) in_flight_time_ = ros::Time::now().toSec();
     in_flight_ = true;
-    in_flight_time_ = ros::Time::now().toSec();
   }
 
   // Are we in flight?

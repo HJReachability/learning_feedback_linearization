@@ -71,10 +71,12 @@ class ReferenceGenerator {
   // In flight?
   void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
     in_flight_ = true;
+    in_flight_time_ = ros::Time::now().toSec();
   }
 
   // Are we in flight?
   bool in_flight_;
+  double in_flight_time_;
 
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;
@@ -89,6 +91,9 @@ class ReferenceGenerator {
 
   // Frequency of sinusoids.
   double x_freq_, y_freq_, z_freq_, psi_freq_;
+
+  // Hover point.
+  double hover_x_, hover_y_, hover_z_;
 
   // Initialized flag and name.
   bool initialized_;

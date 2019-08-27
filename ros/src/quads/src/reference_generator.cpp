@@ -78,6 +78,22 @@ bool ReferenceGenerator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("freq/z", z_freq_)) return false;
   if (!nl.getParam("freq/psi", psi_freq_)) return false;
 
+  // Hover point.
+  if (!nl.getParam("hover/x", hover_x_)) {
+    hover_x_ = 0.0;
+    ROS_WARN("%s: hover/x unset.", name_.c_str());
+  }
+
+  if (!nl.getParam("hover/y", hover_y_)) {
+    hover_y_ = 0.0;
+    ROS_WARN("%s: hover/y unset.", name_.c_str());
+  }
+
+  if (!nl.getParam("hover/z", hover_z_)) {
+    hover_z_ = 0.0;
+    ROS_WARN("%s: hover/z unset.", name_.c_str());
+  }
+
   // Time step.
   if (!nl.getParam("dt", dt_)) {
     dt_ = 0.01;
@@ -109,23 +125,24 @@ void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
   quads_msgs::OutputDerivatives msg;
 
   constexpr double kLateralAmplitude = 1.0;
-  constexpr double kAverageHeight = 1.5;
   constexpr double kPsiAmplitude = 0.25;  // M_PI_2;
 
-  const double t = ros::Time::now().toSec();
-  msg.x = kLateralAmplitude * std::sin(x_freq_ * t);
+  if (!in_flight_) return;
+
+  const double t = ros::Time::now().toSec() - in_flight_time_;
+  msg.x = hover_x_ + kLateralAmplitude * std::sin(x_freq_ * t);
   msg.xdot1 = kLateralAmplitude * x_freq_ * std::cos(x_freq_ * t);
   msg.xdot2 = -kLateralAmplitude * x_freq_ * x_freq_ * std::sin(x_freq_ * t);
   msg.xdot3 =
       -kLateralAmplitude * x_freq_ * x_freq_ * x_freq_ * std::cos(x_freq_ * t);
 
-  msg.y = kLateralAmplitude * std::cos(y_freq_ * t);
-  msg.ydot1 = -kLateralAmplitude * y_freq_ * std::sin(y_freq_ * t);
-  msg.ydot2 = -kLateralAmplitude * y_freq_ * y_freq_ * std::cos(y_freq_ * t);
+  msg.y = hover_y_ + kLateralAmplitude * (1.0 - std::cos(y_freq_ * t));
+  msg.ydot1 = kLateralAmplitude * y_freq_ * std::sin(y_freq_ * t);
+  msg.ydot2 = kLateralAmplitude * y_freq_ * y_freq_ * std::cos(y_freq_ * t);
   msg.ydot3 =
-      kLateralAmplitude * y_freq_ * y_freq_ * y_freq_ * std::sin(y_freq_ * t);
+      -kLateralAmplitude * y_freq_ * y_freq_ * y_freq_ * std::sin(y_freq_ * t);
 
-  msg.z = kAverageHeight - std::sin(z_freq_ * t);
+  msg.z = hover_z_ - std::sin(z_freq_ * t);
   msg.zdot1 = -z_freq_ * std::cos(z_freq_ * t);
   msg.zdot2 = z_freq_ * z_freq_ * std::sin(z_freq_ * t);
   msg.zdot3 = z_freq_ * z_freq_ * z_freq_ * std::cos(z_freq_ * t);

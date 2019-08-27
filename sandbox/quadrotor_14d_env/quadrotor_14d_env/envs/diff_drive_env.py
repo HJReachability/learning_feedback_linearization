@@ -51,14 +51,15 @@ class DiffDriveEnv(gym.Env):
         v = -self._K @ (diff)
 
         #output of neural network
-        m2, f2 = np.split(self._uscaling*0*u,[4])
+        m2, f2 = np.split(self._uscaling*u,[4])
 
-        M = np.reshape(m2,(self._udim, self._udim)) + self._M1(self._state)
+        M = np.reshape(m2,(self._udim, self._udim))# + self._M1(self._state)
 
-        f = np.reshape(f2,(self._udim, 1)) + self._f1(self._state)
+        f = np.reshape(f2,(self._udim, 1)) #+ + self._f1(self._state)
 
         z = np.dot(M, v) + f
 
+        #assert (abs(self._state[3])>1e-3)
         self._state = self._dynamics.integrate(self._state, z, self._time_step)
         self._current_y = self._dynamics.linearized_system_state(self._state)
 
@@ -129,14 +130,14 @@ class DiffDriveEnv(gym.Env):
               ``` vi(k) = a * sin(2 * pi * f * k) + b  ```
         """
         MAX_CONTINUOUS_TIME_FREQ = 0.1
-        MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step
+        MAX_DISCRETE_TIME_FREQ = MAX_CONTINUOUS_TIME_FREQ * self._dynamics._time_step * 2* np.pi
 
         linsys_xdim=self.A.shape[0]
         linsys_udim=self.B.shape[1]
 
         #random scaling factor for Q based on how many iterations have been done
         if(self._largerQ):
-            Q= 50 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
+            Q= 200 * (np.random.uniform() + 0.1) * np.eye(linsys_xdim)
         else:
             Q= 10 * np.eye(linsys_xdim)
 
@@ -146,16 +147,28 @@ class DiffDriveEnv(gym.Env):
         y0 = self._dynamics.linearized_system_state(x0)
 
         y = np.empty((linsys_xdim, self._num_steps_per_rollout))
-        for ii in range(linsys_xdim):
-            y[ii, :] = np.linspace(
+        # for ii in range(linsys_xdim):
+        #     y[ii, :] = np.linspace(
+        #         0, self._num_steps_per_rollout * self._dynamics._time_step,
+        #         self._num_steps_per_rollout)
+        #     y[ii, :] = y0[ii, 0] + 1.0 * np.random.uniform() * (1.0 - np.cos(
+        #         2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
+        #         np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
+        y[0, :] = y0[0, 0] + np.random.uniform()*np.sin(MAX_DISCRETE_TIME_FREQ*np.linspace(
                 0, self._num_steps_per_rollout * self._dynamics._time_step,
-                self._num_steps_per_rollout)
-            y[ii, :] = y0[ii, 0] + 1.0 * np.random.uniform() * (1.0 - np.cos(
-                2.0 * np.pi * MAX_DISCRETE_TIME_FREQ * \
-                np.random.uniform() * y[ii, :])) #+ 0.1 * np.random.normal()
+                self._num_steps_per_rollout))
+        y[1, :] = y0[1, 0] + np.random.uniform()*np.cos(MAX_DISCRETE_TIME_FREQ*np.linspace(
+                0, self._num_steps_per_rollout * self._dynamics._time_step,
+                self._num_steps_per_rollout))
+        y[2, :] = y0[2, 0] + MAX_DISCRETE_TIME_FREQ*np.random.uniform()*np.cos(MAX_DISCRETE_TIME_FREQ*np.linspace(
+                0, self._num_steps_per_rollout * self._dynamics._time_step,
+                self._num_steps_per_rollout))
+        y[3, :] = y0[3, 0] - MAX_DISCRETE_TIME_FREQ*np.random.uniform()*np.sin(MAX_DISCRETE_TIME_FREQ*np.linspace(
+                0, self._num_steps_per_rollout * self._dynamics._time_step,
+                self._num_steps_per_rollout))
 
         # Ensure that y ref starts at y0.
-        assert(np.allclose(y[:, 0].flatten(), y0.flatten(), 1e-5))
+        # assert(np.allclose(y[:, 0].flatten(), y0.flatten(), 1e-5))
 
         P = solve_continuous_are(self.A, self.B, Q, R)
         K = np.linalg.inv(R) @ self.B.T @ P
@@ -172,7 +185,10 @@ class DiffDriveEnv(gym.Env):
         for r in refs:
             diff = self._dynamics.linear_system_state_delta(r, y)
             v = -K @ diff
-            y += (self.A @ y + self.B @ v)*self._time_step
+            u = self._dynamics.feedback(x, v)
+            x = self._dynamics.integrate(x, u)
+            y=self._dynamics.linearized_system_state(x)
+            # y += (self.A @ y + self.B @ v)*self._time_step
             ys.append(y.copy())
         return ys
 

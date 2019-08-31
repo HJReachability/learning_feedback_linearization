@@ -155,7 +155,7 @@ def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation, actio
 def polynomial_gaussian_policy(x, a, order, action_space):
     act_dim = a.shape.as_list()[-1]
     mu = polynomial(x, order, act_dim)
-    log_std = tf.get_variable(name=u'log_std', initializer=-2.0*np.ones(act_dim, dtype=np.float32))
+    log_std = tf.get_variable(name=u'log_std', initializer=-1.5*np.ones(act_dim, dtype=np.float32))
     std = tf.exp(log_std)
     pi = mu + tf.random_normal(tf.shape(mu)) * std
     logp = gaussian_likelihood(a, mu, log_std)
@@ -192,9 +192,9 @@ def polynomial_actor_critic(x, a, order, policy=None, action_space=None):
     elif policy is None and isinstance(action_space, Discrete):
         assert(False)
 
-    with tf.variable_scope(u'pi'):
+    with tf.variable_scope(u'pi',reuse=tf.AUTO_REUSE):
         pi, logp, logp_pi = policy(x, a, order, action_space)
-    with tf.variable_scope(u'v'):
+    with tf.variable_scope(u'v',reuse=tf.AUTO_REUSE):
         # DFK modified: want unbiased gradient estimate, so replacing MLP with
         # zero (for all states).
         # TODO(@eric): figure out how to do this right and not just multiply by zero.

@@ -96,7 +96,7 @@ Vanilla Policy Gradient
 """
 
 def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=dict(), seed=0,
-        steps_per_epoch=4000, epochs=50, gamma=0.99, pi_lr=2e-5,
+        steps_per_epoch=4000, epochs=50, gamma=0.9, pi_lr=2e-5,
         vf_lr=1e-3, train_v_iters=80, lam=0.97, max_ep_len=1000,
         logger_kwargs=dict(), save_freq=10, l1_scaling = 0.001):
     u"""
@@ -225,6 +225,10 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
         inputs = dict((k, v) for k,v in izip(all_phs, buf.get()))
         pi_l_old, v_l_old, ent = sess.run([pi_loss, v_loss, approx_ent], feed_dict=inputs)
 
+        # print "grads"
+        # print sess.run(pi_optim.compute_gradients(pi_loss, tf.trainable_variables(u'pi')),
+        #                feed_dict=inputs)
+
         # Policy gradient step
         sess.run(train_pi, feed_dict=inputs)
         sess.run(train_pi_norm, feed_dict=inputs)
@@ -247,7 +251,9 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
 
         # Publish ros parameters
         params_msg = LearnedParameters()
-        params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        params = [sess.run(v).flatten() for v in tf.trainable_variables() if u"pi" in v.name]
+        num_params_in_msg = sum([len(p) for p in params])
+        assert(num_params_in_msg == core.count_vars(u'pi'))
         for p in params:
             msg = Parameters()
             if isinstance(p, np.ndarray):
@@ -287,7 +293,7 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
-                o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+                _, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
 
         # Save model
         if (epoch % save_freq == 0) or (epoch == epochs-1):

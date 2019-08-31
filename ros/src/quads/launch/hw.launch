@@ -189,7 +189,7 @@
     <param name="topics/reference" value="$(arg reference_topic)" />
     <param name="topics/control" value="$(arg open_loop_takeoff_control_topic)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
-    <param name="duration/hover" value="10.0" />
+    <param name="duration/hover" value="5.0" />
 
     <param name="hover/x" value="$(arg takeoff_hover_x)" />
     <param name="hover/y" value="$(arg takeoff_hover_y)" />

@@ -40,12 +40,26 @@ class FeedbackLinearizingController(object):
         #TODO add in central way to accept arguments
         #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
         #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
-        self._pi, logp, logp_pi, v = core.polynomial_actor_critic(
-            self._x_ph, self._u_ph, 3, action_space=action_space)
+        POLY_ORDER = 2
+        self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
+            self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
 
         #start up tensorflow graph
+
+        var_counts = tuple(core.count_vars(scope) for scope in [u'pi'])
+        print(u'\nYoyoyoyyoyo Number of parameters: \t pi: %d\n'%var_counts)
+
+        self._tf_vars = [v for v in tf.trainable_variables() if u'pi' in v.name]
+        self._num_tf_vars = sum([np.prod(v.shape.as_list()) for v in self._tf_vars])
+        print("tf vars is of length: ", len(self._tf_vars))
+        print("total trainable vars: ", len(tf.trainable_variables()))
+
         self._sess = tf.Session()
         self._sess.run(tf.global_variables_initializer())
+
+        #THIS WILL BREAK THINGS
+#        self._sess.graph.finalize()
+
 
         # id of reference viz msg.
         self._ref_viz_last_id = 0
@@ -58,7 +72,7 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 1.0e-1 * np.diag([1.5, 1.0, 0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 2.0, 1.5, 0.0, 0.0, 2.0, 2.0])
+        Q = 2.0e-1 * np.diag([1.5, 1.0, 0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 2.0, 1.5, 0.0, 0.0, 2.0, 2.0])
         R = 1.0e0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
@@ -81,6 +95,8 @@ class FeedbackLinearizingController(object):
 #        print("K is now: ", self._K)
         if not self.register_callbacks():
             sys.exit(1)
+
+        print("total trainable vars: ", len(tf.trainable_variables()))
 
     def load_parameters(self):
         if not rospy.has_param("~topics/y"):
@@ -167,11 +183,26 @@ class FeedbackLinearizingController(object):
         # TODO(@shreyas, @eric): Update values of self._params here.
         # change network parameters
         t = rospy.Time.now().to_sec()
-        tf_vars = [v for v in tf.trainable_variables() if u"pi" in v.name]
-        for p, v in zip(msg.params, tf_vars):
-            self._sess.run(tf.assign(np.array(p), v))
+        sq_norm_old_params = 0.0
+        sq_norm_difference = 0.0
+        norm_params = []
+        num_params = 0
+        for p, v in zip(msg.params, self._tf_vars):
+            num_params += len(p.params)
+            print("P is len ", len(p.params), ", and v is len ", np.prod(v.shape.as_list()))
+            assert(len(p.params) == np.prod(v.shape.as_list()))
+
+            reshaped_p = np.array(p.params).reshape(v.shape.as_list())
+            norm_params.append(np.linalg.norm(reshaped_p))
+            v_actual = self._sess.run(v)
+            sq_norm_old_params += np.linalg.norm(v_actual)**2
+            sq_norm_difference += np.linalg.norm(v_actual - np.array(reshaped_p))**2
+            self._sess.run(tf.assign(v, reshaped_p))
         rospy.loginfo("Updated tf params in controller.")
-        print "Params callback took %f seconds." % (rospy.Time.now().to_sec() - t)
+        rospy.loginfo("Parameters changed by %f on average." % (
+            sq_norm_difference / float(num_params)))
+        rospy.loginfo("Parameter group norms: " + str(norm_params))
+        rospy.loginfo("Params callback took %f seconds." % (rospy.Time.now().to_sec() - t))
 
     def ref_callback(self, msg):
         self._ref[0, 0] = msg.x
@@ -217,6 +248,11 @@ class FeedbackLinearizingController(object):
         self._ref_viz_last_id += 1
 
     def state_callback(self, msg):
+        # print("hit state callback. total trainable vars: ",
+        #       len(self._sess.run(tf.trainable_variables(scope=u'pi'))))
+        # print("hit state callback. total vars: ",
+        #       len(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)))
+
         # Update x.
         x = np.array([[msg.x], [msg.y], [msg.z], [msg.theta],
                       [msg.phi], [msg.psi], [msg.dx], [msg.dy],
@@ -224,7 +260,8 @@ class FeedbackLinearizingController(object):
 
         # Determine v.
         if self._y is not None:
-            v = -np.dot(self._K, (self._y - self._ref))
+#            v = -np.dot(self._K, (self._y - self._ref))
+            v = -np.dot(self._K, self._dynamics.linear_system_state_delta(self._ref, self._y))
             u, a = self.feedback(x, v)
 
             # Publish Control msg.
@@ -258,12 +295,13 @@ class FeedbackLinearizingController(object):
             dt = rospy.Time.now().to_sec() - self._last_ylin_integration_time
             self._last_ylin_integration_time = rospy.Time.now().to_sec()
 
+#            v = -np.dot(self._K, self._dynamics.linear_system_state_delta(self._ref, self._ylin))
             v = -np.dot(self._K, (self._ylin - self._ref))
             self._ylin += dt * (np.dot(self._A, self._ylin) + np.dot(self._B, v))
 
     def linear_system_reset_callback(self, msg):
         self._ylin = self._y
-
+#        rospy.loginfo("Resetting linear system state.")
         t = rospy.Time.now().to_sec()
         self._last_ylin_integration_time = t
         self._last_ylin_reset_time = t
@@ -275,7 +313,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
 
         #creating m2, ft
-        A_SCALING = 0.00
+        A_SCALING = 0.05
         m2, f2 = np.split(A_SCALING * a[0],[16])
 
         # TODO: make sure this works with tf stuff.

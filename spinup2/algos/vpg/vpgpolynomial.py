@@ -11,7 +11,7 @@ from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_s
 from itertools import izip
 
 import rospy
-from quads_msgs.msg import LearnedParameters, Parameters
+#from quads_msgs.msg import LearnedParameters, Parameters
 
 class VPGBuffer(object):
     u"""
@@ -250,18 +250,18 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
                      DeltaLossV=(v_l_new - v_l_old))
 
         # Publish ros parameters
-        params_msg = LearnedParameters()
-        params = [sess.run(v).flatten() for v in tf.trainable_variables() if u"pi" in v.name]
-        num_params_in_msg = sum([len(p) for p in params])
-        assert(num_params_in_msg == core.count_vars(u'pi'))
-        for p in params:
-            msg = Parameters()
-            if isinstance(p, np.ndarray):
-                msg.params = list(p)
-            else:
-                msg.params = [p]
-            params_msg.params.append(msg)
-        params_pub.publish(params_msg)
+        # params_msg = LearnedParameters()
+        # params = [sess.run(v).flatten() for v in tf.trainable_variables() if u"pi" in v.name]
+        # num_params_in_msg = sum([len(p) for p in params])
+        # assert(num_params_in_msg == core.count_vars(u'pi'))
+        # for p in params:
+        #     msg = Parameters()
+        #     if isinstance(p, np.ndarray):
+        #         msg.params = list(p)
+        #     else:
+        #         msg.params = [p]
+        #     params_msg.params.append(msg)
+        # params_pub.publish(params_msg)
 
     start_time = time.time()
     #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
@@ -335,7 +335,7 @@ if __name__ == u'__main__':
 
     mpi_fork(args.cpu)  # run parallel code with mpi
 
-    from spinup.utils.run_utils import setup_logger_kwargs
+    from spinup2.utils.run_utils import setup_logger_kwargs
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
     #polynomial version

@@ -10,8 +10,8 @@ from spinup2.utils.mpi_tf import MpiAdamOptimizer, sync_all_params
 from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_scalar, num_procs
 from itertools import izip
 
-from quads_msgs.msg import LearnedParameters
-from quads_msgs.msg import Parameters
+#from quads_msgs.msg import LearnedParameters
+#from quads_msgs.msg import Parameters
 import rospy
 
 class PPOBuffer(object):
@@ -176,8 +176,8 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     """
     #ros stuff
     name = rospy.get_name() + "/ppo_rl_agent"
-    params_topic = rospy.get_param("~topics/params")
-    params_pub = rospy.Publisher(params_topic, LearnedParameters)
+    # params_topic = rospy.get_param("~topics/params")
+    # params_pub = rospy.Publisher(params_topic, LearnedParameters)
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -261,18 +261,18 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
                      DeltaLossPi=(pi_l_new - pi_l_old),
                      DeltaLossV=(v_l_new - v_l_old))
 
-        # Publish ros parameters
-        params_msg = LearnedParameters()
+        # # Publish ros parameters
+        # params_msg = LearnedParameters()
 
-        params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
-        for p in params:
-            msg = Parameters()
-            if isinstance(p, np.ndarray):
-                msg.params = list(p)
-            else:
-                msg.params = [p]
-            params_msg.params.append(msg)
-        params_pub.publish(params_msg)
+        # params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        # for p in params:
+        #     msg = Parameters()
+        #     if isinstance(p, np.ndarray):
+        #         msg.params = list(p)
+        #     else:
+        #         msg.params = [p]
+        #     params_msg.params.append(msg)
+        # params_pub.publish(params_msg)
 
     # RUN THIS THING!
     start_time = time.time()

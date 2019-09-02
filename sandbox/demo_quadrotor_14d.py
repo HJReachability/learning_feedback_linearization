@@ -150,10 +150,10 @@ if linear_fb:
 
         diff = desired_linear_system_state - ref
         v=-1*K @ diff
-        
+
         obs = np.array(preprocess_state(x.tolist()))
         # obs = x
-    
+
         u = sess.run(tf.get_default_graph().get_tensor_by_name('pi/add:0'),{tf.get_default_graph().get_tensor_by_name('Placeholder:0'): obs.reshape(1,-1)})
          #output of neural network
         u = 0.1*u[0]
@@ -164,7 +164,7 @@ if linear_fb:
         f = bad_dyn._f_q(x) + np.reshape(f2,(4, 1))
 
         control = np.matmul(M, v) + f
-        
+
         learned_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)
         learned_err[:,t+1]=(diff)[:,0]
@@ -178,7 +178,7 @@ if linear_fb:
              learned_path[4,:], '.-g', label="y")
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_path[8,:], '.-b', label="z")
-    
+
     plt.plot(np.linspace(0, T*time_step, T+1),
              learned_states[9,:], '.-y', label="zeta")
     plt.plot(np.linspace(0, T*time_step, T+1),
@@ -249,7 +249,7 @@ if ground_truth:
         ground_truth_err[:,t+1]=(diff)[:,0]
         ground_truth_path[:,t+1]=(desired_linear_system_state)[:,0]
         ground_truth_states[:,t+1]=x[:, 0]
-   
+
 
 
     plt.figure()
@@ -284,14 +284,14 @@ if ground_truth:
     # plt.legend()
 
 
-    
+
 if show or make_vid:
     fig=plt.figure(figsize=(10,6))
     fig.suptitle(filename + ' ' + testname)
     if make_vid:
         writer = ani.FFMpegWriter(fps=10)
         writer.setup(fig, output_dir + filename + testname + '.mp4', dpi=100)
-    
+
     gs=GridSpec(1,3)
     ax = fig.add_subplot(gs[0,0:2],projection = '3d')
     states = fig.add_subplot(gs[0,2])
@@ -308,14 +308,14 @@ if show or make_vid:
             if nominal:
                 ax.plot(nominal_path[0,last:i],nominal_path[4,last:i],nominal_path[8,last:i],'r')
                 p1=ax.scatter(nominal_path[0,i],nominal_path[4,i],nominal_path[8,i],c='r', label = 'nominal')
-            
+
             if linear_fb:
                 ax.plot(learned_path[0,last:i],learned_path[4,last:i],learned_path[8,last:i],'g')
                 p2=ax.scatter(learned_path[0,i],learned_path[4,i],learned_path[8,i],c='g',label='Learned policy')
                 states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[3,last:i], '.-y', label="learned-theta")
                 states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[4,last:i], '.-g', label="learned-phi")
                 states.plot(np.linspace(last*time_step, i*time_step, i-last), learned_states[5,last:i], '.-b', label="learned-psi")
-    
+
             if ground_truth:
                 ax.plot(ground_truth_path[0,last:i],ground_truth_path[4,last:i],ground_truth_path[8,last:i],'b')
                 p3=ax.scatter(ground_truth_path[0,i],ground_truth_path[4,i],ground_truth_path[8,i],c='b',label='Ground Truth')
@@ -326,7 +326,7 @@ if show or make_vid:
             if show_ref:
                 ax.plot(reference[0,last:i],reference[4,last:i],reference[8,last:i],'k')
                 p4=ax.scatter(reference[0,i],reference[4,i],reference[8,i],c='k',label='Reference')
-        
+
             # if show:
             #     plt.pause(0.01)
 
@@ -348,8 +348,8 @@ if show or make_vid:
 
                 if show_ref:
                     p4.remove()
-            
-        
+
+
 
 if make_vid:
     writer.finish()
@@ -362,9 +362,9 @@ if make_plot:
     ax = fig.add_subplot(111, projection='3d')
 
     ax.plot(ground_truth_path[0,:],ground_truth_path[4,:],ground_truth_path[8,:],c=blues(0.75))
-        
+
     ax.plot(learned_path[0,:],learned_path[4,:],learned_path[8,:],c=greens(0.75))
-        
+
     ax.plot(nominal_path[0,:],nominal_path[4,:],nominal_path[8,:],c=reds(0.75))
 
     ax.scatter(ground_truth_path[0,-1],ground_truth_path[4,-1],ground_truth_path[8,-1],c=[blues(0.75)],s=100,marker='x',label='True System')
@@ -378,11 +378,3 @@ if make_plot:
     ax.set_zlabel('z')
     ax.legend(loc='lower left', bbox_to_anchor=(0, 0.9))
     ax.figure.savefig(output_dir + '3dpathsummary.png')
-
-
-
-
-
-
-
-

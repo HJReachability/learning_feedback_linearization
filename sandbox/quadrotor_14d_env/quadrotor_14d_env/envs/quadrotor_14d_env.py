@@ -57,7 +57,7 @@ class Quadrotor14dEnv(gym.Env):
         #compute v based on basic control law
         diff = self._dynamics.linear_system_state_delta(self._reference[self._count],self._current_y)
 
-        v = -self._K @ (diff)
+        v = -np.dot(self._K, diff)
 
         #output of neural network
         m2, f2 = np.split(self._uscaling * u,[16])
@@ -204,7 +204,7 @@ class Quadrotor14dEnv(gym.Env):
         assert(np.allclose(y[:, 0].flatten(), y0.flatten(), 1e-5))
 
         P = solve_continuous_are(self.A, self.B, Q, R)
-        K = np.linalg.inv(R) @ self.B.T @ P
+        K = np.dot(np.dot(np.linalg.inv(R), self.B.T),  P)
         return (np.split(y, indices_or_sections=self._num_steps_per_rollout, axis=1),K)
 
     def _generate_ys(self, x0, refs,K):
@@ -217,7 +217,7 @@ class Quadrotor14dEnv(gym.Env):
         ys = []
         for r in refs:
             diff = self._dynamics.linear_system_state_delta(r, y)
-            v = -K @ diff
+            v = -np.dot(K, diff)
             u = self._dynamics.feedback(x, v)
             x = self._dynamics.integrate(x, u)
             y=self._dynamics.linearized_system_state(x)

@@ -20,7 +20,7 @@ from matplotlib import cm
 # filename = 'poly-v3-continuousrollout-originreturn'
 # filename = 'poly-v3-continuousrollout-originreturn-dynamicsScaling0.6'
 # filename = 'ppo-v3-continuousrollout-originreturn-dynamicsScaling0.6-zeroweights'
-filename = "polyrandomtest"
+filename = "polyrandomtest_hw_400"
 
 filepath="/home/hysys/Github/learning_feedback_linearization/ros/logs/{}/simple_save".format(filename)
 
@@ -64,7 +64,7 @@ bad_dyn = Quadrotor14D(
     bad_Iy, bad_Iz, time_step)
 
 # LQR Parameters and dynamics
-Q = 2.0e-1 * np.diag([1.5, 1.0, 0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 2.0, 1.5, 0.0, 0.0, 2.0, 2.0])
+Q = 2.0e-1 * np.diag([1.5, 0.0, 0.0, 0.0, 1.5, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 2.0, 2.0])
 R = 1.0e0 * np.eye(4)
 A, B, C = dyn.linearized_system()
 
@@ -73,6 +73,7 @@ K=solve_lqr(A,B,Q,R)
 
 #Get random initial state
 reference=0.0*np.ones((14,T))
+testname = "hover"
 
 # testname = "circle"
 # freq= 0.5
@@ -90,12 +91,12 @@ reference=0.0*np.ones((14,T))
 # reference[12,:]=0.1*np.linspace(0,T*time_step,T)
 # reference[13,:]=0.1*time_step
 
-testname = "Figure8"
-freq=1.0
-reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
-reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
-reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
+# testname = "Figure8"
+# freq=1.0
+# reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+# reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
+# reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
+# reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
 
 
 # testname = "PointyCorkscrew"

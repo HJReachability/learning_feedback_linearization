@@ -23,15 +23,15 @@ def run(msg):
     #polynomials
     spinup2.vpgpolynomial(
         env,
-        ac_kwargs={"order":2},
+        ac_kwargs={"order":3},
         seed = np.random.randint(100),
-        steps_per_epoch=1250,
-        max_ep_len=25,
+        steps_per_epoch=400, # 1250
+        max_ep_len=5,
         epochs=2500,
 #        pi_lr=2e-5,
-        pi_lr=1e-3,
+        pi_lr=1e-5, #1e-3,
         l1_scaling=0.01,
-        logger_kwargs = {"output_dir" : "/home/hysys/Github/learning_feedback_linearization/ros/logs/polyrandomtest"}
+        logger_kwargs = {"output_dir" : "/home/hysys/Github/learning_feedback_linearization/ros/logs/polyrandomtest_hw_400"}
     )
 
 

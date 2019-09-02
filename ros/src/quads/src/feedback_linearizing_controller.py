@@ -31,7 +31,7 @@ class FeedbackLinearizingController(object):
         self._ylin = None
 
         #define placeholders
-        observation_space = spaces.Box(low=-100,high=100,shape=(8,),dtype=np.float32)
+        observation_space = spaces.Box(low=-100,high=100,shape=(9,),dtype=np.float32)
         action_space = spaces.Box(low=-50,high=50,shape=(12,),dtype=np.float32)
         self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
 
@@ -40,7 +40,7 @@ class FeedbackLinearizingController(object):
         #TODO add in central way to accept arguments
         #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
         #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
-        POLY_ORDER = 2
+        POLY_ORDER = 3
         self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
             self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
 
@@ -72,7 +72,7 @@ class FeedbackLinearizingController(object):
 
         # LQR.
         self._A, self._B, _ = self._dynamics.linearized_system()
-        Q = 2.0e-1 * np.diag([1.5, 1.0, 0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 2.0, 1.5, 0.0, 0.0, 2.0, 2.0])
+        Q = 2.0e-1 * np.diag([1.5, 0.0, 0.0, 0.0, 1.5, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 5.0, 2.0])
         R = 1.0e0 * np.eye(4)
 
         def solve_lqr(A, B, Q, R):
@@ -337,6 +337,6 @@ class FeedbackLinearizingController(object):
 #        x[4] = np.cos(x[4])
 #        x[5]= np.cos(x[5])
 
-        x = np.delete(x, [0, 1, 2, 5, 10, 13])
+        x = np.delete(x, [0, 1, 2, 10, 13])
 
         return x

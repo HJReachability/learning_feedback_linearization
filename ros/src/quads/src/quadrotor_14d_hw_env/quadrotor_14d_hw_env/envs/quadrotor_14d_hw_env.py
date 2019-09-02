@@ -19,8 +19,8 @@ class Quadrotor14dHwEnv(gym.Env):
         if not self.register_callbacks(): sys.exit(1)
 
         # Set up observation space and action space.
-        NUM_PREPROCESSED_STATES = 13
-        NUM_ACTION_DIMS = 20
+        NUM_PREPROCESSED_STATES = 8
+        NUM_ACTION_DIMS = 12
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, (NUM_PREPROCESSED_STATES,))
         self.action_space = gym.spaces.Box(-np.inf, np.inf, (NUM_ACTION_DIMS,))
 
@@ -50,15 +50,17 @@ class Quadrotor14dHwEnv(gym.Env):
 
     def preprocess_state(self, x0):
         x = x0.copy()
-        x[0] = np.sin(x[3])
-        x[1] = np.sin(x[4])
-        x[2]= np.sin(x[5])
-        x[3] = np.cos(x[3])
-        x[4] = np.cos(x[4])
-        x[5]= np.cos(x[5])
+#       x[0] = np.sin(x[3])
+#        x[1] = np.sin(x[4])
+#        x[2]= np.sin(x[5])
+#        x[3] = np.cos(x[3])
+#        x[4] = np.cos(x[4])
+#        x[5]= np.cos(x[5])
+
+        x = np.delete(x, [0, 1, 2, 5, 10, 13])
 
         # Remove xi.
-        x = np.delete(x, 10)
+#        x = np.delete(x, 10)
 
         # TODO: think about removing p, q, r?
         return x

@@ -35,7 +35,7 @@ class Dynamics(object):
         """ Apply feedback linearization control law to compute u. """
         M_q, f_q = self.feedback_linearize()
 
-        u = M_q(x) @ v + f_q(x)
+        u = np.dot(M_q(x), v) + f_q(x)
         return u
 
     def observation_distance(self, y1, y2,norm):

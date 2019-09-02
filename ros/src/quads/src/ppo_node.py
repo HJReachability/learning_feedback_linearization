@@ -31,7 +31,7 @@ def run(msg):
 #        pi_lr=2e-5,
         pi_lr=1e-3,
         l1_scaling=0.01,
-        logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
+        logger_kwargs = {"output_dir" : "/home/hysys/Github/learning_feedback_linearization/ros/logs/polyrandomtest"}
     )
 
 

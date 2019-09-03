@@ -29,6 +29,9 @@ sess = tf.Session()
 model = spinup.utils.logx.restore_tf_graph(sess,filepath)
 print(model)
 
+#setting sigma variables to zero
+sess.run(tf.assign(tf.get_default_graph().get_tensor_by_name("pi/log_std:0"), tf.zeros((20,))))
+
 # Plot everything.
 def solve_lqr(A,B,Q,R):
     P = solve_continuous_are(A, B, Q, R)

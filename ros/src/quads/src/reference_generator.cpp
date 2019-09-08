@@ -40,6 +40,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <crazyflie_msgs/PositionVelocityStateStamped.h>
 #include <quads/reference_generator.h>
 #include <quads/tf_parser.h>
 #include <quads_msgs/OutputDerivatives.h>
@@ -74,6 +75,8 @@ bool ReferenceGenerator::LoadParameters(const ros::NodeHandle& n) {
   // Topics.
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/reference", reference_topic_)) return false;
+  if (!nl.getParam("topics/backup_reference", backup_reference_topic_))
+    return false;
 
   // Frequence of sinusoids.
   if (!nl.getParam("freq/x", x_freq_)) return false;
@@ -100,6 +103,9 @@ bool ReferenceGenerator::RegisterCallbacks(const ros::NodeHandle& n) {
   // Publisher.
   reference_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
       reference_topic_.c_str(), 1, false);
+  backup_reference_pub_ =
+      nl.advertise<crazyflie_msgs::PositionVelocityStateStamped>(
+          backup_reference_topic_.c_str(), 1, false);
 
   // Timer.
   timer_ = nl.createTimer(ros::Duration(dt_),
@@ -138,6 +144,18 @@ void ReferenceGenerator::TimerCallback(const ros::TimerEvent& e) {
   msg.psidot1 = -kPsiAmplitude * psi_freq_ * std::sin(psi_freq_ * t);
 
   reference_pub_.publish(msg);
+
+  // Publish to backup controller too.
+  crazyflie_msgs::PositionVelocityStateStamped backup_msg;
+  backup_msg.header.stamp = ros::Time::now();
+  backup_msg.state.x = msg.x;
+  backup_msg.state.y = msg.y;
+  backup_msg.state.z = msg.z;
+  backup_msg.state.x_dot = msg.xdot1;
+  backup_msg.state.y_dot = msg.ydot1;
+  backup_msg.state.z_dot = msg.zdot1;
+
+  backup_reference_pub_.publish(backup_msg);
 }
 
 }  // namespace quads

@@ -87,9 +87,11 @@ class ReferenceGenerator {
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;
   ros::Publisher reference_pub_;
+  ros::Publisher backup_reference_pub_;
 
   std::string in_flight_topic_;
   std::string reference_topic_;
+  std::string backup_reference_topic_;
 
   // TF parser.
   TfParser tf_parser_;

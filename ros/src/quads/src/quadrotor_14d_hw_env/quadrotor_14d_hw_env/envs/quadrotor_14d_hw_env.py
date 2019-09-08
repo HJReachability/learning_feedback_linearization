@@ -19,8 +19,8 @@ class Quadrotor14dHwEnv(gym.Env):
         if not self.register_callbacks(): sys.exit(1)
 
         # Set up observation space and action space.
-        NUM_PREPROCESSED_STATES = 9
-        NUM_ACTION_DIMS = 12
+        NUM_PREPROCESSED_STATES = 14-7
+        NUM_ACTION_DIMS = 2
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, (NUM_PREPROCESSED_STATES,))
         self.action_space = gym.spaces.Box(-np.inf, np.inf, (NUM_ACTION_DIMS,))
 
@@ -57,7 +57,7 @@ class Quadrotor14dHwEnv(gym.Env):
 #        x[4] = np.cos(x[4])
 #        x[5]= np.cos(x[5])
 
-        x = np.delete(x, [0, 1, 2, 10, 13])
+        x = np.delete(x, [0, 1, 6, 7, 11, 12, 13])
 
         # Remove xi.
 #        x = np.delete(x, 10)

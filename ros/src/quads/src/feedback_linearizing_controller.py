@@ -31,8 +31,11 @@ class FeedbackLinearizingController(object):
         self._ylin = None
 
         #define placeholders
-        observation_space = spaces.Box(low=-100,high=100,shape=(9,),dtype=np.float32)
-        action_space = spaces.Box(low=-50,high=50,shape=(12,),dtype=np.float32)
+        self.NUM_PREPROCESSED_STATES = 14 - 7
+        self.NUM_ACTIONS = 2
+        observation_space = spaces.Box(low=-100,high=100,shape=(self.NUM_PREPROCESSED_STATES,),
+                                       dtype=np.float32)
+        action_space = spaces.Box(low=-50,high=50,shape=(self.NUM_ACTIONS,),dtype=np.float32)
         self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
 
 
@@ -314,11 +317,11 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
         #creating m2, ft
         A_SCALING = 0.05
-        m2, f2 = np.split(A_SCALING * a[0],[9])
+        m2, f2 = np.split(A_SCALING * a[0],[self.NUM_ACTIONS])
         new_m2=np.zeros((4,4))
-        new_m2[:3,:3]=m2.reshape((3, 3))
+        new_m2[2, 2]=m2.reshape((1, 1))
         new_f2=np.zeros((4,1))
-        new_f2[:3,0]=f2.reshape((3,))
+        new_f2[2, 0]=f2.reshape((1,))
         # TODO: make sure this works with tf stuff.
         return np.dot(self._M1(x) + new_m2, v) + \
             new_f2 + self._f1(x), a
@@ -337,6 +340,6 @@ class FeedbackLinearizingController(object):
 #        x[4] = np.cos(x[4])
 #        x[5]= np.cos(x[5])
 
-        x = np.delete(x, [0, 1, 2, 10, 13])
+        x = np.delete(x, [0, 1, 6, 7, 11, 12, 13])
 
         return x

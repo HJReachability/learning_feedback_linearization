@@ -118,6 +118,7 @@
         required="true">
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+    <param name="topics/backup_reference" value="$(arg reference_topic)" />
     <param name="frames/world" value="$(arg fixed_frame)" />
     <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="0.01" />
@@ -215,7 +216,7 @@
   <!-- Merger node.  -->
   <node name="merger"
         pkg="crazyflie_control_merger"
-        type="regular_control_merger_node"
+        type="only_thrust_control_merger_node"
         output="screen">
 
     <param name="mode" value="$(arg merger_mode)" />
@@ -275,11 +276,11 @@
 
     <param name="K_file" value="$(arg lqr_K_file)" />
     <param name="u_ref_file" value="$(arg lqr_u_ref_file)" />
-    <param name="integrator/thresh/x" value="0.0" />
-    <param name="integrator/thresh/y" value="0.0" />
+    <param name="integrator/thresh/x" value="100.0" />
+    <param name="integrator/thresh/y" value="100.0" />
     <param name="integrator/thresh/z" value="0.5" />
-    <param name="integrator/k/x" value="-0.0" />
-    <param name="integrator/k/y" value="-0.0" />
+    <param name="integrator/k/x" value="-0.5" />
+    <param name="integrator/k/y" value="0.5" />
     <param name="integrator/k/z" value="-0.5" />
 
     <param name="topics/reference" value="$(arg reference_topic)" />

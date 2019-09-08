@@ -13,6 +13,7 @@ from quads_msgs.msg import LearnedParameters
 from std_msgs.msg import Empty
 from quadrotor_14d import Quadrotor14D
 from visualization_msgs.msg import Marker
+from scipy.linalg import expm
 
 #import spinup2.algos.ppo.core as core
 import spinup2.algos.vpg.core as core
@@ -281,6 +282,7 @@ class FeedbackLinearizingController(object):
             t_msg.a = list(a.flatten())
             t_msg.r = -self._dynamics.observation_distance(self._y, self._ylin, norm=2)
             self._transitions_pub.publish(t_msg)
+            self.linear_system_reset_callback(0)
 
     def output_callback(self, msg):
         self._y = np.array([[msg.x], [msg.xdot1], [msg.xdot2], [msg.xdot3],
@@ -300,7 +302,10 @@ class FeedbackLinearizingController(object):
 
 #            v = -np.dot(self._K, self._dynamics.linear_system_state_delta(self._ref, self._ylin))
             v = -np.dot(self._K, (self._ylin - self._ref))
-            self._ylin += dt * (np.dot(self._A, self._ylin) + np.dot(self._B, v))
+            A = expm(self._A * dt)
+            B = np.dot(A - np.eye(A.shape[0]), self._B)
+            #self._ylin += dt * (np.dot(self._A, self._ylin) + np.dot(self._B, v))
+            self._ylin = np.dot(A, self._ylin.copy()) + np.dot(B, v)
 
     def linear_system_reset_callback(self, msg):
         self._ylin = self._y
@@ -317,7 +322,7 @@ class FeedbackLinearizingController(object):
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
         #creating m2, ft
         A_SCALING = 0.05
-        m2, f2 = np.split(A_SCALING * a[0],[self.NUM_ACTIONS])
+        m2, f2 = np.split(A_SCALING * a[0],[1])
         new_m2=np.zeros((4,4))
         new_m2[2, 2]=m2.reshape((1, 1))
         new_f2=np.zeros((4,1))

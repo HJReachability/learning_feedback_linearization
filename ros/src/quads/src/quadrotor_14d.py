@@ -108,10 +108,14 @@ class Quadrotor14D(Dynamics):
     def observation_distance(self, y1, y2, norm):
         """ Compute a distance metric on the observation space. """
         if norm == 1:
-            return np.abs(self.linear_system_state_delta(y1, y2)).sum()
+            # HACK only care about z subsystem.
+            return np.abs(self.linear_system_state_delta(y1, y2))[8:12,].sum()
+#            return np.abs(self.linear_system_state_delta(y1, y2)).sum()
         elif norm == 2:
+            # HACK only care about z subsystem.
             delta = self.linear_system_state_delta(y1, y2)
-            return np.sqrt(np.multiply(delta, delta).sum())
+            return np.sqrt(np.multiply(delta, delta)[8:12,].sum())
+#            return np.sqrt(np.multiply(delta, delta).sum())
 
         print("You dummy. Bad norm.")
         return np.inf

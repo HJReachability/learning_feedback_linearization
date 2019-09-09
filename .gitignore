@@ -19,6 +19,9 @@ ros/.catkin_workspace
 
 frames.*
 
+# Crazyflie stuff
+ros/src/crazyflie_*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

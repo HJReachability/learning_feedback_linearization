@@ -145,6 +145,8 @@
     <param name="freq/y" value="0.25" />
     <param name="freq/z" value="0.5" />
     <param name="freq/psi" value="0.25" />
+    <param name="frames/world" value="$(arg fixed_frame)" />
+    <param name="frames/quad" value="$(arg robot_frame)" />
   </node>
 
 

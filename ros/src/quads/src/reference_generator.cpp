@@ -75,6 +75,7 @@ bool ReferenceGenerator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/in_flight", in_flight_topic_)) return false;
   if (!nl.getParam("topics/reference", reference_topic_)) return false;
 
+
   // Frequence of sinusoids.
   if (!nl.getParam("freq/x", x_freq_)) return false;
   if (!nl.getParam("freq/y", y_freq_)) return false;
@@ -86,6 +87,7 @@ bool ReferenceGenerator::LoadParameters(const ros::NodeHandle& n) {
     dt_ = 0.01;
     ROS_WARN("%s: Time discretization set to %lf (s).", name_.c_str(), dt_);
   }
+
 
   return true;
 }

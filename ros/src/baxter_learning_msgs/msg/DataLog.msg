@@ -1,0 +1,3 @@
+# All the data needed for post-processing
+State state # system state
+State ref # desired state

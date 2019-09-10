@@ -7,13 +7,20 @@ import numpy as np
 # ROS imports
 import rospy
 from baxter_learning_msgs.msg import State, Reference
+from geometry_msgs.msg import PoseStamped
+from moveit_msgs.msg import RobotTrajectory
 from std_msgs.msg import Empty
+
+# package imports
+from path_planner import PathPlanner
 
 class ReferenceGenerator(object):
     """docstring for ReferenceGenerator"""
     def __init__(self):
         
         if not self.load_parameters(): sys.exit(1)
+
+        self._planner = PathPlanner('{}_arm'.format(self._arm))
 
         rospy.on_shutdown(self.shutdown)
 
@@ -22,6 +29,10 @@ class ReferenceGenerator(object):
 
     def load_parameters(self):
 
+        if not rospy.has_param("~baxter/arm"):
+            return False
+        self._arm = rospy.get_param("~baxter/arm")
+
         if not rospy.has_param("~topics/ref"):
             return False
         self._ref_topic = rospy.get_param("~topics/ref")
@@ -29,6 +40,11 @@ class ReferenceGenerator(object):
         if not rospy.has_param("~topics/linear_system_reset"):
             return False
         self._reset_topic = rospy.get_param("~topics/linear_system_reset")
+
+        if not rospy.has_param("~topics/integration_reset"):
+            return False
+        self._int_reset_topic = rospy.get_param("~topics/integration_reset")
+
 
         return True
 
@@ -40,6 +56,8 @@ class ReferenceGenerator(object):
         self._ref_pub = rospy.Publisher(
             self._ref_topic, Reference)
 
+        self._int_reset_pub = rospy.Publisher(self._int_reset_topic, Empty)
+
         return True
 
     def send_zeros(self):
@@ -50,8 +68,250 @@ class ReferenceGenerator(object):
             self._ref_pub.publish(msg)
             rospy.sleep(0.05)
 
+    def alternate(self):
+        position1 = np.array([-0.3, -0.2, -0.3, 0.7, -0.6, 0.7, -0.3])
+        position2 = np.array([-0.6, -0.4, -0.5, 0.6, -0.4, 1.1, -0.5])
+
+        # self._planner.set_max_velocity_scaling_factor(1.0)
+        # while not rospy.is_shutdown():
+        #     try:
+        #         plan = self._planner.plan_to_joint_pos(position2)
+        #         # raw_input("Press enter to execute plan via moveit")
+        #         if not self._planner.execute_plan(plan):
+        #             raise Exception("Execution failed")
+        #     except Exception as e:
+        #         pass
+        #     else:
+        #         break
+        # rospy.sleep(1)
+
+        # print "hi"
+
+        # self._planner.set_max_velocity_scaling_factor(0.5)
+        # while not rospy.is_shutdown():
+        #     try:
+        #         plan2 = self._planner.plan_to_joint_pos(position1)
+        #         # raw_input("Press enter to execute plan via moveit")
+        #         if not self._planner.execute_plan(plan):
+        #             raise Exception("Execution failed")
+        #     except Exception as e:
+        #         pass
+        #     else:
+        #         break
+        # rospy.sleep(1)
+
+        # print "hola"
+
+        # self._planner.set_max_velocity_scaling_factor(0.5)
+        # while not rospy.is_shutdown():
+        #     try:
+        #         plan1 = self._planner.plan_to_joint_pos(position2)
+        #         # raw_input("Press enter to execute plan via moveit")
+        #         if not self._planner.execute_plan(plan):
+        #             raise Exception("Execution failed")
+        #     except Exception as e:
+        #         pass
+        #     else:
+        #         break
+        # rospy.sleep(1)
+
+        # print "como estas"
+
+
+        while not rospy.is_shutdown():
+            print "moving to A via moveit"
+            self._planner.set_max_velocity_scaling_factor(1.0)
+            while not rospy.is_shutdown():
+                try:
+                    plan = self._planner.plan_to_joint_pos(position1)
+                    # raw_input("Press enter to execute plan via moveit")
+                    if not self._planner.execute_plan(plan):
+                        raise Exception("Execution failed")
+                except Exception as e:
+                    pass
+                else:
+                    break
+            rospy.sleep(1)
+            # self._planner.stop()
+            rospy.sleep(0.5)
+
+            print "moving to B via control"
+            self._planner.set_max_velocity_scaling_factor(0.5)
+            plan = self._planner.plan_to_joint_pos(position2)
+            # raw_input("Press enter to execute plan via control")
+            self._int_reset_pub.publish(Empty())
+            self.execute_path(plan)
+            rospy.sleep(1)
+            # self._planner.stop()
+            rospy.sleep(0.5)
+            
+            print "moving to B via moveit"
+            self._planner.set_max_velocity_scaling_factor(1.0)
+            while not rospy.is_shutdown():
+                try:
+                    plan = self._planner.plan_to_joint_pos(position2)
+                    # raw_input("Press enter to execute plan via moveit")
+                    if not self._planner.execute_plan(plan):
+                        raise Exception("Execution failed")
+                except Exception as e:
+                    pass
+                else:
+                    break
+            rospy.sleep(1)
+            # self._planner.stop()
+            rospy.sleep(0.5)
+
+            print "moving to A via control"
+            self._planner.set_max_velocity_scaling_factor(0.5)
+            plan = self._planner.plan_to_joint_pos(position1)
+            # raw_input("Press enter to execute plan via control")
+            self._int_reset_pub.publish(Empty())
+            self.execute_path(plan)
+            rospy.sleep(1)
+            # self._planner.stop()
+            rospy.sleep(0.5)
+
     def linear_system_reset_callback(self, msg):
         rospy.sleep(0.5)
+
+
+    def interpolate_path(self, path, t, current_index = 0):
+        """
+        interpolates over a :obj:`moveit_msgs.msg.RobotTrajectory` to produce desired
+        positions, velocities, and accelerations at a specified time
+
+        Parameters
+        ----------
+        path : :obj:`moveit_msgs.msg.RobotTrajectory`
+        t : float
+            the time from start
+        current_index : int
+            waypoint index from which to start search
+
+        Returns
+        -------
+        target_position : 7x' or 6x' :obj:`numpy.ndarray` 
+            desired positions
+        target_velocity : 7x' or 6x' :obj:`numpy.ndarray` 
+            desired velocities
+        target_acceleration : 7x' or 6x' :obj:`numpy.ndarray` 
+            desired accelerations
+        current_index : int
+            waypoint index at which search was terminated 
+        """
+
+        # a very small number (should be much smaller than rate)
+        epsilon = 0.0001
+
+        max_index = len(path.joint_trajectory.points)-1
+
+        # If the time at current index is greater than the current time,
+        # start looking from the beginning
+        if (path.joint_trajectory.points[current_index].time_from_start.to_sec() > t):
+            current_index = 0
+
+        # Iterate forwards so that you're using the latest time
+        while (
+            not rospy.is_shutdown() and \
+            current_index < max_index and \
+            path.joint_trajectory.points[current_index+1].time_from_start.to_sec() < t+epsilon
+        ):
+            current_index = current_index+1
+
+        # Perform the interpolation
+        if current_index < max_index:
+            time_low = path.joint_trajectory.points[current_index].time_from_start.to_sec()
+            time_high = path.joint_trajectory.points[current_index+1].time_from_start.to_sec()
+
+            target_position_low = np.array(
+                path.joint_trajectory.points[current_index].positions
+            )
+            target_velocity_low = np.array(
+                path.joint_trajectory.points[current_index].velocities
+            )
+            target_acceleration_low = np.array(
+                path.joint_trajectory.points[current_index].accelerations
+            )
+
+            target_position_high = np.array(
+                path.joint_trajectory.points[current_index+1].positions
+            )
+            target_velocity_high = np.array(
+                path.joint_trajectory.points[current_index+1].velocities
+            )
+            target_acceleration_high = np.array(
+                path.joint_trajectory.points[current_index+1].accelerations
+            )
+
+            target_position = target_position_low + \
+                (t - time_low)/(time_high - time_low)*(target_position_high - target_position_low)
+            target_velocity = target_velocity_low + \
+                (t - time_low)/(time_high - time_low)*(target_velocity_high - target_velocity_low)
+            target_acceleration = target_acceleration_low + \
+                (t - time_low)/(time_high - time_low)*(target_acceleration_high - target_acceleration_low)
+
+        # If you're at the last waypoint, no interpolation is needed
+        else:
+            target_position = np.array(path.joint_trajectory.points[current_index].positions)
+            target_velocity = np.array(path.joint_trajectory.points[current_index].velocities)
+            target_acceleration = np.array(path.joint_trajectory.points[current_index].velocities)
+
+        return (target_position, target_velocity, target_acceleration, current_index)
+
+
+    def execute_path(self, path, rate=20):
+        """
+        takes in a path and moves the baxter in order to follow the path.  
+
+        Parameters
+        ----------
+        path : :obj:`moveit_msgs.msg.RobotTrajectory`
+        rate : int
+            This specifies the control frequency in hz.  It is important to
+            use a rate and not a regular while loop because you want the
+            loop to refresh at a constant rate, otherwise you would have to
+            tune your PD parameters if the loop runs slower / faster
+
+        Returns
+        -------
+        bool
+            whether the controller completes the path or not
+        """
+
+        # For interpolation
+        max_index = len(path.joint_trajectory.points)-1
+        current_index = 0
+
+        # For timing
+        start_t = rospy.Time.now()
+        r = rospy.Rate(rate)
+
+        while not rospy.is_shutdown():
+            # Find the time from start
+            t = (rospy.Time.now() - start_t).to_sec()
+
+            # Get the desired position, velocity, and acceleration
+            (
+                target_position, 
+                target_velocity, 
+                target_acceleration, 
+                current_index
+            ) = self.interpolate_path(path, t, current_index)
+
+            # Run controller
+            setpoint = State(target_position, target_velocity)
+            feed_forward = target_acceleration
+            msg = Reference(setpoint, feed_forward)
+            self._ref_pub.publish(msg)
+
+            # Sleep for a bit (to let robot move)
+            r.sleep()
+
+            if current_index >= max_index:
+                break
+
+        return True
+
 
     def shutdown(self):
         pass
@@ -62,7 +322,10 @@ if __name__ == '__main__':
 
     gen = ReferenceGenerator()
 
-    gen.send_zeros()
+    rospy.sleep(5)
+
+    # gen.send_zeros()
+    gen.alternate()
 
     rospy.spin()
 

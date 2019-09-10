@@ -96,8 +96,8 @@ class BaxterLearning():
         # self._Kp = 6*np.diag(np.array([1, 1, 1.5, 1.5, 1, 1, 1]))
         # self._Kv = 5*np.diag(np.array([2, 2, 1, 1, 0.8, 0.3, 0.3]))
 
-        self._Kp = 2*np.diag(np.array([4, 4, 1.5, 0.1, 1, 10, 1]))
-        self._Kv = 2*np.diag(np.array([2, 2, 1, 1, 0.8, 1.5, 0.3]))
+        self._Kp = 9*np.diag(np.array([4, 6, 4, 8, 1, 5, 1]))
+        self._Kv = 5*np.diag(np.array([2, 3, 2, 4, 0.8, 1.5, 0.3]))
 
         if not self.register_callbacks(): sys.exit(1)
 
@@ -127,6 +127,10 @@ class BaxterLearning():
             return False
         self._reset_topic = rospy.get_param("~topics/linear_system_reset")
 
+        if not rospy.has_param("~topics/integration_reset"):
+            return False
+        self._int_reset_topic = rospy.get_param("~topics/integration_reset")
+
         if not rospy.has_param("~topics/data"):
             return False
         self._data_topic = rospy.get_param("~topics/data")
@@ -143,6 +147,9 @@ class BaxterLearning():
 
         self._reset_sub = rospy.Subscriber(
             self._reset_topic, Empty, self.linear_system_reset_callback)
+
+        self._int_reset_sub = rospy.Subscriber(
+            self._int_reset_topic, Empty, self.integration_reset_callback)
 
         self._transitions_pub = rospy.Publisher(self._transitions_topic, Transition)
 
@@ -207,7 +214,8 @@ class BaxterLearning():
         # d_error = np.zeros((7,1))
         error_stack = np.vstack([error, d_error])
 
-        v = np.matmul(self._Kv, d_error).reshape((7,1)) + np.matmul(self._Kp, error).reshape((7,1)) + ref.feed_forward
+        v = np.matmul(self._Kv, d_error).reshape((7,1)) + np.matmul(self._Kp, error).reshape((7,1)) + np.array(ref.feed_forward).reshape((7,1))
+        # v = np.array(ref.feed_forward).reshape((7,1))
         # v = np.matmul(self._K, error_stack).reshape((7,1))
         # v = np.zeros((7,1))
 
@@ -218,7 +226,7 @@ class BaxterLearning():
         if self._learning_bool:
             x = np.vstack([current_position, current_velocity])
             a = self._sess.run(self._pi, feed_dict={self._x_ph: x.reshape(1,-1)})
-            m2, f2 = np.split(0.2*a[0],[49])
+            m2, f2 = np.split(0.1*a[0],[49])
             m2 = m2.reshape((7,7))
             f2 = f2.reshape((7,1))
 
@@ -237,8 +245,11 @@ class BaxterLearning():
             m2 = np.zeros((7,7))
             f2 = np.zeros((7,1))
 
+        torque_lim = np.array([4, 4, 4, 4, 2, 2, 2]).reshape((7,1))
 
         torque = np.matmul(inertia + m2, v) + coriolis + gravity + f2
+
+        torque = np.clip(torque, -torque_lim, torque_lim).reshape((7,1))
 
         torque_dict = utils.joint_array_to_dict(torque, self._limb)
         self._limb.set_joint_torques(torque_dict)
@@ -248,6 +259,9 @@ class BaxterLearning():
         # self._planner.execute_plan(plan)
         pass
 
+    def integration_reset_callback(self, msg):
+        self._last_time = rospy.Time.now().to_sec()
+
     def shutdown(self):
         """
         Code to run on shutdown. This is good practice for safety
@@ -255,8 +269,10 @@ class BaxterLearning():
         rospy.loginfo("Stopping Controller")
 
         # Set velocities to zero
-        zero_vel_dict = utils.joint_array_to_dict(np.zeros(7), self._limb)
-        self._limb.set_joint_velocities(zero_vel_dict)
+        # zero_vel_dict = utils.joint_array_to_dict(np.zeros(7), self._limb)
+        # self._limb.set_joint_velocities(zero_vel_dict)
+
+        self._planner.stop()
 
         rospy.sleep(0.1)
 

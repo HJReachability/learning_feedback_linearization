@@ -166,6 +166,15 @@ class PathPlanner(object):
 
         self._planning_scene_publisher.publish(co)
 
+    def stop(self):
+        """
+        Stops the robot
+        """
+        self._group.stop()
+
+    def set_max_velocity_scaling_factor(self, value):
+        self._group.set_max_velocity_scaling_factor(value)
+
 
 
         

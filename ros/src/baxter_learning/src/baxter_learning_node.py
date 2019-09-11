@@ -24,6 +24,7 @@ import utils
 from path_planner import PathPlanner
 
 import spinup2.algos.vpg.core as core
+# import spinup2.algos.ppo.core as core
 
 
 
@@ -37,21 +38,11 @@ class BaxterLearning():
         self._kin = baxter_kinematics(self._arm)
         self._planner = PathPlanner('{}_arm'.format(self._arm))
 
-        self._last_time = rospy.Time.now().to_sec()
-
-        current_position = utils.get_joint_positions(self._limb).reshape((7,1))
-        current_velocity = utils.get_joint_velocities(self._limb).reshape((7,1))
-
-        self._last_x = np.vstack([current_position, current_velocity])
-        self._last_a = np.zeros(56)
-
-
-
         rospy.on_shutdown(self.shutdown)
 
-        # plan = self._planner.plan_to_joint_pos(np.zeros(7))
-        # self._planner.execute_plan(plan)
-        # rospy.sleep(0.5)
+        plan = self._planner.plan_to_joint_pos(np.array([-0.6, -0.4, -0.5, 0.6, -0.4, 1.1, -0.5]))
+        self._planner.execute_plan(plan)
+        rospy.sleep(5)
 
         ################################## Tensorflow bullshit
         if self._learning_bool:
@@ -63,7 +54,7 @@ class BaxterLearning():
 
             #define actor critic
             #TODO add in central way to accept arguments
-            #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
+            # self._pi, logp, logp_pi, v = core.mlp_actor_critic(
             #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
             POLY_ORDER = 2
             self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
@@ -83,6 +74,17 @@ class BaxterLearning():
             self._sess.run(tf.global_variables_initializer())
 
             print("total trainable vars: ", len(tf.trainable_variables()))
+
+        self._last_time = rospy.Time.now().to_sec()
+
+        current_position = utils.get_joint_positions(self._limb).reshape((7,1))
+        current_velocity = utils.get_joint_velocities(self._limb).reshape((7,1))
+
+        self._last_x = np.vstack([current_position, current_velocity])
+
+        if self._learning_bool:
+            self._last_a = self._sess.run(self._pi, feed_dict={self._x_ph: self._last_x.reshape(1,-1)})
+
 
         ##################################### Controller params
 
@@ -253,7 +255,6 @@ class BaxterLearning():
 
             self._last_x = x
             self._last_a = a
-            
         else:
             m2 = np.zeros((7,7))
             f2 = np.zeros((7,1))
@@ -285,10 +286,10 @@ class BaxterLearning():
         rospy.loginfo("Stopping Controller")
 
         # Set velocities to zero
-        # zero_vel_dict = utils.joint_array_to_dict(np.zeros(7), self._limb)
-        # self._limb.set_joint_velocities(zero_vel_dict)
+        zero_vel_dict = utils.joint_array_to_dict(np.zeros(7), self._limb)
+        self._limb.set_joint_velocities(zero_vel_dict)
 
-        self._planner.stop()
+        # self._planner.stop()
 
         rospy.sleep(0.1)
 

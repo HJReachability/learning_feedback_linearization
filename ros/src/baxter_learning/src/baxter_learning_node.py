@@ -48,7 +48,7 @@ class BaxterLearning():
         if self._learning_bool:
             # I DON'T KNOW HOW THESE WORK
             #define placeholders
-            observation_space = spaces.Box(low=-100,high=100,shape=(14,),dtype=np.float32)
+            observation_space = spaces.Box(low=-100,high=100,shape=(21,),dtype=np.float32)
             action_space = spaces.Box(low=-50,high=50,shape=(56,),dtype=np.float32)
             self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
 
@@ -83,7 +83,7 @@ class BaxterLearning():
         self._last_x = np.vstack([current_position, current_velocity])
 
         if self._learning_bool:
-            self._last_a = self._sess.run(self._pi, feed_dict={self._x_ph: self._last_x.reshape(1,-1)})
+            self._last_a = self._sess.run(self._pi, feed_dict={self._x_ph: self.preprocess_state(self._last_x).reshape(1,-1)})
 
 
         ##################################### Controller params
@@ -238,7 +238,7 @@ class BaxterLearning():
 
         if self._learning_bool:
             x = np.vstack([current_position, current_velocity])
-            a = self._sess.run(self._pi, feed_dict={self._x_ph: x.reshape(1,-1)})
+            a = self._sess.run(self._pi, feed_dict={self._x_ph: self.preprocess_state(x).reshape(1,-1)})
             m2, f2 = np.split(0.1*a[0],[49])
             m2 = m2.reshape((7,7))
             f2 = f2.reshape((7,1))
@@ -278,6 +278,12 @@ class BaxterLearning():
 
     def integration_reset_callback(self, msg):
         self._last_time = rospy.Time.now().to_sec()
+
+    def preprocess_state(self, x0):
+        q = x0[0:7]
+        dq = x0[7:14]
+        x = np.hstack([np.sin(q), np.cos(q), dq])
+        return x
 
     def shutdown(self):
         """

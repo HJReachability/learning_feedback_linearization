@@ -51,7 +51,7 @@ class DataCollector(object):
     def dump(self):
         """ Dump to disk. """
         import dill
-        PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-tah/Desktop/data/"
+        PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-tag/Desktop/data/"
         # PREFIX = "~/Desktop/"
         THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
         print THIS_FOLDER

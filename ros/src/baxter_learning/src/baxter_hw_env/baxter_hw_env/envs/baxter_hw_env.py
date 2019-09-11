@@ -19,7 +19,7 @@ class BaxterHwEnv(gym.Env):
         if not self.register_callbacks(): sys.exit(1)
 
         # Set up observation space and action space.
-        NUM_PREPROCESSED_STATES = 14
+        NUM_PREPROCESSED_STATES = 21
         NUM_ACTION_DIMS = 56
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, (NUM_PREPROCESSED_STATES,))
         self.action_space = gym.spaces.Box(-np.inf, np.inf, (NUM_ACTION_DIMS,))
@@ -48,20 +48,26 @@ class BaxterHwEnv(gym.Env):
 
         return self.preprocess_state(x), r, a, done, {}
 
+    # def preprocess_state(self, x0):
+    #     # x = x0.copy()
+    #     # x[0] = np.sin(x[3])
+    #     # x[1] = np.sin(x[4])
+    #     # x[2]= np.sin(x[5])
+    #     # x[3] = np.cos(x[3])
+    #     # x[4] = np.cos(x[4])
+    #     # x[5]= np.cos(x[5])
+
+    #     # # Remove xi.
+    #     # x = np.delete(x, 10)
+
+    #     # TODO: think about removing p, q, r?
+    #     return x0
+
     def preprocess_state(self, x0):
-        # x = x0.copy()
-        # x[0] = np.sin(x[3])
-        # x[1] = np.sin(x[4])
-        # x[2]= np.sin(x[5])
-        # x[3] = np.cos(x[3])
-        # x[4] = np.cos(x[4])
-        # x[5]= np.cos(x[5])
-
-        # # Remove xi.
-        # x = np.delete(x, 10)
-
-        # TODO: think about removing p, q, r?
-        return x0
+        q = x0[0:7]
+        dq = x0[7:14]
+        x = np.hstack([np.sin(q), np.cos(q), dq])
+        return x
 
     def reset(self):
         self._linear_system_reset_pub.publish(Empty())

@@ -182,7 +182,6 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     params_topic = rospy.get_param("~topics/params")
     params_pub = rospy.Publisher(params_topic, LearnedParameters)
 
-    
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
 

@@ -10,11 +10,8 @@ from spinup2.utils.mpi_tf import MpiAdamOptimizer, sync_all_params
 from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_scalar, num_procs
 from itertools import izip
 
-from quads_msgs.msg import LearnedParameters
-from quads_msgs.msg import Parameters
 import rospy
-
-
+from quads_msgs.msg import LearnedParameters, Parameters
 
 class VPGBuffer(object):
     u"""
@@ -188,8 +185,8 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
     # Need all placeholders in *this* order later (to zip with data from buffer)
     all_phs = [x_ph, a_ph, adv_ph, ret_ph, logp_old_ph]
 
-    # Every step, get: value and logprob (we'll get action from the env)
-    get_action_ops = [v, logp] # logp instead of logp_pi since we know a
+    # Every step, get: action, value, and logprob
+    get_action_ops = [v, logp]
 
     # Experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
@@ -250,7 +247,6 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
 
         # Publish ros parameters
         params_msg = LearnedParameters()
-
         params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
         for p in params:
             msg = Parameters()
@@ -262,23 +258,24 @@ def vpgpolynomial(env_fn, actor_critic=core.polynomial_actor_critic, ac_kwargs=d
         params_pub.publish(params_msg)
 
     start_time = time.time()
-    o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+    #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+    env.reset()
+    ep_ret = 0
+    ep_len = 0
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in xrange(epochs):
         for t in xrange(local_steps_per_epoch):
             o, r, a, d, _ = env.step()
-
             ep_ret += r
             ep_len += 1
 
-            # get log prob
-            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1),
-                                                              a_ph: a.reshape(1, -1)})
+            v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1), a_ph: a.reshape(1, -1)})
 
             # save and log
             buf.store(o, a, r, v_t, logp_t)
             logger.store(VVals=v_t)
+
 
             terminal = d or (ep_len == max_ep_len)
             if terminal or (t==local_steps_per_epoch-1):

@@ -103,7 +103,6 @@ class Logger(object):
                 print u"Warning: Log dir %s already exists! Storing info there anyway."%self.output_dir
             else:
                 os.makedirs(self.output_dir)
-            print(os.getcwd())
             self.output_file = open(osp.join(self.output_dir, output_fname), u'w')
             atexit.register(self.output_file.close)
             print colorize(u"Logging data to %s"%self.output_file.name, u'green', bold=True)

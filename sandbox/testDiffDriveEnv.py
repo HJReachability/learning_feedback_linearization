@@ -25,7 +25,7 @@ spinup.ppo(
     steps_per_epoch=1250,
     pi_lr=3e-3,
     epochs=2500,
-    logger_kwargs = {"output_dir" : "logs/ppo-diffdrivetest-fromfullnonet"}
+    logger_kwargs = {"output_dir" : "logs/ppo-diffdrivetest-wtf"}
 )
 
 #polynomials

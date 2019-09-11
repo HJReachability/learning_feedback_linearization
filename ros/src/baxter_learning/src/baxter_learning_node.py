@@ -96,8 +96,11 @@ class BaxterLearning():
         # self._Kp = 6*np.diag(np.array([1, 1, 1.5, 1.5, 1, 1, 1]))
         # self._Kv = 5*np.diag(np.array([2, 2, 1, 1, 0.8, 0.3, 0.3]))
 
-        self._Kp = 9*np.diag(np.array([4, 6, 4, 8, 1, 5, 1]))
-        self._Kv = 5*np.diag(np.array([2, 3, 2, 4, 0.8, 1.5, 0.3]))
+        # self._Kp = 9*np.diag(np.array([4, 6, 4, 8, 1, 5, 1]))
+        # self._Kv = 5*np.diag(np.array([2, 3, 2, 4, 0.8, 1.5, 0.3]))
+
+        self._Kp = 6*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
+        self._Kv = 6*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
 
         if not self.register_callbacks(): sys.exit(1)
 

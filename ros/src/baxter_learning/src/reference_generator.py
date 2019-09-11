@@ -68,6 +68,26 @@ class ReferenceGenerator(object):
             self._ref_pub.publish(msg)
             rospy.sleep(0.05)
 
+
+    def random_span(self, rate = 20, number = 50):
+        min_range = np.array([-0.5, -0.4, -0.5, 0.6, -0.6, 0.7, -0.5])
+        max_range = np.array([-0.3, -0.2, -0.3, 0.8, -0.4, 0.9, -0.3])
+
+        r = rospy.Rate(rate)
+
+        while not rospy.is_shutdown():
+            position = (max_range - min_range)*np.random.random_sample(min_range.shape) + min_range
+            setpoint = State(position, np.zeros(7))
+            feed_forward = np.zeros(7)
+            msg = Reference(setpoint, feed_forward)
+            count = 0
+            while not count > number and not rospy.is_shutdown():
+                self._ref_pub.publish(msg)
+                count = count + 1
+                r.sleep()
+
+
+
     def alternate(self):
         position1 = np.array([-0.3, -0.2, -0.3, 0.7, -0.6, 0.7, -0.3])
         position2 = np.array([-0.6, -0.4, -0.5, 0.6, -0.4, 1.1, -0.5])
@@ -325,7 +345,8 @@ if __name__ == '__main__':
     rospy.sleep(5)
 
     # gen.send_zeros()
-    gen.alternate()
+    # gen.alternate()
+    gen.random_span()
 
     rospy.spin()
 

@@ -39,6 +39,14 @@ class BaxterLearning():
 
         self._last_time = rospy.Time.now().to_sec()
 
+        current_position = utils.get_joint_positions(self._limb).reshape((7,1))
+        current_velocity = utils.get_joint_velocities(self._limb).reshape((7,1))
+
+        self._last_x = np.vstack([current_position, current_velocity])
+        self._last_a = np.zeros(56)
+
+
+
         rospy.on_shutdown(self.shutdown)
 
         # plan = self._planner.plan_to_joint_pos(np.zeros(7))
@@ -189,13 +197,13 @@ class BaxterLearning():
         # Get/log state data
         ref = msg
 
+        dt = rospy.Time.now().to_sec() - self._last_time
+        self._last_time = rospy.Time.now().to_sec()
+
         current_position = utils.get_joint_positions(self._limb).reshape((7,1))
         current_velocity = utils.get_joint_velocities(self._limb).reshape((7,1))
 
         current_state = State(current_position, current_velocity)
-
-        data = DataLog(current_state, ref.setpoint)
-        self._data_pub.publish(data)
 
         # get dynamics info
 
@@ -233,20 +241,25 @@ class BaxterLearning():
             m2 = m2.reshape((7,7))
             f2 = f2.reshape((7,1))
 
-            dt = rospy.Time.now().to_sec() - self._last_time
+            x_predict = np.matmul(expm((self._A + np.matmul(self._B, np.hstack([self._Kp, self._Kv])))*dt), self._last_x)
 
-            x_predict = np.matmul(expm((self._A + np.matmul(self._B, np.hstack([self._Kp, self._Kv])))*dt), x)
-
-            self._last_time = rospy.Time.now().to_sec()
 
             t_msg = Transition()
-            t_msg.x = list(x.flatten())
-            t_msg.a = list(a.flatten())
+            t_msg.x = list(self._last_x.flatten())
+            t_msg.a = list(self._last_a.flatten())
             t_msg.r = -np.linalg.norm(x - x_predict, 2)
             self._transitions_pub.publish(t_msg)
+            data = DataLog(current_state, ref.setpoint, t_msg)
+
+            self._last_x = x
+            self._last_a = a
+            
         else:
             m2 = np.zeros((7,7))
             f2 = np.zeros((7,1))
+            data = DataLog(current_state, ref.setpoint, Transition())
+
+        self._data_pub.publish(data)
 
         torque_lim = np.array([4, 4, 4, 4, 2, 2, 2]).reshape((7,1))
 

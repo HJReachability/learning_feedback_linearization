@@ -11,28 +11,28 @@ from std_msgs.msg import Empty
 
 def run():
     env = lambda : gym.make("BaxterHwEnv-v0")
-    # spinup2.ppo(
-    #     env,
-    #     ac_kwargs={"hidden_sizes":(64,2)},
-    #     seed = np.random.randint(100),
-    #     steps_per_epoch=1250,
-    #     pi_lr=3e-4,
-    #     epochs=2500,
-    #     logger_kwargs = {"output_dir" : "./logs/ppo-log-dir-betterwork"}
-    # )
-    #polynomials
-    spinup2.vpgpolynomial(
+    spinup2.ppo(
         env,
-        ac_kwargs={"order":2},
+        ac_kwargs={"hidden_sizes":(128,2)},
         seed = np.random.randint(100),
         steps_per_epoch=1250,
-        max_ep_len=25,
+        pi_lr=3e-4,
         epochs=2500,
-#        pi_lr=2e-5,
-        pi_lr=1e-3,
-        l1_scaling=0.01,
-        logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
+        logger_kwargs = {"output_dir" : "./logs/ppo-log-dir-betterwork"}
     )
+    #polynomials
+#     spinup2.vpgpolynomial(
+#         env,
+#         ac_kwargs={"order":2},
+#         seed = np.random.randint(100),
+#         steps_per_epoch=1250,
+#         max_ep_len=25,
+#         epochs=2500,
+# #        pi_lr=2e-5,
+#         pi_lr=1e-3,
+#         l1_scaling=0.01,
+#         logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
+#     )
 
 
 if __name__ == "__main__":

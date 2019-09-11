@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   geometry_msgs
-  
+  quads_msgs
 )
 
 file(GLOB msg_files RELATIVE ${PROJECT_SOURCE_DIR}/msg ${PROJECT_SOURCE_DIR}/msg/*.msg)
@@ -21,6 +21,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  quads_msgs
 )
 
 catkin_package(
@@ -29,5 +30,6 @@ catkin_package(
     rospy
     std_msgs
     geometry_msgs
+    quads_msgs
     message_runtime
 )

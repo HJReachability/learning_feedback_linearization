@@ -54,7 +54,7 @@ class BaxterLearning():
 
             #define actor critic
             #TODO add in central way to accept arguments
-            # self._pi, logp, logp_pi, v = core.mlp_actor_critic(
+            # self._pi, self._logp, self._logp_pi, self._v = core.mlp_actor_critic(
             #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
             POLY_ORDER = 2
             self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
@@ -89,7 +89,7 @@ class BaxterLearning():
         ##################################### Controller params
 
         self._A = np.vstack([
-            np.hstack([np.zeros((7,7)), np.eye(7)]), 
+            np.hstack([np.zeros((7,7)), np.eye(7)]),
             np.hstack([np.zeros((7,7)), np.zeros((7,7))])
             ])
         self._B = np.vstack([np.zeros((7,7)), np.eye(7)])
@@ -114,7 +114,7 @@ class BaxterLearning():
 
         if not self.register_callbacks(): sys.exit(1)
 
-        
+
     def load_parameters(self):
         if not rospy.has_param("~baxter/arm"):
             return False
@@ -178,7 +178,7 @@ class BaxterLearning():
         num_params = 0
         for p, v in zip(msg.params, self._tf_vars):
             num_params += len(p.params)
-            print("P is len ", len(p.params), ", and v is len ", np.prod(v.shape.as_list())) 
+            print("P is len ", len(p.params), ", and v is len ", np.prod(v.shape.as_list()))
             assert(len(p.params) == np.prod(v.shape.as_list()))
 
             reshaped_p = np.array(p.params).reshape(v.shape.as_list())
@@ -299,7 +299,7 @@ class BaxterLearning():
 
         rospy.sleep(0.1)
 
-        
+
 
 if __name__ == '__main__':
 
@@ -308,7 +308,3 @@ if __name__ == '__main__':
     bl = BaxterLearning()
 
     rospy.spin()
-
-
-
-

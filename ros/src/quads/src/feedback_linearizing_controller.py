@@ -15,8 +15,8 @@ from quadrotor_14d import Quadrotor14D
 from visualization_msgs.msg import Marker
 from scipy.linalg import expm
 
-#import spinup2.algos.ppo.core as core
-import spinup2.algos.vpg.core as core
+import spinup2.algos.ppo.core as core
+#import spinup2.algos.vpg.core as core
 
 class FeedbackLinearizingController(object):
     def __init__(self):
@@ -42,11 +42,12 @@ class FeedbackLinearizingController(object):
 
         #define actor critic
         #TODO add in central way to accept arguments
-        #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
-        #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
-        POLY_ORDER = 3
-        self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
-            self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
+        self._pi, self._logp, self._logp_pi, self._v = core.mlp_actor_critic(
+           self._x_ph, self._u_ph, hidden_sizes=(32,2), action_space=action_space)
+
+        # POLY_ORDER = 3
+        # self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
+        #     self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
 
         #start up tensorflow graph
 
@@ -321,7 +322,7 @@ class FeedbackLinearizingController(object):
         preprocessed_x = self.preprocess_state(x)
         a = self._sess.run(self._pi, feed_dict={self._x_ph: preprocessed_x.reshape(1,-1)})
         #creating m2, ft
-        A_SCALING = 0.05
+        A_SCALING = 1.0
         m2, f2 = np.split(A_SCALING * a[0],[1])
         new_m2=np.zeros((4,4))
         new_m2[2, 2]=m2.reshape((1, 1))

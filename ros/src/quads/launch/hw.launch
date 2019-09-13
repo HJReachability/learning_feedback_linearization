@@ -59,9 +59,9 @@
   <arg name="mocap_frame" default="vicon/Hy4/Hy4" />
 
   <!-- Takeoff hover point. -->
-  <arg name="takeoff_hover_x" default="-1.0" />
+  <arg name="takeoff_hover_x" default="0.0" />
   <arg name="takeoff_hover_y" default="0.0" />
-  <arg name="takeoff_hover_z" default="0.3" />
+  <arg name="takeoff_hover_z" default="1.3" />
 
   <!-- Control parameters. -->
   <arg name="lqr_x_dim" default="7" />
@@ -122,8 +122,8 @@
     <param name="frames/world" value="$(arg fixed_frame)" />
     <param name="frames/quad" value="$(arg robot_frame)" />
     <param name="dt" value="0.01" />
-    <param name="freq/x" value="0.02" />
-    <param name="freq/y" value="0.02" />
+    <param name="freq/x" value="0.0" />
+    <param name="freq/y" value="0.0" />
     <param name="freq/z" value="0.02" />
     <param name="freq/psi" value="0.0" />
   </node>

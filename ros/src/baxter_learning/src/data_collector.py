@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 
 from baxter_learning_msgs.msg import State, DataLog
+from quads_msgs.msg import LearnedParameters, Parameters
 import sys
 import os
 
@@ -14,8 +15,9 @@ class DataCollector(object):
         self._refs = []
         self._states = []
         self._times = []
-        self._parameters = []
+        self._outputs = []
         self._rewards = []
+        self._learned_parameters = []
 
         rospy.on_shutdown(self.shutdown)
 
@@ -27,26 +29,42 @@ class DataCollector(object):
             return False
         self._data_topic = rospy.get_param("~topics/data")
 
+        if not rospy.has_param("~topics/params"):
+            return False
+        self._param_topic = rospy.get_param("~topics/params")
+
         return True
 
     def register_callbacks(self):
         self._data_sub = rospy.Subscriber(
-            self._data_topic, DataLog, self.callback)
+            self._data_topic, DataLog, self.data_callback)
+
+        self._param_sub = rospy.Subscriber(
+            self._param_topic, LearnedParameters, self.param_callback)
 
         return True
 
-    def callback(self, msg):
+    def data_callback(self, msg):
         t = rospy.Time.now().to_sec()
         ref = np.hstack([msg.ref.position, msg.ref.velocity])
         s = np.hstack([msg.state.position, msg.state.velocity])
-        p = msg.transition.a
+        o = msg.transition.a
         rew = msg.transition.r
 
         self._refs.append(ref)
         self._states.append(s)
         self._times.append(t)
-        self._parameters.append(p)
+        self._outputs.append(o)
         self._rewards.append(rew)
+    
+    def param_callback(self, msg):
+        p_list = []
+        t = rospy.Time.now().to_sec()
+        for p in msg.params:
+            p_list.append(np.array(p.params))
+
+        self._learned_parameters.append((t, p_list))
+
 
     def dump(self):
         """ Dump to disk. """
@@ -67,11 +85,14 @@ class DataCollector(object):
         f = open(PREFIX + "times.pkl", "wb")
         dill.dump(self._times, f)
         f.close()
-        f = open(PREFIX + "params.pkl", "wb")
-        dill.dump(self._parameters, f)
+        f = open(PREFIX + "outputs.pkl", "wb")
+        dill.dump(self._outputs, f)
         f.close()
         f = open(PREFIX + "rewards.pkl", "wb")
         dill.dump(self._rewards, f)
+        f.close()
+        f = open(PREFIX + "learned_params.pkl", "wb")
+        dill.dump(self._learned_parameters, f)
         f.close()
 
 

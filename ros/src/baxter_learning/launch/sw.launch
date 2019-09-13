@@ -44,6 +44,7 @@
         output="screen"
         required="true" >
     <param name="topics/data" value="$(arg data_topic)" />
+    <param name="topics/params" value="$(arg learned_params_topic)" /> 
   </node>
 
   <!-- Learning node. -->

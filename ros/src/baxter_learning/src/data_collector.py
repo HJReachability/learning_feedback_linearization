@@ -5,6 +5,7 @@ import numpy as np
 
 from baxter_learning_msgs.msg import State, DataLog
 from quads_msgs.msg import LearnedParameters, Parameters
+from std_srvs.srv import Empty, EmptyResponse
 import sys
 import os
 
@@ -42,6 +43,8 @@ class DataCollector(object):
         self._param_sub = rospy.Subscriber(
             self._param_topic, LearnedParameters, self.param_callback)
 
+        self._dump_service = rospy.Service('dump', Empty, self.dump_srv)
+
         return True
 
     def data_callback(self, msg):
@@ -65,6 +68,10 @@ class DataCollector(object):
 
         self._learned_parameters.append((t, p_list))
 
+    def dump_srv(self, msg):
+        self.dump()
+
+        return EmptyResponse()
 
     def dump(self):
         """ Dump to disk. """
@@ -95,12 +102,12 @@ class DataCollector(object):
         dill.dump(self._learned_parameters, f)
         f.close()
 
-
-
     def shutdown(self):
-        rospy.sleep(0.1)
-        self.dump()
-        rospy.sleep(0.1)
+        # rospy.sleep(0.1)
+        # self.dump()
+        # rospy.sleep(0.1)
+
+        pass
 
 if __name__ == '__main__':
     

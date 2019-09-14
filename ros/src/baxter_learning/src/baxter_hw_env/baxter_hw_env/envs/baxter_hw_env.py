@@ -34,6 +34,9 @@ class BaxterHwEnv(gym.Env):
             rospy.logwarn_throttle(10.0, "%s: Out of transitions." % self._name)
             rospy.sleep(0.01)
 
+        if rospy.is_shutdown():
+            return None
+            
         transition = self._transitions.pop(0)
         x = np.array(transition.x)
         a = np.array(transition.a)

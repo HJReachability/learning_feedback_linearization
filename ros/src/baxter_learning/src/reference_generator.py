@@ -70,8 +70,8 @@ class ReferenceGenerator(object):
 
 
     def random_span(self, rate = 20, number = 50):
-        min_range = np.array([0.3, -0.4, -0.5, 0.6, -0.6, 0.7, -0.5])
-        max_range = np.array([0.5, -0.2, -0.3, 0.8, -0.4, 0.9, -0.3])
+        min_range = np.array([-0.9, -0.6, -0.9, 0.2, -1.0, 0.1, -0.8])
+        max_range = np.array([0.9, 0.6, 0.9, 1.0, 1.0, 1.3, 0.8])
 
         r = rospy.Rate(rate)
 

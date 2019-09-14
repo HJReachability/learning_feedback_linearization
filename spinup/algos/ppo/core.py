@@ -28,8 +28,8 @@ def placeholders_from_spaces(*args):
 
 def mlp(x, hidden_sizes=(32,), activation=tf.tanh, output_activation=None):
     for h in hidden_sizes[:-1]:
-        x = tf.layers.dense(x, units=h, activation=activation,kernel_initializer = tf.zeros_initializer())
-    return tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation,kernel_initializer = tf.zeros_initializer())
+        x = tf.layers.dense(x, units=h, activation=activation)
+    return tf.layers.dense(x, units=hidden_sizes[-1], activation=output_activation)
 
 def get_vars(scope=''):
     return [x for x in tf.trainable_variables() if scope in x.name]

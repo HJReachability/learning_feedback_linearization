@@ -35,10 +35,10 @@ class Quadrotor14dEnv(gym.Env):
         # TODO: these should match what we get from system identification, once
         # we have reliable numbers there.
         #setting parameters of quadrotor and creating dynamics object
-        self._mass = 0.04
-        Ix = 0.1
-        Iy = 0.1
-        Iz = 0.1
+        self._mass = 1
+        Ix = 1
+        Iy = 1
+        Iz = 1
         self._dynamics = Quadrotor14D(self._mass, Ix, Iy, Iz, self._time_step)
 
         #creating bad dynamics object

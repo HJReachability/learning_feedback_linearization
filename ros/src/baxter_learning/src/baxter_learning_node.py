@@ -16,7 +16,7 @@ import moveit_commander
 from baxter_pykdl import baxter_kinematics
 from baxter_learning_msgs.msg import State, Reference, DataLog
 from quads_msgs.msg import Transition
-from quads_msgs.msg import LearnedParameters
+from quads_msgs.msg import LearnedParameters, Parameters
 from std_msgs.msg import Empty
 
 # Package Imports
@@ -55,7 +55,7 @@ class BaxterLearning():
             #define actor critic
             #TODO add in central way to accept arguments
             self._pi, self._logp, self._logp_pi, self._v = core.mlp_actor_critic(
-               self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
+               self._x_ph, self._u_ph, hidden_sizes=(128,2), action_space=action_space)
             # POLY_ORDER = 2
             # self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
             #     self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
@@ -81,10 +81,32 @@ class BaxterLearning():
         current_velocity = utils.get_joint_velocities(self._limb).reshape((7,1))
 
         self._last_x = np.vstack([current_position, current_velocity])
+        self._last_xbar = self._last_x
 
         if self._learning_bool:
             self._last_a = self._sess.run(self._pi, feed_dict={self._x_ph: self.preprocess_state(self._last_x).reshape(1,-1)})
+        else:
+            self._last_a = np.zeros((1,56))
 
+        #################################### Set Tensorflow from saved params
+        self._READ_PARAMS = False
+        PARAM_INDEX = 150
+        if self._learning_bool:
+            if self._READ_PARAMS:
+                import dill
+                PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-taf/Desktop/"
+                lp = dill.load(open(PREFIX + "learned_params.pkl", "rb"))
+                param_list = []
+                for param in lp[PARAM_INDEX][1]:
+                    p_msg = Parameters(param)
+                    param_list.append(p_msg)
+                lp_msg = LearnedParameters(param_list)
+
+                self._sess.run(tf.assign(tf.get_default_graph().get_tensor_by_name('pi/log_std:0'), tf.zeros((56,))))
+
+                self.params_callback(lp_msg)
+
+                self._last_a = self._sess.run(self._pi, feed_dict={self._x_ph: self.preprocess_state(self._last_x).reshape(1,-1)})
 
         ##################################### Controller params
 
@@ -109,8 +131,14 @@ class BaxterLearning():
         # self._Kp = 9*np.diag(np.array([4, 6, 4, 8, 1, 5, 1]))
         # self._Kv = 5*np.diag(np.array([2, 3, 2, 4, 0.8, 1.5, 0.3]))
 
+        # WORKS WELL FOR TRAINING
         self._Kp = 6*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
         self._Kv = 6*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
+
+        # Tune down for testing except I didn't
+        # self._Kp = 5*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
+        # self._Kv = 5*np.diag(np.array([1, 1, 1, 1, 1, 1, 1]))
+
 
         if not self.register_callbacks(): sys.exit(1)
 
@@ -152,8 +180,9 @@ class BaxterLearning():
 
     def register_callbacks(self):
 
-        self._params_sub = rospy.Subscriber(
-            self._params_topic, LearnedParameters, self.params_callback)
+        if not self._READ_PARAMS:
+            self._params_sub = rospy.Subscriber(
+                self._params_topic, LearnedParameters, self.params_callback)
 
         self._ref_sub = rospy.Subscriber(
             self._ref_topic, Reference, self.ref_callback)
@@ -171,11 +200,13 @@ class BaxterLearning():
         return True
 
     def params_callback(self, msg):
+
         t = rospy.Time.now().to_sec()
         sq_norm_old_params = 0.0
         sq_norm_difference = 0.0
         norm_params = []
         num_params = 0
+
         for p, v in zip(msg.params, self._tf_vars):
             num_params += len(p.params)
             print("P is len ", len(p.params), ", and v is len ", np.prod(v.shape.as_list()))
@@ -236,29 +267,36 @@ class BaxterLearning():
 
         ##### Nonlinear control
 
+        x = np.vstack([current_position, current_velocity])
+        xbar = np.vstack([np.array(ref.setpoint.position).reshape((7,1)), np.array(ref.setpoint.velocity).reshape((7,1))])
+
         if self._learning_bool:
-            x = np.vstack([current_position, current_velocity])
             a = self._sess.run(self._pi, feed_dict={self._x_ph: self.preprocess_state(x).reshape(1,-1)})
-            m2, f2 = np.split(0.1*a[0],[49])
-            m2 = m2.reshape((7,7))
-            f2 = f2.reshape((7,1))
-
-            x_predict = np.matmul(expm((self._A + np.matmul(self._B, np.hstack([self._Kp, self._Kv])))*dt), self._last_x)
-
-
-            t_msg = Transition()
-            t_msg.x = list(self._last_x.flatten())
-            t_msg.a = list(self._last_a.flatten())
-            t_msg.r = -np.linalg.norm(x - x_predict, 2)
-            self._transitions_pub.publish(t_msg)
-            data = DataLog(current_state, ref.setpoint, t_msg)
-
-            self._last_x = x
-            self._last_a = a
         else:
-            m2 = np.zeros((7,7))
-            f2 = np.zeros((7,1))
-            data = DataLog(current_state, ref.setpoint, Transition())
+            a = np.zeros((1,56))
+
+        m2, f2 = np.split(0.1*a[0],[49])
+        m2 = m2.reshape((7,7))
+        f2 = f2.reshape((7,1))
+
+        K = np.hstack([self._Kp, self._Kv])
+
+        x_predict = np.matmul(expm((self._A - np.matmul(self._B, K))*dt), self._last_x) + \
+                    np.matmul(np.matmul(self._B, K), self._last_xbar)*dt
+
+        t_msg = Transition()
+        t_msg.x = list(self._last_x.flatten())
+        t_msg.a = list(self._last_a.flatten())
+        t_msg.r = -np.linalg.norm(x - x_predict, 2)
+    
+        if self._learning_bool:
+            self._transitions_pub.publish(t_msg)
+
+        data = DataLog(current_state, ref.setpoint, t_msg)
+
+        self._last_x = x
+        self._last_xbar = xbar
+        self._last_a = a
 
         self._data_pub.publish(data)
 

@@ -86,57 +86,91 @@ class ReferenceGenerator(object):
                 count = count + 1
                 r.sleep()
 
+    def dual_setpoints(self, rate = 20, number = 50):
+        min_range = np.array([-0.9, -0.6, -0.9, 0.2, -1.0, 0.1, -0.8])
+        max_range = np.array([0.9, 0.6, 0.9, 1.0, 1.0, 1.3, 0.8])
+
+        
+
+        r = rospy.Rate(rate)
+
+        flag = True
+        while not rospy.is_shutdown():
+            if flag:
+                position = (max_range - min_range)*0.2 + min_range
+            else:
+                position = (max_range - min_range)*0.8 + min_range
+            setpoint = State(position, np.zeros(7))
+            feed_forward = np.zeros(7)
+            msg = Reference(setpoint, feed_forward)
+            count = 0
+            while not count > number and not rospy.is_shutdown():
+                self._ref_pub.publish(msg)
+                count = count + 1
+                r.sleep()
+
+            flag = not flag
+
+    
 
 
+    # Doesn't work
+    def sinusoids(self, rate=20, period = 2):
+        r = rospy.Rate(rate)
+
+        min_range = np.array([-0.9, -0.6, -0.9, 0.2, -1.0, 0.1, -0.8])
+        max_range = np.array([0.9, 0.6, 0.9, 1.0, 1.0, 1.3, 0.8])
+
+        middle = (min_range + max_range) / 2.0
+        amp = np.array([0.6, 0.4, 0.6, 0.3, 0.7, 0.3, 0.6])
+
+        count = 0
+        max_count = period*rate
+        while not rospy.is_shutdown():
+            position = middle + amp*np.sin(count/max_count*2*np.pi)
+            setpoint = State(position, np.zeros(7))
+            feed_forward = np.zeros(7)
+            msg = Reference(setpoint, feed_forward)
+            self._ref_pub.publish(msg)
+            count = count + 1
+            if count >= max_count:
+                count = 0
+            r.sleep()
+
+    # Doesn't work
+    def test_path(self):
+
+        position1 = np.array([-0.7, -0.5, -0.7, 0.4, -0.9, 0.3, -0.6])
+        position2 = np.array([0.7, 0.5, 0.7, 0.8, 0.9, 1.1, 0.6])
+
+        print "moving to A via moveit"
+        self._planner.set_max_velocity_scaling_factor(1.0)
+        while not rospy.is_shutdown():
+            try:
+                plan = self._planner.plan_to_joint_pos(position1)
+                # raw_input("Press enter to execute plan via moveit")
+                if not self._planner.execute_plan(plan):
+                    raise Exception("Execution failed")
+            except Exception as e:
+                pass
+            else:
+                break
+        rospy.sleep(1)
+
+        print "moving to B via control"
+        self._planner.set_max_velocity_scaling_factor(0.5)
+        plan = self._planner.plan_to_joint_pos(position2)
+        # raw_input("Press enter to execute plan via control")
+        self._int_reset_pub.publish(Empty())
+        self.execute_path(plan)
+        rospy.sleep(1)
+
+        rospy.spin()
+
+    # Doesn't work
     def alternate(self):
         position1 = np.array([-0.3, -0.2, -0.3, 0.7, -0.6, 0.7, -0.3])
         position2 = np.array([-0.6, -0.4, -0.5, 0.6, -0.4, 1.1, -0.5])
-
-        # self._planner.set_max_velocity_scaling_factor(1.0)
-        # while not rospy.is_shutdown():
-        #     try:
-        #         plan = self._planner.plan_to_joint_pos(position2)
-        #         # raw_input("Press enter to execute plan via moveit")
-        #         if not self._planner.execute_plan(plan):
-        #             raise Exception("Execution failed")
-        #     except Exception as e:
-        #         pass
-        #     else:
-        #         break
-        # rospy.sleep(1)
-
-        # print "hi"
-
-        # self._planner.set_max_velocity_scaling_factor(0.5)
-        # while not rospy.is_shutdown():
-        #     try:
-        #         plan2 = self._planner.plan_to_joint_pos(position1)
-        #         # raw_input("Press enter to execute plan via moveit")
-        #         if not self._planner.execute_plan(plan):
-        #             raise Exception("Execution failed")
-        #     except Exception as e:
-        #         pass
-        #     else:
-        #         break
-        # rospy.sleep(1)
-
-        # print "hola"
-
-        # self._planner.set_max_velocity_scaling_factor(0.5)
-        # while not rospy.is_shutdown():
-        #     try:
-        #         plan1 = self._planner.plan_to_joint_pos(position2)
-        #         # raw_input("Press enter to execute plan via moveit")
-        #         if not self._planner.execute_plan(plan):
-        #             raise Exception("Execution failed")
-        #     except Exception as e:
-        #         pass
-        #     else:
-        #         break
-        # rospy.sleep(1)
-
-        # print "como estas"
-
 
         while not rospy.is_shutdown():
             print "moving to A via moveit"
@@ -346,7 +380,10 @@ if __name__ == '__main__':
 
     # gen.send_zeros()
     # gen.alternate()
-    gen.random_span()
+    gen.random_span() # TESTING
+    # gen.test_path()
+    # gen.sinusoids()
+    # gen.dual_setpoints(number = 100) # TRAINING
 
     rospy.spin()
 

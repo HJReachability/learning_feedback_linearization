@@ -13,7 +13,7 @@ def run():
     env = lambda : gym.make("BaxterHwEnv-v0")
     spinup2.ppo(
         env,
-        ac_kwargs={"hidden_sizes":(64,2)},
+        ac_kwargs={"hidden_sizes":(128,2)},
         seed = np.random.randint(100),
         steps_per_epoch=1250,
         pi_lr=3e-4,

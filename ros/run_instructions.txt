@@ -1,0 +1,29 @@
+You'll need at least 4 terminal windows.
+In each, first navigate to ~/learning_feedback_linearization/ros, then type 
+	./baxter.sh asimov (or archytas or ayrton)
+There will be an annoying dialog that asks you for your name. Just ctrl-C
+Then type
+	source devel/setup.bash
+
+In one terminal window, type
+	rosrun baxter_tools enable_robot -e
+This unlocks the robot, and you'll need to run it everytime you e-stop the robot
+
+In another type
+	rosrun baxter_learning start_joint_trajectory_action_server.py
+(use tab-complete). This starts the internal controller and unlocks the control interface
+
+In another type
+	roslaunch baxter_moveit_config demo_baxter.launch left_electric_gripper:=true
+set the right/left electric gripper args based on the grippers on your robot. The default is false.
+After the first time you run this, you can instead run
+	roslaunch baxter_moveit_config move_group.launch left_electric_gripper:=true
+which doesn't open rviz.
+
+Finally, in another window, type
+	roslaunch baxter_learning sw.launch learning:=true
+
+Hitting ctrl-C should stop the robot, but use the e-stop in a dangerous-seeming situation. Never use ctrl-Z to stop your process. If things seem really broken, you can use ctrl-\ but then your data won't save.
+
+
+

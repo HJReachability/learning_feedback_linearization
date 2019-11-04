@@ -11,10 +11,7 @@ from spinup2.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_s
 from itertools import izip
 
 from quads_msgs.msg import LearnedParameters
-<<<<<<< HEAD
-=======
 from quads_msgs.msg import Parameters
->>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 import rospy
 
 class PPOBuffer(object):
@@ -266,11 +263,9 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
         # Publish ros parameters
         params_msg = LearnedParameters()
-<<<<<<< HEAD
-        params_msg.params = [sess.run(v) for v in tf.trainable_variables() if u"pi" in v.name][ 0 ]
-=======
-
-        params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        params = [sess.run(v).flatten() for v in tf.trainable_variables() if u"pi" in v.name]
+        num_params_in_msg = sum([len(p) for p in params])
+        assert(num_params_in_msg == core.count_vars(u'pi'))
         for p in params:
             msg = Parameters()
             if isinstance(p, np.ndarray):
@@ -278,8 +273,17 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             else:
                 msg.params = [p]
             params_msg.params.append(msg)
->>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
         params_pub.publish(params_msg)
+
+        # params = [sess.run(v)[0] for v in tf.trainable_variables() if u"pi" in v.name]
+        # for p in params:
+        #     msg = Parameters()
+        #     if isinstance(p, np.ndarray):
+        #         msg.params = list(p)
+        #     else:
+        #         msg.params = [p]
+        #     params_msg.params.append(msg)
+        # params_pub.publish(params_msg)
 
     # RUN THIS THING!
     start_time = time.time()

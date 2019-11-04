@@ -123,10 +123,13 @@ void PolynomialFit<k, n>::Update(double x, double t) {
 
   // Solve least squares with a little ridge regression.
   constexpr double ridge = 0.00001;
-  coeffs_ = (A.transpose() * A +
-             ridge * Eigen::Matrix<double, k + 1, k + 1>::Identity())
-                .householderQr()
-                .solve(A.transpose() * b);
+  Eigen::Matrix<double, k + 1, k + 1> added =
+    ridge * Eigen::Matrix<double, k + 1, k + 1>::Identity();
+  for (size_t ii = 0; ii < k + 1; ii++)
+    added(ii, ii) *= std::pow(2.0, ii);
+
+  coeffs_ =
+      (A.transpose() * A + added).householderQr().solve(A.transpose() * b);
 }
 
 template <size_t k, size_t n>

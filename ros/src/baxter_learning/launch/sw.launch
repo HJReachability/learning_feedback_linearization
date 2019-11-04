@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+
+<launch>
+  <!-- Topics. -->
+  <arg name="reference_topic" default="/ref"/>
+  <arg name="learned_params_topic" default="/params" />
+  <arg name="transition_topic" default="/transitions" />
+  <arg name="linear_system_reset_topic" default="/reset" />
+  <arg name="integration_reset_topic" default="/int_reset" />
+  <arg name="data_topic" default="/data" />
+
+  <!-- Config. -->
+  <arg name="baxter_arm" default="left" />
+  <arg name="learning" default="false" />
+
+  <!-- Record? -->
+  <arg name="record" default="false" />
+
+  <!-- Record a rosbag. -->
+  <node pkg="rosbag"
+	      type="record"
+	      name="recorder"
+	      args="-a -o $(find quads)/bagfiles/recording.bag"
+	      if="$(arg record)">
+  </node>
+
+  <!-- Joint trajectory action server -->
+<!--   <node pkg="baxter_learning"
+        type="start_joint_trajectory_action_server.py"
+        name="jtas"
+        output="screen"
+        required="true">
+  </node>
+
+  <include file="$(find baxter_moveit_config)/launch/demo_baxter.launch">
+    <arg name="left_electric_gripper" value="true" />
+    <arg name="right_electric_gripper" value="false" />
+  </include>
+ -->
+  <!-- Data collector. -->
+  <node pkg="baxter_learning"
+        type="data_collector.py"
+        name="collector"
+        output="screen"
+        required="true" >
+    <param name="topics/data" value="$(arg data_topic)" />
+    <param name="topics/params" value="$(arg learned_params_topic)" /> 
+  </node>
+
+  <!-- Learning node. -->
+  <node pkg="baxter_learning"
+        name="learning"
+        type="ppo_node.py"
+        output="screen"
+        if="$(arg learning)"
+        required="true">
+    <param name="topics/transition" value="$(arg transition_topic)" />
+<!--     What's the use of the topic below ? -->
+    <param name="topics/params" value="$(arg learned_params_topic)" /> 
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+  </node>
+
+  <!-- Reference publisher. -->
+  <node pkg="baxter_learning"
+        name="reference_generator"
+        type="reference_generator.py"
+        output="screen"
+        required="true">
+    <param name="baxter/arm" value="$(arg baxter_arm)" />
+    <param name="topics/ref" value="$(arg reference_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/integration_reset" value="$(arg integration_reset_topic)" /> 
+  </node>
+
+  <!-- Control and hardware integration -->
+  <node pkg="baxter_learning"
+        name="controller"
+        type="baxter_learning_node.py"
+        output="screen"
+        required="true">
+    <param name="baxter/arm" value="$(arg baxter_arm)" />
+    <param name="learning" value="$(arg learning)" type="bool"/>
+    <param name="topics/ref" value="$(arg reference_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/integration_reset" value="$(arg integration_reset_topic)" />
+    <param name="topics/params" value="$(arg learned_params_topic)" />
+    <param name="topics/transitions" value="$(arg transition_topic)" />
+    <param name="topics/data" value="$(arg data_topic)" />
+  </node>
+
+  <!-- Launch RViz with the proper config file robot descriptor.
+  <node name="rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(find crazyflie_simulator)/rviz/crazyflie_simulator.rviz"
+        required="true">
+
+    <param name="robot_description"
+           command="$(find xacro)/xacro.py
+                    $(find crazyflie_description)/urdf/crazyflie.urdf.xacro" />
+                    </node>
+  -->
+</launch>

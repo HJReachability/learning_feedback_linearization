@@ -16,9 +16,13 @@
   <arg name="final_control_topic" default="/control/final" />
   <arg name="in_flight_topic" default="/in_flight" />
   <arg name="learned_params_topic" default="/params" />
+<<<<<<< HEAD
+  <arg name="transitions_topic" default="/transitions" />
+=======
   <arg name="transition_topic" default="/transitions" />
   <arg name="linear_system_reset_topic" default="/reset" />
   <arg name="reference_viz_topic" default="/viz/ref" />
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 
   <arg name="merger_mode" default="PRIORITIZED" />
 
@@ -124,12 +128,19 @@
   <!-- Learning node. -->
   <node pkg="quads"
         name="learning"
+<<<<<<< HEAD
+        type="ppo_node"
+=======
         type="ppo_node.py"
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
         output="screen"
         required="true">
     <param name="topics/transition" value="$(arg transition_topic)" />
     <param name="topics/params" value="$(arg learned_params_topic)" />
+<<<<<<< HEAD
+=======
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
   </node>
 
   <!-- Reference publisher. -->
@@ -175,12 +186,16 @@
     <param name="topics/u" value="$(arg raw_control_topic)" />
     <param name="topics/x" value="$(arg state_topic)" />
     <param name="topics/y" value="$(arg output_derivs_topic)" />
+<<<<<<< HEAD
+    <param name="topics/params" value="$(arg learned_params_topic)" />
+=======
     <param name="topics/ref" value="$(arg linear_system_reference_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/params" value="$(arg learned_params_topic)" />
     <param name="topics/transitions" value="$(arg transition_topic)" />
     <param name="viz/reference" value="$(arg reference_viz_topic)" />
     <param name="frames/fixed" value="$(arg fixed_frame)" />
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 
     <param name="dynamics/m" value="$(arg bad_mass)" />
     <param name="dynamics/Ix" value="$(arg bad_Ix)" />
@@ -256,9 +271,15 @@
     <param name="topics/state" value="$(arg state_topic)" />
     <param name="topics/control" value="$(arg raw_control_topic)" />
     <param name="topics/output_derivs" value="$(arg output_derivs_topic)" />
+<<<<<<< HEAD
+    <param name="topics/transitions" value="$(arg transitions_topic)" />
+    <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
+    <param name="topics/reference" value="$(arg reference_topic)" />
+=======
     <param name="topics/transitions" value="$(arg transition_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+>>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

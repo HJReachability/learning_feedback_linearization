@@ -15,8 +15,9 @@ from gym import spaces
 from matplotlib import cm
 
 #should be in form ./logs/ and then whatever foldername logger dumped
-filename = 'poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr5e-5-normscaling0.001'
-# filename = 'ppo-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1'
+# filename = 'ppo-v3-yawcontroller'
+# filename = 'poly-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1-parameternorm-lr5e-5-normscaling0.001'
+filename = 'ppo-10-0.33-null-v2-preprocess-largerQ-start25-uscaling0.1'
 # filename = 'poly-v3-continuousrollout-originreturn'
 # filename = 'poly-v3-continuousrollout-originreturn-dynamicsScaling0.6'
 # filename = 'ppo-v3-continuousrollout-originreturn-dynamicsScaling0.6-zeroweights'
@@ -27,6 +28,9 @@ filepath="./logs/{}/simple_save".format(filename)
 sess = tf.Session()
 model = spinup.utils.logx.restore_tf_graph(sess,filepath)
 print(model)
+
+#setting sigma variables to zero
+sess.run(tf.assign(tf.get_default_graph().get_tensor_by_name("pi/log_std:0"), tf.zeros((20,))))
 
 # Plot everything.
 def solve_lqr(A,B,Q,R):
@@ -39,10 +43,10 @@ linear_fb=1
 nominal=0
 ground_truth=1
 T=3000
-show = 1
+show = 0
 make_plot = 1
-make_vid = 1
-show_ref = 1
+make_vid = 0
+show_ref = 0
 to_render=1
 speed=0.01
 
@@ -88,12 +92,12 @@ reference=0.0*np.ones((14,T))
 # reference[12,:]=0.1*np.linspace(0,T*time_step,T)
 # reference[13,:]=0.1*time_step
 
-# testname = "Figure8"
-# freq=1.0
-# reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
-# reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
-# reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
-# reference[12,:]= np.pi*np.sin(0.5*np.linspace(0,T*time_step,T))
+testname = "Figure8"
+freq=1.0
+reference[0,:]=np.pi*np.sin(freq * np.linspace(0,T*time_step,T))
+reference[4,:]=np.pi*np.cos(freq /2.0* np.linspace(0,T*time_step,T))
+reference[8,:]=5.0-2.0*np.sin(np.linspace(0,T*time_step,T))
+reference[12,:]= np.pi/2*np.sin(0.5*np.linspace(0,T*time_step,T))
 
 
 # testname = "PointyCorkscrew"
@@ -164,6 +168,9 @@ if linear_fb:
         f = bad_dyn._f_q(x) + np.reshape(f2,(4, 1))
 
         control = np.matmul(M, v) + f
+
+        #stablizing yaw controller
+        # control[3] = v[3]
         
         learned_controls_path[:,t]=control[:,0]
         x=dyn.integrate(x,control)

@@ -18,38 +18,29 @@ class Quadrotor14dHwEnv(gym.Env):
         if not self.load_parameters(): sys.exit(1)
         if not self.register_callbacks(): sys.exit(1)
 
-        # Set up observation space and action space.
-        NUM_PREPROCESSED_STATES = 13
-        NUM_ACTION_DIMS = 20
-        self.observation_space = gym.spaces.Box(-np.inf, np.inf, (NUM_PREPROCESSED_STATES,))
-        self.action_space = gym.spaces.Box(-np.inf, np.inf, (NUM_ACTION_DIMS,))
-
         # Queue of state transitions observed in real system with current policy.
         self._transitions = []
-        self._num_steps = 0
 
-    def step(self):
-        """ Return x, r, u, done. """
-        while len(self._transitions) == 0:
-            rospy.logwarn_throttle(10.0, "%s: Out of transitions." % self._name)
-            rospy.sleep(0.01)
+    def step(self, u):
+        """ Return x, v, u, r, done """
+        if len(self._transitions) == 0:
+            rospy.logerr("%s: Out of transitions.", self._name)
+            return None, None, None, None, True
 
         transition = self._transitions.pop(0)
-        x = np.array(transition.x)
-        a = np.array(transition.a)
+        x = np.array([transition.x.x, transition.x.y,
+                      transition.x.z, transition.x.theta,
+                      transition.x.phi, transition.x.psi,
+                      transition.x.dx, transition.x.dy,
+                      transition.x.dz, transition.x.zeta,
+                      transition.x.xi, transition.x.q,
+                      transition.x.r, transition.x.p])
+        u = np.array([transition.u.thrustdot2, transition.u.pitchdot2,
+                      transition.u.rolldot2, transition.u.yawdot2])
         r = transition.r
+        return x, r, u, False, {}
 
-        done = False
-        if self._num_steps > 25:
-            self._num_steps = 0
-            done = True
-
-        self._num_steps += 1
-
-        return self.preprocess_state(x), r, a, done, {}
-
-    def preprocess_state(self, x0):
-        x = x0.copy()
+    def preprocess_state(self, x):
         x[0] = np.sin(x[3])
         x[1] = np.sin(x[4])
         x[2]= np.sin(x[5])
@@ -58,7 +49,7 @@ class Quadrotor14dHwEnv(gym.Env):
         x[5]= np.cos(x[5])
 
         # Remove xi.
-        x = np.delete(x, 10)
+        x.pop(10)
 
         # TODO: think about removing p, q, r?
         return x
@@ -88,7 +79,7 @@ class Quadrotor14dHwEnv(gym.Env):
 
     def register_callbacks(self):
         self._transition_sub = rospy.Subscriber(
-            self._transition_topic, Transition, self.transition_callback)
+            self._transition_topic, StateTransition, self.transition_callback)
 
         self._linear_system_reset_pub = rospy.Publisher(self._linear_system_reset_topic, Empty)
 

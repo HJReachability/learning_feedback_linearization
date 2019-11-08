@@ -45,7 +45,7 @@ class BallAndBeamEnv(gym.Env):
 
     def lyapunov_dissipation(self, x):
         # HACK! Exponential stability.
-        return 0.1 * lyapunov
+        return 0.1 * self.lyapunov(x)
 
     def xdot(self, u):
         x1 = self._state[0]
@@ -58,7 +58,7 @@ class BallAndBeamEnv(gym.Env):
             x2,
             x1 * x4 * x4 - g * np.sin(x3),
             x4,
-            u
+            u[0]
         ])
 
     def step(self, a):
@@ -68,22 +68,14 @@ class BallAndBeamEnv(gym.Env):
         scaled_a = self._uscaling * a
 
         # Integrate dynamics forward with an Euler step.
-        self._last_u = self._control(a)
+        self._last_u = self.control(a)
         self._last_state = np.copy(self._state)
-        self._state += self._time_step * self.xdot(u)
+        self._state += self._time_step * self.xdot(self._last_u)
         reward = self.compute_reward()
 
         # Check if we're done yet.
         done = self._count >= self._num_steps_per_rollout
-
-        # Formatting observation.
-        obs = []
-        for x in self._state:
-            obs.append(x[0])
-
-        obs = self.preprocess_state(obs)
-
-        return np.array(obs), reward, done, {}
+        return self._state, reward, done, {}
 
     def control(self, a):
         return -np.linalg.norm(self._state) + a
@@ -93,15 +85,7 @@ class BallAndBeamEnv(gym.Env):
 
         # Sample state using state smapler method
         self._state = self.initial_state_sampler()
-
-        # Formatting observation.
-        obs = []
-        for x in self._state:
-            obs.append(x[0])
-
-        obs = self.preprocess_state(obs)
-
-        return np.array(obs)
+        return self._state
 
     def seed(self, s):
         np.random.seed(np.random.randomint())
@@ -117,10 +101,7 @@ class BallAndBeamEnv(gym.Env):
         pass
 
     def compute_reward(self):
-        vdot = (self._lyapunov(self._state) -
+        vdot = (self.lyapunov(self._state) -
                 self.lyapunov(self._last_state)) / self._time_step
         return -self._reward_scaling * (
             vdot + self.lyapunov_dissipation(self._last_state))
-
-    def preprocess_state(self, x):
-        return x

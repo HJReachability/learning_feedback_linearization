@@ -11,7 +11,6 @@ class BallAndBeamEnv(gym.Env):
     def __init__(self,
                  stepsPerRollout,
                  rewardScaling,
-                 dynamicsScaling,
                  uscaling):
         # Calling init method of parent class.
         super(BallAndBeamEnv, self).__init__()
@@ -87,8 +86,7 @@ class BallAndBeamEnv(gym.Env):
         return np.array(obs), reward, done, {}
 
     def control(self, a):
-        # TODO!
-        pass
+        return -np.linalg.norm(self._state) + a
 
     def reset(self):
         self._count = 0

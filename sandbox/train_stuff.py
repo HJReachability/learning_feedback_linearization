@@ -7,7 +7,8 @@ import numpy as np
 envargs = {"uscaling": 0.1}
 
 #making environment lambda function
-env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0", uscaling=0.1, dynamicsScaling = 0)
+#env = lambda : gym.make("quadrotor_14d_env:Quadrotor14dEnv-v0", uscaling=0.1, dynamicsScaling = 0)
+env = lambda : gym.make("custom_envs:BallAndBeamEnv-v0", uscaling=0.1)
 
 #vpg
 # spinup.vpg(

@@ -36,6 +36,7 @@ class BaxterLearning():
 
         self._limb = baxter_interface.Limb(self._arm)
         self._kin = baxter_kinematics(self._arm)
+
         self._planner = PathPlanner('{}_arm'.format(self._arm))
 
         rospy.on_shutdown(self.shutdown)
@@ -89,13 +90,20 @@ class BaxterLearning():
             self._last_a = np.zeros((1,56))
 
         #################################### Set Tensorflow from saved params
-        self._READ_PARAMS = False
-        PARAM_INDEX = 150
+        self._READ_PARAMS = self._is_test_set
+        PARAM_INDEX = 201 ## This is the index of the learned parameters that you'll use (which epoch)
         if self._learning_bool:
             if self._READ_PARAMS:
                 import dill
-                PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-taf/Desktop/"
-                lp = dill.load(open(PREFIX + "learned_params.pkl", "rb"))
+                # Put ABSOLUTE path to location of learned_params.pkl here, 
+                # then remove the NotImplementedError. (This will probably be the 
+                # same as the PREFIX variable in data_collector.py)
+                # eg. PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-taf/Desktop/data"
+                PREFIX = "/home/cc/ee106b/sp20/staff/ee106b-laa/Desktop/data/read_params"
+                # raise NotImplementedError
+
+                lp = dill.load(open(PREFIX + "/learned_params.pkl", "rb"))
+                print ("Running training set using data from epoch number: " + str(PARAM_INDEX))
                 param_list = []
                 for param in lp[PARAM_INDEX][1]:
                     p_msg = Parameters(param)
@@ -176,11 +184,15 @@ class BaxterLearning():
             return False
         self._data_topic = rospy.get_param("~topics/data")
 
+        if not rospy.has_param("~test_set"):
+            return False
+        self._is_test_set = rospy.get_param("~test_set")
+
         return True
 
     def register_callbacks(self):
 
-        if not self._READ_PARAMS:
+        if not self._is_test_set:
             self._params_sub = rospy.Subscriber(
                 self._params_topic, LearnedParameters, self.params_callback)
 
@@ -244,12 +256,15 @@ class BaxterLearning():
         velocity_dict = utils.joint_array_to_dict(current_velocity, self._limb)
 
         inertia = self._kin.inertia(positions_dict)
-        coriolis = self._kin.coriolis(positions_dict, velocity_dict)[0][0]
-        coriolis = np.array([float(coriolis[i]) for i in range(7)]).reshape((7,1))
+        # coriolis = self._kin.coriolis(positions_dict, velocity_dict)[0][0]
+        # coriolis = np.array([float(coriolis[i]) for i in range(7)]).reshape((7,1))
+        coriolis = self._kin.coriolis(positions_dict, velocity_dict).reshape((7,1))
 
-        gravity_wrench = np.array([0,0,0.981,0,0,0]).reshape((6,1))
-        gravity_jointspace = (np.matmul(self._kin.jacobian_transpose(positions_dict), gravity_wrench))
-        gravity = (np.matmul(inertia, gravity_jointspace)).reshape((7,1))
+        # gravity_wrench = np.array([0,0,0.981,0,0,0]).reshape((6,1))
+        # gravity_jointspace = (np.matmul(self._kin.jacobian_transpose(positions_dict), gravity_wrench))
+        # gravity = (np.matmul(inertia, gravity_jointspace)).reshape((7,1))
+
+        gravity = 0.075*self._kin.gravity(positions_dict).reshape((7,1))
 
         # Linear Control
 
@@ -289,7 +304,7 @@ class BaxterLearning():
         t_msg.a = list(self._last_a.flatten())
         t_msg.r = -np.linalg.norm(x - x_predict, 2)
     
-        if self._learning_bool:
+        if self._learning_bool and not self._is_test_set:
             self._transitions_pub.publish(t_msg)
 
         data = DataLog(current_state, ref.setpoint, t_msg)

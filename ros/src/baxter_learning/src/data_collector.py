@@ -2,7 +2,11 @@
 
 import rospy
 import numpy as np
+import time
+import datetime
+import dill
 
+from std_msgs.msg import String
 from baxter_learning_msgs.msg import State, DataLog
 from quads_msgs.msg import LearnedParameters, Parameters
 from std_srvs.srv import Empty, EmptyResponse
@@ -19,6 +23,10 @@ class DataCollector(object):
         self._outputs = []
         self._rewards = []
         self._learned_parameters = []
+        now = datetime.datetime.now()
+        self.dt_string = now.strftime("%d-%m-%Y--%H:%M:%S")
+        self.notif_pub = rospy.Publisher('data_dump_notif', String, queue_size=10)
+        self.save_every = 100
 
         rospy.on_shutdown(self.shutdown)
 
@@ -33,6 +41,10 @@ class DataCollector(object):
         if not rospy.has_param("~topics/params"):
             return False
         self._param_topic = rospy.get_param("~topics/params")
+
+        if not rospy.has_param("~test_set"):
+            return False
+        self._is_test_set = rospy.get_param("~test_set")
 
         return True
 
@@ -59,7 +71,18 @@ class DataCollector(object):
         self._times.append(t)
         self._outputs.append(o)
         self._rewards.append(rew)
-    
+
+        if len(self._refs) and len(self._refs) % self.save_every == 0:
+            t0 = time.time()
+            self.dump()
+            t1 = time.time()
+            now = datetime.datetime.now()
+            self.notif_pub.publish(String(("Saved Data at "
+                + now.strftime("%d-%m-%Y--%H:%M:%S")
+                + ". Number of timesteps saved: "
+                + str(len(self._refs)) + "."
+                + " Dump took " + str(t1 - t0) + " seconds.")))
+
     def param_callback(self, msg):
         p_list = []
         t = rospy.Time.now().to_sec()
@@ -75,30 +98,37 @@ class DataCollector(object):
 
     def dump(self):
         """ Dump to disk. """
-        import dill
-        PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-taf/Desktop/data/"
-        # PREFIX = "~/Desktop/"
-        THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
-        print THIS_FOLDER
-        # PREFIX = THIS_FOLDER + "/data/"
+        # Put ABSOLUTE path to logging directory here, then remove the NotImplementedError.
+        # eg. PREFIX = "/home/cc/ee106a/fa19/staff/ee106a-taf/Desktop/data"
+        PREFIX = "/home/cc/ee106b/sp20/staff/ee106b-laa/Desktop/data"
+        # raise NotImplementedError
 
+        filename = PREFIX + "/data_log-" + self.dt_string
 
-        f = open(PREFIX + "refs.pkl", "wb")
-        dill.dump(self._refs, f)
-        f.close()
-        f = open(PREFIX + "states.pkl", "wb")
-        dill.dump(self._states, f)
-        f.close()
-        f = open(PREFIX + "times.pkl", "wb")
-        dill.dump(self._times, f)
-        f.close()
-        f = open(PREFIX + "outputs.pkl", "wb")
-        dill.dump(self._outputs, f)
-        f.close()
-        f = open(PREFIX + "rewards.pkl", "wb")
-        dill.dump(self._rewards, f)
-        f.close()
-        f = open(PREFIX + "learned_params.pkl", "wb")
+        if self._is_test_set:
+            np.savez_compressed(filename, refs=self._refs,
+                                          states=self._states,
+                                          times=self._times,
+                                          outputs=self._outputs,
+                                          rewards=self._rewards,
+                                          learned_params=self._learned_parameters)
+
+        # f = open(PREFIX + "refs.pkl", "wb")
+        # dill.dump(self._refs, f)
+        # f.close()
+        # f = open(PREFIX + "states.pkl", "wb")
+        # dill.dump(self._states, f)
+        # f.close()
+        # f = open(PREFIX + "times.pkl", "wb")
+        # dill.dump(self._times, f)
+        # f.close()
+        # f = open(PREFIX + "outputs.pkl", "wb")
+        # dill.dump(self._outputs, f)
+        # f.close()
+        # f = open(PREFIX + "rewards.pkl", "wb")
+        # dill.dump(self._rewards, f)
+        # f.close()
+        f = open(PREFIX + "/learned_params.pkl", "wb")
         dill.dump(self._learned_parameters, f)
         f.close()
 

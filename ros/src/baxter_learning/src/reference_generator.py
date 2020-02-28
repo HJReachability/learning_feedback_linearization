@@ -45,6 +45,9 @@ class ReferenceGenerator(object):
             return False
         self._int_reset_topic = rospy.get_param("~topics/integration_reset")
 
+        if not rospy.has_param("~test_set"):
+            return False
+        self._is_test_set = rospy.get_param("~test_set")
 
         return True
 
@@ -366,7 +369,6 @@ class ReferenceGenerator(object):
 
         return True
 
-
     def shutdown(self):
         pass
 
@@ -378,12 +380,16 @@ if __name__ == '__main__':
 
     rospy.sleep(5)
 
+    if gen._is_test_set:
+        gen.dual_setpoints(number = 100) # TESTING
+    else:
+        gen.random_span() # TRAINING
+
+
     # gen.send_zeros()
     # gen.alternate()
-    gen.random_span() # TESTING
     # gen.test_path()
     # gen.sinusoids()
-    # gen.dual_setpoints(number = 100) # TRAINING
 
     rospy.spin()
 

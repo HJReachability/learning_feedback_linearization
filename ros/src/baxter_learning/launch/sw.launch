@@ -12,6 +12,7 @@
   <!-- Config. -->
   <arg name="baxter_arm" default="left" />
   <arg name="learning" default="false" />
+  <arg name="test_set" default="false" />
 
   <!-- Record? -->
   <arg name="record" default="false" />
@@ -45,6 +46,7 @@
         required="true" >
     <param name="topics/data" value="$(arg data_topic)" />
     <param name="topics/params" value="$(arg learned_params_topic)" /> 
+    <param name="test_set" value="$(arg test_set)" type="bool"/>
   </node>
 
   <!-- Learning node. -->
@@ -70,6 +72,7 @@
     <param name="topics/ref" value="$(arg reference_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/integration_reset" value="$(arg integration_reset_topic)" /> 
+    <param name="test_set" value="$(arg test_set)" type="bool" />
   </node>
 
   <!-- Control and hardware integration -->
@@ -79,7 +82,8 @@
         output="screen"
         required="true">
     <param name="baxter/arm" value="$(arg baxter_arm)" />
-    <param name="learning" value="$(arg learning)" type="bool"/>
+    <param name="learning" value="$(arg learning)" type="bool" />
+    <param name="test_set" value="$(arg test_set)" type="bool" />
     <param name="topics/ref" value="$(arg reference_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/integration_reset" value="$(arg integration_reset_topic)" />

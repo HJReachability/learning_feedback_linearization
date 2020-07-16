@@ -156,20 +156,6 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
   const double r =
       -(linear_system_state_ - our_linear_system_state).squaredNorm();
 
-<<<<<<< HEAD
-=======
-  /*
->>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
-  quads_msgs::Transition transition_msg;
-  transition_msg.x = state_msg;
-  transition_msg.u = *last_control_;
-  transition_msg.r = r;
-
-  transitions_pub_.publish(transition_msg);
-<<<<<<< HEAD
-=======
-  */
->>>>>>> 2f3031e323d5fea502f4d2b06156fa58d5edcffd
 }
 
 bool StateEstimator::Initialize(const ros::NodeHandle& n) {

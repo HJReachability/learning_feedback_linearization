@@ -6,6 +6,9 @@ from spinup2.algos.sac import core
 from spinup2.algos.sac.core import get_vars
 from spinup2.utils.logx import EpochLogger
 
+from quads_msgs.msg import LearnedParameters
+from quads_msgs.msg import Parameters
+import rospy
 
 class ReplayBuffer:
     """
@@ -128,10 +131,15 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             the current policy and value function.
 
     """
+    #ros stuff
+    name = rospy.get_name() + "/sac_rl_agent"
+    params_topic = rospy.get_param("~topics/params")
+    params_pub = rospy.Publisher(params_topic, LearnedParameters)
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
 
+    seed += 10000 * proc_id()
     tf.set_random_seed(seed)
     np.random.seed(seed)
 
@@ -229,7 +237,10 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             logger.store(TestEpRet=ep_ret, TestEpLen=ep_len)
 
     start_time = time.time()
-    o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+#    o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+    env.reset()
+    ep_ret = 0
+    ep_len = 0
     total_steps = steps_per_epoch * epochs
 
     # Main loop: collect experience in env and update/log each epoch
@@ -240,13 +251,13 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
         from a uniform distribution for better exploration. Afterwards,
         use the learned policy.
         """
-        if t > start_steps:
-            a = get_action(o)
-        else:
-            a = env.action_space.sample()
+        # if t > start_steps:
+        #     a = get_action(o)
+        # else:
+        #     a = env.action_space.sample()
 
         # Step the env
-        o2, r, d, _ = env.step(a)
+        o2, r, a, d, _ = env.step(a)
         ep_ret += r
         ep_len += 1
 
@@ -282,7 +293,10 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
                              VVals=outs[6], LogPi=outs[7])
 
             logger.store(EpRet=ep_ret, EpLen=ep_len)
-            o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+            #o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
+            env.reset()
+            ep_ret = 0
+            ep_len = 0
 
 
         # End of epoch wrap-up
@@ -313,6 +327,21 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             logger.log_tabular('LossV', average_only=True)
             logger.log_tabular('Time', time.time()-start_time)
             logger.dump_tabular()
+
+        # Publish ros parameters
+        params_msg = LearnedParameters()
+        params = [sess.run(v).flatten() for v in tf.trainable_variables() if u"pi" in v.name]
+        num_params_in_msg = sum([len(p) for p in params])
+        assert(num_params_in_msg == core.count_vars(u'pi'))
+        for p in params:
+            msg = Parameters()
+            if isinstance(p, np.ndarray):
+                msg.params = list(p)
+            else:
+                msg.params = [p]
+            params_msg.params.append(msg)
+        params_pub.publish(params_msg)
+
 
 if __name__ == '__main__':
     import argparse

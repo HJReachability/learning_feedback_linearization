@@ -1,4 +1,4 @@
-from __future__ import division
+\from __future__ import division
 from __future__ import absolute_import
 import numpy as np
 import tensorflow as tf
@@ -12,7 +12,6 @@ from itertools import izip
 
 import rospy
 from quads_msgs.msg import LearnedParameters, Parameters
-
 class VPGBuffer(object):
     u"""
     A buffer for storing trajectories experienced by a VPG agent interacting

@@ -15,7 +15,7 @@ from quadrotor_14d import Quadrotor14D
 from visualization_msgs.msg import Marker
 
 #import spinup2.algos.ppo.core as core
-import spinup2.algos.vpg.core as core
+import spinup2.algos.sac.core as core
 
 class FeedbackLinearizingController(object):
     def __init__(self):
@@ -35,19 +35,13 @@ class FeedbackLinearizingController(object):
         action_space = spaces.Box(low=-50,high=50,shape=(20,),dtype=np.float32)
         self._x_ph, self._u_ph = core.placeholders_from_spaces(observation_space, action_space)
 
-
         #define actor critic
-        #TODO add in central way to accept arguments
-        #self._pi, logp, logp_pi, v = core.mlp_actor_critic(
-        #    self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
-        POLY_ORDER = 2
-        self._pi, self._logp, self._logp_pi, self._v = core.polynomial_actor_critic(
-            self._x_ph, self._u_ph, POLY_ORDER, action_space=action_space)
+        mu, self._pi, logp_pi, q1, s2, q1_pi, q2_pi, v = core.mlp_actor_critic(
+           self._x_ph, self._u_ph, hidden_sizes=(64,2), action_space=action_space)
 
         #start up tensorflow graph
-
         var_counts = tuple(core.count_vars(scope) for scope in [u'pi'])
-        print(u'\nYoyoyoyyoyo Number of parameters: \t pi: %d\n'%var_counts)
+        print(u'\n Number of parameters: \t pi: %d\n'%var_counts)
 
         self._tf_vars = [v for v in tf.trainable_variables() if u'pi' in v.name]
         self._num_tf_vars = sum([np.prod(v.shape.as_list()) for v in self._tf_vars])

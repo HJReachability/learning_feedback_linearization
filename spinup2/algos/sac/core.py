@@ -1,13 +1,38 @@
 import numpy as np
 import tensorflow as tf
+from gym.spaces import Box, Discrete
 
 EPS = 1e-8
 
+
+def combined_shape(length, shape=None):
+    if shape is None:
+        return (length,)
+    if(np.isscalar(shape)):
+        return (length, shape)
+    else:
+        l = list(shape)
+        l.insert(0, length)
+        l = tuple(l)
+        return l
+#        tp = (length, shape)
+#        return convert([element for tupl in tp for element in tupl])
+
 def placeholder(dim=None):
-    return tf.placeholder(dtype=tf.float32, shape=(None,dim) if dim else (None,))
+    return tf.placeholder(dtype=tf.float32, shape=combined_shape(None,dim))
 
 def placeholders(*args):
     return [placeholder(dim) for dim in args]
+
+def placeholder_from_space(space):
+    if isinstance(space, Box):
+        return placeholder(space.shape)
+    elif isinstance(space, Discrete):
+        return tf.placeholder(dtype=tf.int32, shape=(None,))
+    raise NotImplementedError
+
+def placeholders_from_spaces(*args):
+    return [placeholder_from_space(space) for space in args]
 
 def mlp(x, hidden_sizes=(32,), activation=tf.tanh, output_activation=None):
     for h in hidden_sizes[:-1]:
@@ -53,9 +78,9 @@ def mlp_gaussian_policy(x, a, hidden_sizes, activation, output_activation):
     net could produce extremely large values for the log_stds, which
     would result in some actions being either entirely deterministic
     or too random to come back to earth. Either of these introduces
-    numerical instability which could break the algorithm. To 
-    protect against that, we'll constrain the output range of the 
-    log_stds, to lie within [LOG_STD_MIN, LOG_STD_MAX]. This is 
+    numerical instability which could break the algorithm. To
+    protect against that, we'll constrain the output range of the
+    log_stds, to lie within [LOG_STD_MIN, LOG_STD_MAX]. This is
     slightly different from the trick used by the original authors of
     SAC---they used tf.clip_by_value instead of squashing and rescaling.
     I prefer this approach because it allows gradient propagation
@@ -81,7 +106,7 @@ def apply_squashing_func(mu, pi, logp_pi):
 """
 Actor-Critics
 """
-def mlp_actor_critic(x, a, hidden_sizes=(400,300), activation=tf.nn.relu, 
+def mlp_actor_critic(x, a, hidden_sizes=(400,300), activation=tf.nn.relu,
                      output_activation=None, policy=mlp_gaussian_policy, action_space=None):
     # policy
     with tf.variable_scope('pi'):

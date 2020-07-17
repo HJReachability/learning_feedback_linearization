@@ -21,17 +21,16 @@ def run(msg):
     #     logger_kwargs = {"output_dir" : "./logs/ppo-log-dir-betterwork"}
     # )
     #polynomials
-    spinup2.vpgpolynomial(
+    spinup2.sac(
         env,
-        ac_kwargs={"order":2},
-        seed = np.random.randint(100),
-        steps_per_epoch=1250,
+        seed=0, # np.random.randint(100),
+        steps_per_epoch=50,
         max_ep_len=25,
         epochs=2500,
 #        pi_lr=2e-5,
         pi_lr=1e-3,
-        l1_scaling=0.01,
-        logger_kwargs = {"output_dir" : "logs/polyrandomtest"}
+        alpha=0.2,
+        logger_kwargs = {"output_dir" : "logs/sac"}
     )
 
 

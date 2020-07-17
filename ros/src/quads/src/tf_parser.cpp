@@ -40,9 +40,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <crazyflie_utils/angles.h>
 #include <quads/tf_parser.h>
 #include <quads/types.h>
-#include <crazyflie_utils/angles.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
@@ -68,10 +68,9 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
   *z = msg.transform.translation.z;
 
   // Get roll, pitch, and yaw from quaternion.
-  const Eigen::Quaterniond quat(msg.transform.rotation.w,
-                                msg.transform.rotation.x,
-                                msg.transform.rotation.y,
-                                msg.transform.rotation.z);
+  const Eigen::Quaterniond quat(
+      msg.transform.rotation.w, msg.transform.rotation.x,
+      msg.transform.rotation.y, msg.transform.rotation.z);
 
   // Multiply by sign of x component to ensure quaternion giving the preferred
   // Euler transformation (here we're exploiting the fact that rot(q)=rot(-q) ).
@@ -96,15 +95,9 @@ void TfParser::GetXYZRPY(double* x, double* y, double* z, double* phi,
   }
 
   // Catch nans.
-  if (std::isnan(*x) || std::isnan(*y) || std::isnan(*z) || std::isnan(*phi) ||
-      std::isnan(*theta) || std::isnan(*psi)) {
-    *x = 0.0;
-    *y = 0.0;
-    *z = 0.0;
-    *phi = 0.0;
-    *theta = 0.0;
-    *psi = 0.0;
-  }
+  if (!std::isnan(*x) && !std::isnan(*y) && !std::isnan(*z) &&
+      !std::isnan(*phi) && !std::isnan(*theta) && !std::isnan(*psi))
+    ROS_WARN_THROTTLE(1.0, "TF Parser got nans.");
 }
 
 bool TfParser::Initialize(const ros::NodeHandle& n) {

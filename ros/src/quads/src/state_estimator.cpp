@@ -53,6 +53,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <math.h>
 #include <ros/ros.h>
+#include <std_msgs/Empty.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_listener.h>
@@ -155,7 +156,6 @@ void StateEstimator::TimerCallback(const ros::TimerEvent& e) {
       derivs_msg.zdot3, derivs_msg.psi, derivs_msg.psidot1;
   const double r =
       -(linear_system_state_ - our_linear_system_state).squaredNorm();
-
 }
 
 bool StateEstimator::Initialize(const ros::NodeHandle& n) {
@@ -241,8 +241,11 @@ bool StateEstimator::RegisterCallbacks(const ros::NodeHandle& n) {
                    &StateEstimator::LinearSystemResetCallback, this);
   reference_sub_ = nl.subscribe(reference_topic_.c_str(), 1,
                                 &StateEstimator::ReferenceCallback, this);
+  simulator_restart_sub_ =
+      nl.subscribe(simulator_restart_topic_.c_str(), 1,
+                   &StateEstimator::SimulatorRestartCallback, this);
 
-  // Publisher.
+  // Publishers.
   state_pub_ = nl.advertise<quads_msgs::State>(state_topic_.c_str(), 1, false);
   output_derivs_pub_ = nl.advertise<quads_msgs::OutputDerivatives>(
       output_derivs_topic_.c_str(), 1, false);
@@ -313,6 +316,16 @@ inline void StateEstimator::ControlCallback(
   */
 
   last_control_time_ = t;
+}
+
+void StateEstimator::SimulatorRestartCallback(
+    const std_msgs::Empty::ConstPtr& msg) {
+  smoother_x_.Clear();
+  smoother_y_.Clear();
+  smoother_z_.Clear();
+  smoother_psi_.Clear();
+  smoother_theta_.Clear();
+  smoother_phi_.Clear();
 }
 
 }  // namespace quads

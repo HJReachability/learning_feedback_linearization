@@ -61,6 +61,7 @@
 #include <Eigen/Dense>
 #include <limits>
 #include <string>
+#include <std_msgs/Empty.h>
 
 namespace quads {
 
@@ -103,6 +104,9 @@ class StateEstimator {
   // Callback to process new control msgs.
   void ControlCallback(const quads_msgs::Control::ConstPtr& msg);
 
+  // Callback to handle simulator restarts.
+  void SimulatorRestartCallback(const std_msgs::Empty::ConstPtr& msg);
+
   // Timer callback and utility to compute Jacobian.
   void TimerCallback(const ros::TimerEvent& e);
 
@@ -139,10 +143,12 @@ class StateEstimator {
   ros::Subscriber control_sub_;
   ros::Subscriber linear_system_reset_sub_;
   ros::Subscriber reference_sub_;
+  ros::Subscriber simulator_restart_sub_;
   ros::Publisher state_pub_;
   ros::Publisher output_derivs_pub_;
   ros::Publisher transitions_pub_;
 
+  std::string simulator_restart_topic_;
   std::string output_derivs_topic_;
   std::string in_flight_topic_;
   std::string control_topic_;

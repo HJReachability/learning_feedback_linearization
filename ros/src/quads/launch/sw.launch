@@ -19,8 +19,12 @@
   <arg name="transitions_topic" default="/transitions" />
   <arg name="linear_system_reset_topic" default="/reset" />
   <arg name="reference_viz_topic" default="/viz/ref" />
+  <arg name="restart_simulator_topic" default="/restart_simulator" />
 
   <arg name="merger_mode" default="PRIORITIZED" />
+
+  <!-- Should we auto-restart? -->
+  <arg name="auto_restart" value="true" />
 
   <!-- System ID params. -->
   <arg name="mass" default="0.04" />
@@ -85,6 +89,9 @@
     <param name="init/x" value="1.0" />
     <param name="init/y" value="1.0" />
     <param name="init/z" value="0.0" />
+
+    <param name="auto_restart" value="$(arg auto_restart)" />
+    <param name="topics/restarted" value="$(arg restart_simulator_topic)" />
   </node>
 
   <!--

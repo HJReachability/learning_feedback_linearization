@@ -27,8 +27,7 @@ def run(msg):
         steps_per_epoch=50,
         max_ep_len=25,
         epochs=2500,
-#        pi_lr=2e-5,
-        pi_lr=1e-3,
+        lr=0.0,
         alpha=0.2,
         logger_kwargs = {"output_dir" : "logs/sac"}
     )

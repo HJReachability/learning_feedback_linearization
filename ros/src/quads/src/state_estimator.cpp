@@ -218,6 +218,7 @@ bool StateEstimator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/linear_system_reset", linear_system_reset_topic_))
     return false;
   if (!nl.getParam("topics/reference", reference_topic_)) return false;
+  if (!nl.getParam("topics/restart", simulator_restart_topic_)) return false;
 
   // Time step.
   if (!nl.getParam("dt", dt_)) {

@@ -168,6 +168,7 @@
     <param name="dynamics/Iy" value="$(arg Iy)" />
     <param name="dynamics/Iz" value="$(arg Iz)" />
     <param name="topics/in_flight" value="$(arg in_flight_topic)" />
+    <param name="topics/restart" value="$(arg restart_simulator_topic)" />
     <param name="topics/raw_control" value="$(arg raw_control_topic)" />
     <param name="topics/crazyflie_control" value="$(arg crazyflie_control_topic)" />
     <param name="prioritized" value="true" /> <!-- HACK -->
@@ -266,6 +267,7 @@
     <param name="topics/transitions" value="$(arg transitions_topic)" />
     <param name="topics/linear_system_reset" value="$(arg linear_system_reset_topic)" />
     <param name="topics/reference" value="$(arg linear_system_reference_topic)" />
+    <param name="topics/restart" value="$(arg restart_simulator_topic)" />
 
     <param name="dynamics/m" value="$(arg mass)" />
     <param name="dynamics/Ix" value="$(arg Ix)" />

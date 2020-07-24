@@ -141,6 +141,7 @@ bool ControlIntegrator::LoadParameters(const ros::NodeHandle& n) {
   if (!nl.getParam("topics/raw_control", raw_control_topic_)) return false;
   if (!nl.getParam("topics/crazyflie_control", crazyflie_control_topic_))
     return false;
+  if (!nl.getParam("topics/restart", restart_simulator_topic_)) return false;
 
   if (!nl.getParam("prioritized", prioritized_)) return false;
 
@@ -157,6 +158,10 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
   in_flight_sub_ = nl.subscribe(in_flight_topic_.c_str(), 1,
                                 &ControlIntegrator::InFlightCallback, this);
 
+  restart_simulator_sub_ =
+      nl.subscribe(in_flight_topic_.c_str(), 1,
+                   &ControlIntegrator::SimulatorRestartCallback, this);
+
   // Publisher.
   if (prioritized_) {
     crazyflie_control_pub_ =
@@ -168,6 +173,17 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
   }
 
   return true;
+}
+
+void ControlIntegrator::SimulatorRestartCallback(
+    const std_msgs::Empty::ConstPtr& msg) {
+  thrust_ = 0.0;
+  thrustdot_ = 0.0;
+  roll_ = 0.0;
+  rolldot_ = 0.0;
+  pitch_ = 0.0;
+  pitchdot_ = 0.0;
+  yawdot_ = 0.0;
 }
 
 }  // namespace quads

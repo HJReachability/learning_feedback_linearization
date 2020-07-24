@@ -85,6 +85,9 @@ class ControlIntegrator {
     in_flight_ = true;
   }
 
+  // Callback to handle simulator restarts.
+  void SimulatorRestartCallback(const std_msgs::Empty::ConstPtr& msg);
+
   // Keep track of integral(s) of raw control inputs.
   double thrust_, thrustdot_;
   double roll_, rolldot_;
@@ -104,11 +107,13 @@ class ControlIntegrator {
   // Publishers and subscribers.
   ros::Subscriber in_flight_sub_;
   ros::Subscriber raw_control_sub_;
+  ros::Subscriber restart_simulator_sub_;
   ros::Publisher crazyflie_control_pub_;
 
   std::string in_flight_topic_;
   std::string raw_control_topic_;
   std::string crazyflie_control_topic_;
+  std::string restart_simulator_topic_;
 
   // Initialized flag and name.
   bool initialized_;

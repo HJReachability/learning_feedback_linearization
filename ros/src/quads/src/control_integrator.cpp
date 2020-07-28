@@ -50,9 +50,28 @@ namespace quads {
 
 void ControlIntegrator::RawControlCallback(
     const quads_msgs::Control::ConstPtr& msg) {
+  if (!in_flight_) return;
   if (std::isnan(time_of_last_msg_)) {
     time_of_last_msg_ = ros::Time::now().toSec();
     return;
+  }
+
+  // Publish this guy.
+  if (prioritized_) {
+    crazyflie_msgs::PrioritizedControlStamped integrated_msg;
+    integrated_msg.control.priority = 1.0;
+    integrated_msg.control.control.thrust = thrust_ / dynamics_.Mass();
+    integrated_msg.control.control.roll = roll_ / dynamics_.InertiaX();
+    integrated_msg.control.control.pitch = pitch_ / dynamics_.InertiaY();
+    integrated_msg.control.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
+    crazyflie_control_pub_.publish(integrated_msg);
+  } else {
+    crazyflie_msgs::ControlStamped integrated_msg;
+    integrated_msg.control.thrust = thrust_ / dynamics_.Mass();
+    integrated_msg.control.roll = roll_ / dynamics_.InertiaX();
+    integrated_msg.control.pitch = pitch_ / dynamics_.InertiaY();
+    integrated_msg.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
+    crazyflie_control_pub_.publish(integrated_msg);
   }
 
   const double current_time = ros::Time::now().toSec();
@@ -60,14 +79,14 @@ void ControlIntegrator::RawControlCallback(
   time_of_last_msg_ = current_time;
 
   // Integrate stuff.
-  thrustdot_ += msg->thrustdot2 * dt;
   thrust_ += thrustdot_ * dt;
+  thrustdot_ += msg->thrustdot2 * dt;
 
-  rolldot_ += msg->rolldot2 * dt;
   roll_ += rolldot_ * dt;
+  rolldot_ += msg->rolldot2 * dt;
 
-  pitchdot_ += msg->pitchdot2 * dt;
   pitch_ += pitchdot_ * dt;
+  pitchdot_ += msg->pitchdot2 * dt;
 
   yawdot_ += msg->yawdot2 * dt;
 
@@ -92,24 +111,6 @@ void ControlIntegrator::RawControlCallback(
 
   // If not in flight, get out of here.
   //  if (!in_flight_) return;
-
-  // Publish this guy.
-  if (prioritized_) {
-    crazyflie_msgs::PrioritizedControlStamped integrated_msg;
-    integrated_msg.control.priority = 1.0;
-    integrated_msg.control.control.thrust = thrust_ / dynamics_.Mass();
-    integrated_msg.control.control.roll = roll_ / dynamics_.InertiaX();
-    integrated_msg.control.control.pitch = pitch_ / dynamics_.InertiaY();
-    integrated_msg.control.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
-    crazyflie_control_pub_.publish(integrated_msg);
-  } else {
-    crazyflie_msgs::ControlStamped integrated_msg;
-    integrated_msg.control.thrust = thrust_ / dynamics_.Mass();
-    integrated_msg.control.roll = roll_ / dynamics_.InertiaX();
-    integrated_msg.control.pitch = pitch_ / dynamics_.InertiaY();
-    integrated_msg.control.yaw_dot = yawdot_ / dynamics_.InertiaZ();
-    crazyflie_control_pub_.publish(integrated_msg);
-  }
 }
 
 bool ControlIntegrator::Initialize(const ros::NodeHandle& n) {
@@ -159,7 +160,7 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
                                 &ControlIntegrator::InFlightCallback, this);
 
   restart_simulator_sub_ =
-      nl.subscribe(in_flight_topic_.c_str(), 1,
+      nl.subscribe(restart_simulator_topic_.c_str(), 1,
                    &ControlIntegrator::SimulatorRestartCallback, this);
 
   // Publisher.
@@ -177,7 +178,7 @@ bool ControlIntegrator::RegisterCallbacks(const ros::NodeHandle& n) {
 
 void ControlIntegrator::SimulatorRestartCallback(
     const std_msgs::Empty::ConstPtr& msg) {
-  thrust_ = 0.0;
+  thrust_ = 9.81;
   thrustdot_ = 0.0;
   roll_ = 0.0;
   rolldot_ = 0.0;

@@ -321,12 +321,15 @@ inline void StateEstimator::ControlCallback(
 
 void StateEstimator::SimulatorRestartCallback(
     const std_msgs::Empty::ConstPtr& msg) {
-  smoother_x_.Clear();
-  smoother_y_.Clear();
-  smoother_z_.Clear();
-  smoother_psi_.Clear();
-  smoother_theta_.Clear();
-  smoother_phi_.Clear();
+  smoother_x_.Reset();
+  smoother_y_.Reset();
+  smoother_z_.Reset();
+  smoother_psi_.Reset();
+  smoother_theta_.Reset();
+  smoother_phi_.Reset();
+
+  thrust_ = 9.81 * dynamics_.Mass();
+  thrustdot_ = 0.0;
 }
 
 }  // namespace quads

@@ -76,7 +76,7 @@ class StateEstimator {
             VectorXd::Constant(14, std::numeric_limits<double>::quiet_NaN())),
         reference_(
             VectorXd::Constant(14, std::numeric_limits<double>::quiet_NaN())),
-        thrust_(9.81),
+        thrust_(std::numeric_limits<double>::quiet_NaN()),
         thrustdot_(0.0),
         last_control_time_(std::numeric_limits<double>::quiet_NaN()),
         last_linear_system_state_update_time_(
@@ -95,6 +95,13 @@ class StateEstimator {
   // Are we in flight?
   void InFlightCallback(const std_msgs::Empty::ConstPtr& msg) {
     in_flight_ = true;
+
+    smoother_x_.MarkInFlight();
+    smoother_y_.MarkInFlight();
+    smoother_z_.MarkInFlight();
+    smoother_theta_.MarkInFlight();
+    smoother_phi_.MarkInFlight();
+    smoother_psi_.MarkInFlight();
   }
 
   // Callbacks for reset linear system state and references.

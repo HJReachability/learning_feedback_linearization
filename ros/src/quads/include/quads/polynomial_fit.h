@@ -80,16 +80,27 @@ class PolynomialFit {
     return coeffs_;
   }
 
-  // Clear history.
-  void Clear() {
-    xs_.clear();
-    ts_.clear();
+  // Reset current history to takeoff we already stored.
+  void Reset() {
+    xs_ = takeoff_xs_;
+    ts_ = takeoff_ts_;
+
+    const double delta_t = ros::Time::now().toSec() - takeoff_ts_.back();
+    for (auto& t : ts_) t += delta_t;
+  }
+
+  // Copy contents of xs and ts into takeoff variables.
+  void MarkInFlight() {
+    takeoff_xs_ = xs_;
+    takeoff_ts_ = ts_;
   }
 
  private:
   // Data and time.
   std::list<double> xs_;
   std::list<double> ts_;
+  std::list<double> takeoff_xs_;
+  std::list<double> takeoff_ts_;
 
   // Polynomial coefficients.
   Eigen::Matrix<double, k + 1, 1> coeffs_;

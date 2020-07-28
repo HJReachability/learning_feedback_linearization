@@ -43,7 +43,7 @@
   <!-- Takeoff hover point. -->
   <arg name="takeoff_hover_x" default="0.0" />
   <arg name="takeoff_hover_y" default="0.0" />
-  <arg name="takeoff_hover_z" default="1.5" />
+  <arg name="takeoff_hover_z" default="1" />
 
   <!-- Control parameters. -->
   <arg name="lqr_x_dim" default="7" />
@@ -86,6 +86,7 @@
     <param name="frames/robot" value="$(arg robot_frame)" />
     <param name="time_step" value="$(arg output_smoother_dt)" />
     <param name="topics/control" value="$(arg final_control_topic)" />
+    <param name="topics/in_flight" value="$(arg in_flight_topic)" />
     <param name="init/x" value="1.0" />
     <param name="init/y" value="1.0" />
     <param name="init/z" value="0.0" />

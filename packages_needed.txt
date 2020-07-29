@@ -1,0 +1,21 @@
+pip2 install tensorflow==1.15 --user
+pip2 install cloudpickle --user
+pip2 install gym --user
+pip2 install joblib --user
+pip2 install pandas --user
+pip2 install seaborn==0.8.1 --user
+pip2 install testresources --user
+pip2 install setuptools --upgrade --user
+pip2 install pyasn1==0.4.6 --user
+pip2 install dill --user
+
+In workspace, run
+python setup.py develop --user
+
+Then catkin_make
+in baxter_learning/src/baxter_hw_env, run
+	python setup.py develop --user
+
+
+change the path for data saving in data_collector.py, ppo_node.py, baxter_learning_node.py
+

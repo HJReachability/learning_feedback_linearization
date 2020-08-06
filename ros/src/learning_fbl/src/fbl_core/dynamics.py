@@ -24,12 +24,12 @@ class Dynamics(object):
         raise NotImplementedError('linearized_system not implemented')
         return A, B, C
 
-    def get_v(self):
+    def get_v(self, y, ref):
         """ Return the desired linear input given the linear state and the reference """
         raise NotImplementedError('get_v not implemented')
         return v
 
-    def get_Mf(self):
+    def get_Mf(self, x):
         """ Return the decoupling term and drift vectors M and f """
         raise NotImplementedError('get_Mf not implemented')
         return M, f

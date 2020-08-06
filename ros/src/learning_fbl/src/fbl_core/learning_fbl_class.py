@@ -5,21 +5,17 @@ from scipy.linalg import expm
 
 class LearningFBL(object):
     """
-    A class for implementing learningFBL controllers.
+    A class for implementing learningFBL controllers and interfacing with the hardware/sim
     This class will be wrapped by an openAI gym environment
     """
-    def __init__(self, ros_bool = False, learning_bool = False, test_bool = False,
-            action_space = None, observation_spaces = None, dynamics = None, rate = 20):
+    def __init__(self, action_space = None, observation_space = None,
+        dynamics = None, ros_bool = False, rate = 20):
         """
         Constructor for the superclass. All learningFBL sublcasses should call the superconstructor
 
         Parameters:
         ros_bool : bool
             Are you using ROS?
-        learning_bool : bool
-            Are you doing learning? 
-        test_bool : bool
-            Are you training or testing?
         action_space : :obj:`gym.spaces.Box`
             System action space
         observation_space : :obj:`gym.spaces.Box`
@@ -41,14 +37,14 @@ class LearningFBL(object):
 
         if self._ros_bool:
             import rospy
-            self.setup_ros()
-            rospy.on_shutdown(self.shutdown_ros)
+            self._setup_ros()
+            rospy.on_shutdown(self._shutdown_ros)
             self._rate = rospy.Rate(rate)
 
             # If there hasn't been a new state measurement in the past epsilon seconds, throw a flag
             self._time_epsilon = 1.0/rate 
 
-    def setup_ros(self):
+    def _setup_ros(self):
         """
 
         Sets up the dynamics (sim or hardware), state estimation, and message interface for the problem
@@ -64,7 +60,7 @@ class LearningFBL(object):
         pass
 
 
-    def shutdown_ros(self):
+    def _shutdown_ros(self):
         """
         SAFETY METHOD:
         Do these things when the code is shut down (ctrl-C)
@@ -74,42 +70,42 @@ class LearningFBL(object):
 
     def step(self, a):
         """
-        Performs an n-step rollout
+        Performs a control action
 
         a : 
-            action
+            action (modified parameters)
 
         """
 
-        x, t = self.get_state_time()
+        x, t = self._get_state_time()
 
         # Cut off if ROS is down and check if input is too old
         if self._ros_bool:
             if rospy.is_shutdown():
                 return None
             if rospy.Time.now().to_sec() - t >= self._time_epsilon:
-                x, t = self.input_timeout_flag(x, t)
+                x, t = self._input_timeout_flag(x, t)
 
 
         y = self._dynamics.linearized_system_state(x)
-        ref = self.get_reference()
+        ref = self._get_reference()
 
         # Desired linear input
         v = self._dynamics.get_v(y, ref)
 
         # Calculate input
-        M1, f1 = self._dynamics.get_Mf()
-        M2, f2 = self.parse_action(a)
+        M1, f1 = self._dynamics.get_Mf(x)
+        M2, f2 = self._parse_action(a)
         u = np.dot(M1 + M2, v) + f1 + f2
 
         # Send control
-        self.send_control(u)
+        self._send_control(u)
 
         # If using ros, wait before reading state again
         if self._ros_bool:
             self._rate.sleep()
 
-        x_new, t_new = self.get_state_time()
+        x_new, t_new = self._get_state_time()
         y_new = self._dynamics.linearized_system_state(x_new)
 
         dt = t_new - t
@@ -127,10 +123,10 @@ class LearningFBL(object):
         # Predict what the observation at this step should have been
         y_predicted = np.dot(A_d, y) + np.dot(B_d, v)
 
-        reward = self.compute_reward(y_predicted, y_new)
+        reward = self._compute_reward(y_predicted, y_new)
 
         # Check if environment should be reset
-        done = self.check_to_reset(x)
+        done = self._check_to_reset(x)
 
         return self._dynamics.preprocess_state(x), reward, done, {}
 
@@ -144,7 +140,7 @@ class LearningFBL(object):
         return self._dynamics.preprocess_state(x)
 
 
-    def get_state_time(self):
+    def _get_state_time(self):
         """
         Return the unaugmented system state and the current time
         
@@ -154,7 +150,7 @@ class LearningFBL(object):
         return x, t
 
 
-    def get_reference(self):
+    def _get_reference(self):
         """
         Return the reference for the system at this timestep
 
@@ -163,34 +159,34 @@ class LearningFBL(object):
         raise NotImplementedError('get_reference is not implemented')
         return ref
 
-    def parse_action(self, a):
+    def _parse_action(self, a):
         """
         Parses the action a, and returns the feedback linearizing terms M and f
         """
         raise NotImplementedError('parse_action is not implemented')
         return M, f
 
-    def send_control(self, u):
+    def _send_control(self, u):
         """
         Sends the control input to the system
         """
         raise NotImplementedError('send_control is not implemented')
         return
     
-    def compute_reward(self, y_predicted, y_actual):
+    def _compute_reward(self, y_predicted, y_actual):
         """
         Computes the reward for one action
         """
         raise NotImplementedError('compute_reward is not implemented')
         return
 
-    def check_to_reset(self, x):
+    def _check_to_reset(self, x):
         """
         If the state goes crazy or something, you can manually reset the environment
         """
         return False
 
-    def input_timeout_flag(self, x, t):
+    def _input_timeout_flag(self, x, t):
         """
         If the state hasn't updated in the last _time_epsilon seconds, do something
         """

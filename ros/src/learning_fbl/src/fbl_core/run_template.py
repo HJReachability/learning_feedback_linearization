@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np
-from learning.learning_fbl_class import LearningFBL
-from learning.dynamics import Dynamics
+from fbl_core.learning_fbl_class import LearningFBL
+from fbl_core.dynamics import Dynamics
 import os
 import inspect
 
@@ -11,7 +11,8 @@ task = 'no_learn'
 # Get the file prefix for the data folder in the learning_fbl package
 # On the Cory Lab computers, you may have to enter the absolute path yourself
 # e.g.: "/home/cc/ee106b/sp20/staff/ee106b-taa/Desktop/data/ppo_log"
-PREFIX = os.path.abspath(os.path.join(os.path.dirname(inspect.getfile(learning)), os.pardir, os.pardir, 'data'))
+
+PREFIX = os.path.abspath(os.path.join(os.path.dirname(inspect.getfile(fbl_core)), os.pardir, os.pardir, 'data'))
 DIR_NAME = 'pendulum_1'
 OUTPUT_DIR = os.path.abspath(os.path.join(PREFIX, DIR_NAME))
 

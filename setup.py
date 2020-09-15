@@ -3,15 +3,15 @@ from setuptools import setup
 import sys
 
 
-with open(join("spinup2", "version.py")) as version_file:
+with open(join("spinup", "version.py")) as version_file:
     exec(version_file.read())
 setup(
-    name='spinup2',
-    py_modules=['spinup2'],
+    name='spinup',
+    py_modules=['spinup'],
     version=__version__,#'0.1',
     install_requires=[
         'cloudpickle',
-        'gym[atari,box2d,classic_control]>=0.10.8',
+        # 'gym[atari,box2d,classic_control]>=0.10.8',
         'joblib',
         'matplotlib',
         'mpi4py',
@@ -23,7 +23,7 @@ setup(
         'tensorflow',
         'tqdm'
     ],
-    extras_require={'mujoco': 'mujoco-py<2.1,>=2.0'},
+    # extras_require={'mujoco': 'mujoco-py<2.1,>=2.0'},
     description="Teaching tools for introducing people to deep RL.",
     author="Joshua Achiam",
 )

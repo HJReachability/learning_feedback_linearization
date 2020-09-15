@@ -5,7 +5,7 @@ from scipy.linalg import expm
 
 from fbl_core.learning_fbl_class import LearningFBL
 from pendulum_dynamics import DoublePendulum
-import fbl_utils.utils as utils
+import fbl_core.utils as utils
 
 class SwingupFBL(LearningFBL):
     """
@@ -139,7 +139,7 @@ class SwingupFBL(LearningFBL):
 
         diff = self._nominal_dynamics.linear_system_state_delta(ref, y)
 
-        return -self._K @ (diff)
+        return -np.dot(self._K, diff)
 
     def _get_Mf(self, x):
         """

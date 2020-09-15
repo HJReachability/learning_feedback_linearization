@@ -12,7 +12,7 @@ setup(name='learning_fbl',
       author='Valmik Prabhu',
       author_email='valmik@berkeley.edu',
       package_dir = {'': 'src'},
-      packages=['learning'],
+      packages=['fbl_core'],
       install_requires=requirements,
       test_suite='test'
      )

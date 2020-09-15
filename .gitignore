@@ -9,6 +9,7 @@ examples/logs
 logs
 sandbox/tests
 tests
+ros/src/learning_fbl/data
 
 # ROS stuff.
 ros/devel

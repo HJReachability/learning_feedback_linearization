@@ -5,7 +5,6 @@ from matplotlib.patches import ConnectionPatch
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from fbl_core.dynamics import Dynamics
-import fbl_utils.utils as utils
 
 class DoublePendulum(Dynamics):
     def __init__(self, mass1, mass2, length1, length2,
@@ -32,8 +31,10 @@ class DoublePendulum(Dynamics):
         xdot[0, 0] = x[1, 0]
         xdot[2, 0] = x[3, 0]
 
-        theta_doubledot = self._M_q_inv(x) @ (
-            -self._f_q(x) + np.reshape(u, (self.udim, 1)))
+        theta_doubledot = np.dot(
+            self._M_q_inv(x), 
+            -self._f_q(x) + np.reshape(u, (self.udim, 1))
+            )
 
         xdot[1, 0] = theta_doubledot[0, 0]
         xdot[3, 0] = theta_doubledot[1, 0]
@@ -113,7 +114,7 @@ class DoublePendulum(Dynamics):
         qdot=np.zeros((2,1))
         qdot[0,0]=x[1,0]
         qdot[1,0]=x[3,0]
-        energy = (0.5* qdot.T @ M @ qdot)
+        energy = (0.5*np.dot(np.dot(qdot.T, M), qdot))
         energy+=-(self._mass1+self._mass2)*self.g*self._length1*np.cos(x[0,0])-self._mass2*self.g*self._length2*np.cos(x[0,0]+x[2,0])
 
         return energy

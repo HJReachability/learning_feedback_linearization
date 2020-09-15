@@ -18,13 +18,9 @@ class DoublePendulum(Dynamics):
         self.friction_coeff = friction_coeff
         self.g = 9.81
 
-        Q = q*np.diag([1.0, 0, 1.0, 0])
-        R = r*np.eye(2)
-
         super(DoublePendulum, self).__init__(4, 6, 2, 2, time_step)
 
-        A, B, C = self.linearized_system()
-        self.K = utils.solve_LQR(A, B, Q, R)
+
 
 
     def __call__(self, x, u):
@@ -63,13 +59,6 @@ class DoublePendulum(Dynamics):
     def linearized_system_state(self,x):
 
          return x
-
-    def get_v(self, y, ref):
-        """ Linear Controller, v = -Ke"""
-
-        diff = self.linear_system_state_delta(ref, y)
-
-        return -self._K @ (diff)
 
     def get_Mf(self, x):
         M = self._M_q(x)

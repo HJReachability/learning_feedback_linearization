@@ -3,6 +3,8 @@
 import numpy as np
 from swingup_class import SwingupFBL
 from pendulum_dynamics import DoublePendulum
+from swingup_reference import SwingupReference
+from controller import LQR
 import fbl_core
 import os
 import inspect
@@ -31,9 +33,33 @@ if task == 'no_learn':
 elif task == 'training':
     import spinup
     import gym
+    from gym import spaces
 
-    dynamics = Dynamics()
-    fbl_obj = LearningFBL()
+
+    mass1 = 1.0
+    mass2 = 1.0
+    length1 = 1.0
+    length2 = 1.0
+    times_step = 0.01
+    friction_coeff = 0.5
+
+    true_dynamics = DoublePendulum(mass1, mass2, length1, length2, times_step, friction_coeff)
+    nominal_dynamics = DoublePendulum(0.33*mass1, 0.33*mass2, 0.33*length1, 0.33*length2, times_step, friction_coeff)
+
+    A, B, C = nominal_dynamics.linearized_system()
+    Q = 200.0 * np.diag([1.0, 0, 1.0, 0])
+    R = 1.0 * np.eye(2)
+
+    controller = LQR(A, B, Q, R)
+    reference_generator = SwingupReference(nominal_dynamics, 1000)
+
+    action_space = spaces.Box(low=-50, high=50, shape=(6,), dtype=np.float32)
+    observation_space = spaces.Box(low=-100, high=100, shape=(6,), dtype=np.float32)
+
+    fbl_obj = SwingupFBL(action_space = action_space, observation_space = observation_space,
+        nominal_dynamics = nominal_dynamics, true_dynamics = true_dynamics,
+        controller = controller, reference_generator = reference_generator,
+        action_scaling = 1, reward_scaling = 1, reward_norm = 2)
 
     env = lambda : gym.make('LearningFBLEnv-v0', learn_fbl = fbl_obj)
 

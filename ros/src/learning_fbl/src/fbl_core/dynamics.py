@@ -38,8 +38,6 @@ class Dynamics(object):
         """ Preprocess states for input to learned components. """
         raise NotImplementedError("preprocess_state is not implemented.")
 
-
-
     def observation(self, x):
         """ Compute y from x. """
         raise NotImplementedError()
@@ -63,7 +61,7 @@ class Dynamics(object):
         """ Apply feedback linearization control law to compute u. """
         M_q, f_q = self.feedback_linearize()
 
-        u = np.dot(M_q(x), v) + f_q(x)
+        u = M_q(x) @ v + f_q(x)
         return u
 
     def observation_distance(self, y1, y2,norm):

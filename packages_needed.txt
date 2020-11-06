@@ -1,4 +1,4 @@
-pip2 install tensorflow==1.15 --user
+pip2 install tensorflow==1.14 --user
 pip2 install cloudpickle --user
 pip2 install gym --user
 pip2 install joblib --user

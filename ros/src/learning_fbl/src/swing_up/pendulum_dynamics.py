@@ -8,7 +8,7 @@ from fbl_core.dynamics import Dynamics
 
 class DoublePendulum(Dynamics):
     def __init__(self, mass1, mass2, length1, length2,
-                 time_step=0.05, friction_coeff=0.5, q = 200.0, r = 1.0):
+                 time_step=0.05, friction_coeff=0.5):
         self._mass1 = mass1
         self._mass2 = mass2
         self._length1 = length1

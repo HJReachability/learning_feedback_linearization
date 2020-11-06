@@ -4,7 +4,7 @@ import numpy as np
 from swingup_class import SwingupFBL
 from pendulum_dynamics import DoublePendulum
 from swingup_reference import SwingupReference
-from controller import LQR
+from fbl_core.controller import LQR
 import fbl_core
 import os
 import inspect
@@ -22,7 +22,7 @@ OUTPUT_DIR = os.path.abspath(os.path.join(PREFIX, DIR_NAME))
 try:
     os.mkdir(OUTPUT_DIR)
 except OSError as e:
-    print e
+    print(e)
     if task == 'training': # If the task is training error so I don't wipe my training data
         raise 
 
@@ -34,6 +34,7 @@ elif task == 'training':
     import spinup
     import gym
     from gym import spaces
+    import learning_fbl_env
 
 
     mass1 = 1.0
@@ -61,7 +62,7 @@ elif task == 'training':
         controller = controller, reference_generator = reference_generator,
         action_scaling = 1, reward_scaling = 1, reward_norm = 2)
 
-    env = lambda : gym.make('LearningFBLEnv-v0', learn_fbl = fbl_obj)
+    env = lambda : gym.make('learning_fbl_env:LearningFBLEnv-v0', learn_fbl = fbl_obj)
 
     spinup.ppo(
         env,

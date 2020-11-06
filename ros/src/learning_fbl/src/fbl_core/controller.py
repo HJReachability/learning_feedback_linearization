@@ -46,7 +46,7 @@ class LQR(Controller):
         super(LQR, self).__init__(xdim, ydim)
 
         self.P = solve_continuous_are(self.A, self.B, self.Q, self.R)
-        self.K = np.linalg.inv(R) @ B.T @ P
+        self.K = np.linalg.inv(self.R) @ self.B.T @ self.P
 
     def __call__(self, x):
         """ Compute u from x. """

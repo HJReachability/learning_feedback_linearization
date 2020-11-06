@@ -7,6 +7,7 @@ class SwingupReference(ReferenceGenerator):
     def __init__(self, nominal_dynamics=None, max_path_length = 1000):
         self._nominal_dynamics = nominal_dynamics
         self.max_path_length = max_path_length
+        self._time_step = self._nominal_dynamics.time_step
 
     def __call__(self, x):
         """ Return a reference trajectory which starts from x """
@@ -26,7 +27,7 @@ class SwingupReference(ReferenceGenerator):
         linsys_udim=B.shape[1]
 
         # Initial y.
-        y0 = self._get_linearized_system_state(x0)
+        y0 = self._nominal_dynamics.linearized_system_state(x0)
 
         y = np.empty((linsys_xdim, max_path_length))
         for ii in range(linsys_xdim):

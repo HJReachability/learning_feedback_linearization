@@ -97,12 +97,12 @@ class LearningFBL(object):
         A, B, C = self._get_linear_dynamics()
 
         # Since we know nothing about the form of the controller, we convert the linear dynamics to discrete time for prediction
-        stack = np.zeros((A.shape(1)+B.shape(1), A.shape(1)+B.shape(1)))
-        stack[0:A.shape(0), 0:A.shape(1)] = A
-        stack[0:B.shape(0), A.shape(1):] = B
+        stack = np.zeros((A.shape[1]+B.shape[1], A.shape[1]+B.shape[1]))
+        stack[0:A.shape[0], 0:A.shape[1]] = A
+        stack[0:B.shape[0], A.shape[1]:] = B
         stack_d = expm(stack * dt)
-        A_d = stack[0:A.shape(0), 0:A.shape(1)]
-        B_d = stack[0:B.shape(0), A.shape(1):]
+        A_d = stack[0:A.shape[0], 0:A.shape[1]]
+        B_d = stack[0:B.shape[0], A.shape[1]:]
 
         # Predict what the observation at this step should have been
         y_predicted = np.dot(A_d, y) + np.dot(B_d, v)
@@ -114,7 +114,7 @@ class LearningFBL(object):
 
         return self._preprocess_state(x), reward, done, {}
 
-    def reset():
+    def reset(self):
         """
         All gym environments need a restart method to restart the environment
         This will be called at the start of the learning process and at the end of every epoch

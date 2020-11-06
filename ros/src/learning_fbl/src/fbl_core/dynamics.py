@@ -8,7 +8,7 @@ class Dynamics(object):
         self.preprocessed_xdim = preprocessed_xdim
         self.udim = udim
         self.ydim = ydim
-        self._time_step = time_step
+        self.time_step = time_step
 
     def __call__(self, x, u):
         """ Compute xdot from x, u. """
@@ -88,13 +88,13 @@ class Dynamics(object):
         :rtype: np.array
         """
         if dt is None:
-            dt = 0.25 * self._time_step
+            dt = 0.25 * self.time_step
 
         t = 0.0
         x = x0.copy()
-        while t < self._time_step - 1e-8:
+        while t < self.time_step - 1e-8:
             # Make sure we don't step past T.
-            step = min(dt, self._time_step - t)
+            step = min(dt, self.time_step - t)
 
             # Use Runge-Kutta order 4 integration. For details please refer to
             # https://en.wikipedia.org/wiki/Runge-Kutta_methods.

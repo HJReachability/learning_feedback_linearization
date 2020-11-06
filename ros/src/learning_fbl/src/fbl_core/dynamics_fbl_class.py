@@ -3,11 +3,11 @@
 import numpy as np
 from scipy.linalg import expm
 
-from learning_fbl_class import LearningFBL
-from dynamics import Dynamics
-from controller import Controller
-from reference_generator import ReferenceGenerator
-import utils as utils
+from fbl_core.learning_fbl_class import LearningFBL
+from fbl_core.dynamics import Dynamics
+from fbl_core.controller import Controller
+from fbl_core.reference_generator import ReferenceGenerator
+import fbl_core.utils as utils
 
 class DynamicsFBL(LearningFBL):
     """
@@ -32,7 +32,7 @@ class DynamicsFBL(LearningFBL):
             System state space
         """
 
-        assert(np.all_close(nominal_dynamics.time_step, true_dynamics.time_step, 1e-8), "nominal and actual dynamics have different timesteps")
+        assert(np.allclose(nominal_dynamics.time_step, true_dynamics.time_step, 1e-8), "nominal and actual dynamics have different timesteps")
 
         super(DynamicsFBL, self).__init__(action_space, observation_space)
 
@@ -51,7 +51,7 @@ class DynamicsFBL(LearningFBL):
         self._t = None
         self._reset_flag = False
 
-    def reset():
+    def reset(self):
         """
         All gym environments need a restart method to restart the environment
         This will be called at the start of the learning process and at the end of every epoch
@@ -110,7 +110,7 @@ class DynamicsFBL(LearningFBL):
 
         diff = self._nominal_dynamics.linear_system_state_delta(ref, y)
 
-        return self.controller(diff)
+        return self._controller(diff)
 
     def _get_Mf(self, x):
         """
@@ -151,7 +151,7 @@ class DynamicsFBL(LearningFBL):
         """
 
         self._x = self._true_dynamics.integrate(self._x, u)
-        self._t = self._t + self._true_dynamics._time_step
+        self._t = self._t + self._true_dynamics.time_step
 
         if not self._reset_flag:
             self._reference = self._reference[1:]

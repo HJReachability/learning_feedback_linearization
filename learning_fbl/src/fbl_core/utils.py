@@ -9,3 +9,11 @@ def solve_lqr(A,B,Q,R):
     K = np.dot(np.dot(np.linalg.inv(R), B.T), P)
 
     return K
+
+def unitify(x):
+    """
+    make unit vector
+    """
+    norm = np.linalg.norm(x)
+    return x/norm, norm
+

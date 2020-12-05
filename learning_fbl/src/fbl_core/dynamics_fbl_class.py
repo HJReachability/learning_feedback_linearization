@@ -138,7 +138,7 @@ class DynamicsFBL(LearningFBL):
         Parses the action a, and returns the feedback linearizing terms M and f
         """
 
-        M_flat, f_flat = np.split(self._action_scaling * a, [4])
+        M_flat, f_flat = np.split(self._action_scaling * a, [self._nominal_dynamics.udim**2])
 
         M = np.reshape(M_flat, (self._nominal_dynamics.udim, self._nominal_dynamics.udim))
         f = np.reshape(f_flat, (self._nominal_dynamics.udim, 1))

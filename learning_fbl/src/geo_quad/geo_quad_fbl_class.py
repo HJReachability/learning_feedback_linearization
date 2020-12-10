@@ -41,12 +41,15 @@ class TwoControllerQuadFBL(DynamicsFBL):
             None, reference_generator,
             action_scaling, reward_scaling, reward_norm)
 
+
     def _initial_state_sampler(self):
         """
         Returns the initial state after a reset. This should return an unprocessed state
         """
-        raise NotImplementedError("_initial_state_sampler not implemented")
-        return x
+        # uniformly random xyz coordinates
+        # Biased rotation matrix (random velocity vector and integrate)
+
+        return self._reference_generator.sample_state()
 
     def step(self, a):
         """
@@ -95,22 +98,6 @@ class TwoControllerQuadFBL(DynamicsFBL):
 
         return super(TwoControllerQuadFBL, self)._get_reference()
 
-    def _split_ref(ref):
-        """
-        splits ref into component parts:
-            xd, b1d, vd, omegad, dvd, domegad
-        """
-
-        x = ref[:3]
-        b1 = ref[3:6]
-        v = ref[6:9]
-        omega = ref[9:12]
-        dv = ref[12:15]
-        domega = ref[15:18]
-
-        return x, b1, v, omega, dv, domega
-
-
     def _get_v(self, y, ref):
         """
         Returns v, the nominal input to the system at linear state y 
@@ -118,7 +105,7 @@ class TwoControllerQuadFBL(DynamicsFBL):
         """
 
         x, R, v, omega = self._nominal_dynamics.split_state(y)
-        xd, b1d, vd, omega_d, dv_d, domega_d = self._split_ref(ref)
+        xd, b1d, vd, omega_d, dv_d, domega_d = self._reference_generator.split_ref(ref)
 
 
         ex = x - xd

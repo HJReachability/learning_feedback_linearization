@@ -6,6 +6,7 @@ Partially stolen from Berkeley EE106A lab 3 prelab, which was written by Aaron B
 
 
 import numpy as np
+import scipy.linalg as spl
 
 
 np.set_printoptions(precision=4,suppress=True)
@@ -63,6 +64,24 @@ def rotation_3d(omega, theta):
     theta = theta * np.linalg.norm(omega)
     hat_u = hat_u / np.linalg.norm(omega)
     return np.eye(3) + hat_u * np.sin(theta) + np.dot(hat_u, hat_u) * (1 - np.cos(theta))
+
+def inverse_rotation_3d(R):
+    """
+    Computes omega and theta from R
+    """
+
+    theta = np.arccos((np.trace(R) - 1)/2)
+    if np.abs(theta) > 1e9:
+        omega = np.array([
+                R[2,1] - R[1,2],
+                R[0,2] - R[2,0],
+                R[1,0] - R[0,1]
+            ])
+        omega = (1/(2*np.sin(theta)))*omega
+    else:
+        omega = np.zeros((3,))
+
+    return omega*theta
 
 def renormalize_rotation_3d(R):
     theta = np.arccos((np.trace(R) - 1)/2)
@@ -151,6 +170,36 @@ def homog_3d(xi, theta):
     g[:3, :3] = R
     g[:3, 3] = p
     return g
+
+def homog_3d_exp(xi):
+    return spl.expm(self.hat_3d(xi))
+
+def inverse_homog_3d(g):
+    xi_hat = spl.logm(g)
+    return unhat_3d(xi_hat)
+
+def pR_to_g(p, R):
+    g = np.eye(4)
+    g[:3, :3] = R
+    g[:3, 3] = p
+    return g
+
+def g_to_pR(g):
+    p = g[:3,3]
+    R = g[:3,:3]
+    return p, R
+
+def renormalize_homog_3d(g):
+    R = g[:3,:3]
+    R = renormalize_rotation_3d(R)
+    g[:3,:3] = R
+    return g
+
+def rbt_inv(g):
+    R = g[:3,:3]
+    p = g[:3, 3]
+    g[:3,:3] = R.transpose()
+    g[:3, 3] = - np.dot(R.transpose(), p)
 
 
 def prod_exp(xi, theta):
@@ -245,6 +294,10 @@ if __name__ == "__main__":
                             [ 0.8575, -0.4824, -0.179 ,  0.1978],
                             [ 0.    ,  0.    ,  0.    ,  1.    ]])
     array_func_test(homog_3d, func_args, ret_desired)
+
+    # Test inverse_homog_3d()
+    xi = arg1/(np.linalg.norm(arg1[3:]))
+    array_func_test(inverse_homog_3d, (spl.expm(hat_3d(xi)),), xi)
 
     #Test prod_exp()
     arg1 = np.array([[2.0, 1, 3, 5, 4, 6], [5, 3, 1, 1, 3, 2], [1, 3, 4, 5, 2, 4]]).T

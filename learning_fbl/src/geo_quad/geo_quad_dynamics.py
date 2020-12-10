@@ -94,6 +94,18 @@ class GeoQuadDynamics(Dynamics):
 
         return p, R, v, omega
 
+    def unsplit_state(p, R, v, omega):
+        """
+        Combines the parts into a state vector
+        """
+        x = np.zeros((self.xdim, ))
+        x[:3] = p
+        x[3:12] = np.reshape(R, (9,))
+        x[12:15] = v
+        x[15:] = omega 
+
+        return x
+
     def preprocess_state(self, x):
         """ Preprocess states for input to learned components. """
         return x

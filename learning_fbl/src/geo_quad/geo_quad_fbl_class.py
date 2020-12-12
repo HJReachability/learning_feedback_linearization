@@ -49,7 +49,7 @@ class TwoControllerQuadFBL(DynamicsFBL):
         # uniformly random xyz coordinates
         # Biased rotation matrix (random velocity vector and integrate)
 
-        return self._reference_generator.sample_state()
+        return self._reference_generator.sample_initial_state()
 
     def step(self, a):
         """

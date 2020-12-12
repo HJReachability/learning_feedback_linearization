@@ -3,20 +3,16 @@
 import numpy as np
 import se3_utils as se3
 import fbl_core.utils as utils
+from fbl_core.reference_generator import ReferenceGenerator
 
-class ConstantTwistQuadTrajectory(object):
-    def __init__(self, observation_space, nominal_dynamics, sample_scale = 0.9, nominal_traj_length = 20):
+class QuadTrajectory(ReferenceGenerator):
+    def __init__(self, upper_lims, lower_lims, nominal_dynamics, nominal_traj_length = 20):
         """
-        observation space should be a gym box environment
-        sample_scale is the amount samples are scaled (but not rotations)
+        Upper and lower lims are nominal observation state limits    
         """
 
-        assert sample_scale <= 1
-
-        self.sample_scale = sample_scale
-
-        self.high_lims = observation_space.high * sample_scale
-        self.low_lims = observation_space.low * sample_scale
+        self.high_lims = upper_lims
+        self.low_lims = lower_lims
 
         self._nominal_dynamics = nominal_dynamics
         self.nominal_traj_length = nominal_traj_length
@@ -26,6 +22,48 @@ class ConstantTwistQuadTrajectory(object):
 
         # self.init_high_lims = np.minimum(self.high_lims, self.default_high_lims)
         # self.init_low_lims = np.maximum(self.low_lims, self.default_low_lims)
+
+    def sample_initial_state(self):
+        return sample_state(self)
+
+    def sample_state(self):
+        """
+        Returns the initial state after a reset. This should return an unprocessed state
+        """
+        # uniformly random xyz coordinates
+        # Biased rotation matrix (random velocity vector and integrate)
+
+        x = np.random.uniform(self.low_lims, self.high_lims)
+        p, R, v, omega = self._nominal_dynamics.split_state(x)
+
+        w = utils.unitify(np.random.uniform(-1, 1, (3,)))
+        theta = np.random.uniform(-np.pi, np.pi)
+        R = se3.rotation_3d(w, theta)
+
+        x = self._nominal_dynamics.unsplit_state(p, R, v, omega)
+
+        return x
+
+    def split_ref(ref):
+        """
+        splits ref into component parts:
+            xd, b1d, vd, omegad, dvd, domegad
+        """
+
+        x = ref[:3]
+        b1 = ref[3:6]
+        v = ref[6:9]
+        omega = ref[9:12]
+        dv = ref[12:15]
+        domega = ref[15:18]
+
+        return x, b1, v, omega, dv, domega
+
+
+class ConstantTwistQuadTrajectory(QuadTrajectory):
+    """docstring for ConstantTwistQuadTrajectory"""
+    def __init__(self, upper_lim, lower_lim, nominal_dynamics, nominal_traj_length = 20):
+        super(ConstantTwistQuadTrajectory, self).__init__(upper_lim, low_lim, nominal_dynamics, nominal_traj_length)
 
     def __call__(self, x):
         """ 
@@ -67,37 +105,29 @@ class ConstantTwistQuadTrajectory(object):
 
         return ref
 
+class McClamrochCorkskrew(QuadTrajectory):
+    def __init__(self, upper_lim, lower_lim, nominal_dynamics):
+        super(McClamrochCorkskrew, self).__init__(upper_lim, lower_lim, nominal_dynamics, nominal_traj_length = np.floor(10/nominal_dynamics.dt))
 
-
-    def sample_state(self):
-        """
-        Returns the initial state after a reset. This should return an unprocessed state
-        """
-        # uniformly random xyz coordinates
-        # Biased rotation matrix (random velocity vector and integrate)
-
-        x = np.random.uniform(self.low_lims, self.high_lims)
-        p, R, v, omega = self._nominal_dynamics.split_state(x)
-
-        w = utils.unitify(np.random.uniform(-1, 1, (3,)))
-        theta = np.random.uniform(-np.pi, np.pi)
-        R = se3.rotation_3d(w, theta)
+    def sample_initial_state(self):
+        p = np.array([0,0,0])
+        v = np.array([0,0,0])
+        R = np.eye(3)
+        omega = np.array([0,0,0])
 
         x = self._nominal_dynamics.unsplit_state(p, R, v, omega)
 
         return x
 
-    def split_ref(ref):
-        """
-        splits ref into component parts:
-            xd, b1d, vd, omegad, dvd, domegad
-        """
+    def __call__(self, x):
 
-        x = ref[:3]
-        b1 = ref[3:6]
-        v = ref[6:9]
-        omega = ref[9:12]
-        dv = ref[12:15]
-        domega = ref[15:18]
+        ref = []
+        for i in range(self.nominal_traj_length):
+            t = i*self._nominal_dynamics.dt
+            pd = np.array([0.4*t, 0.4*np.sin(np.pi*t), 0.6*np.cos(np.pi*t)])
+            b1d = np.array([np.cos(np.pi*t), np.sin(np.pi*t), 0])
+            ref.append(np.concatenate([pd, b1d, np.zeros((12,))]))
 
-        return x, b1, v, omega, dv, domega
+        return ref
+
+        

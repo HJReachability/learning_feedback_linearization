@@ -15,15 +15,14 @@ class GeoQuadDynamics(Dynamics):
     """
 
     def __init__(self, mass, inertia, 
-                l1, l2, l3, l4,
-                cTau1, cTau2, cTau3, cTau4,
+                l, cTau,
                 g = 9.81, time_step=0.05):
         """
 
         mass: quad mass
         inertia: 3x3 numpy array; moment of inertia matrix
-        l: arm lengths
-        cTau: 
+        l: arm lengths array, len 4
+        cTau: prop force to torque ratios, len 4
         """
         
         xdim = 18
@@ -44,9 +43,9 @@ class GeoQuadDynamics(Dynamics):
 
         self.input_transform = np.array([
                                         [1, 1, 1, 1]
-                                        [0, -l2, 0, l4]
-                                        [l1, 0, -l3, 0]
-                                        [-cTau1, cTau2, -cTau3, cTau4]
+                                        [0, -l[1], 0, l[3]]
+                                        [l[0], 0, -l[2], 0]
+                                        [-cTau[0], cTau[1], -cTau[2], cTau[3]]
                                         ])
 
         self.inv_input_transform = np.linalg.inv(self.input_transform)

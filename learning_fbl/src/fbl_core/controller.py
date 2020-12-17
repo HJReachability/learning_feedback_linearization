@@ -63,23 +63,26 @@ class PD(Controller):
         
         """
 
-        assert pdim.is_integer() and vdim.is_integer()
+        # assert pdim.is_integer() and vdim.is_integer()
+
+        pdim = int(pdim)
+        vdim = int(vdim)
 
         if np.isscalar(kp) or kp.size == 1:
             self.kp = np.full((pdim, ), kp)
-        elif kp.shape == (pdim, ) or kp.shape == (pdim, 1) or kp.shape == (1, pdim)
+        elif kp.shape == (pdim, ) or kp.shape == (pdim, 1) or kp.shape == (1, pdim):
             self.kp = kp.reshape((pdim, ))
         else:
             raise ValueError('kp wrong shape')
 
         if np.isscalar(kv) or kp.size == 1:
             self.kv = np.full((vdim, ), kv)
-        elif kv.shape == (vdim, ) or kv.shape == (vdim, 1) or kv.shape == (1, vdim)
+        elif kv.shape == (vdim, ) or kv.shape == (vdim, 1) or kv.shape == (1, vdim):
             self.kv = kv.reshape((vdim, ))
         else:
             raise ValueError('kv wrong shape')
 
-        self.K = np.diag(np.concatenate(self.kp, self.kv))
+        self.K = np.hstack([np.diag(self.kp), np.diag(self.kv)])
 
     def __call__(self, x):
         """ return u from x """

@@ -11,6 +11,14 @@ import scipy.linalg as spl
 
 np.set_printoptions(precision=4,suppress=True)
 
+def safe_arccos(t):
+    """
+    Clamps the input to between -1 and 1 before using arccos
+    """
+    t = np.minimum(t, 1.0)
+    t = np.maximum(t, -1.0)
+    return np.arccos(t)
+
 def skew_3d(omega):
     """
     Converts a rotation vector in 3D to its corresponding skew-symmetric matrix.
@@ -69,8 +77,7 @@ def inverse_rotation_3d(R):
     """
     Computes omega and theta from R
     """
-
-    theta = np.arccos((np.trace(R) - 1)/2)
+    theta = safe_arccos((np.trace(R) - 1)/2)
     if np.abs(theta) > 1e9:
         omega = np.array([
                 R[2,1] - R[1,2],
@@ -84,8 +91,13 @@ def inverse_rotation_3d(R):
     return omega*theta
 
 def renormalize_rotation_3d(R):
-    theta = np.arccos((np.trace(R) - 1)/2)
-    if np.abs(theta) > 1e9:
+
+    if np.linalg.det(R) > 2:
+        import pdb
+        pdb.set_trace()
+
+    theta = safe_arccos((np.trace(R) - 1)/2)
+    if np.abs(theta) > 1e-9:
         omega = np.array([
                 R[2,1] - R[1,2],
                 R[0,2] - R[2,0],
@@ -94,13 +106,13 @@ def renormalize_rotation_3d(R):
         omega = (1/(2*np.sin(theta)))*omega
 
         q = np.concatenate(
-            [np.array([cos(theta/2)]), omega*np.sin(theta/2)])
+            [np.array([np.cos(theta/2)]), omega*np.sin(theta/2)])
         q = q/np.linalg.norm(q,2)
 
-        theta_norm = 2*np.arccos(q[0])
+        theta_norm = 2*safe_arccos(q[0])
         omega_norm = q[1:]/np.sin(theta_norm/2)
         R_norm = rotation_3d(omega_norm, theta_norm)
-
+        return R_norm
     else: 
         return R
 
@@ -172,7 +184,7 @@ def homog_3d(xi, theta):
     return g
 
 def homog_3d_exp(xi):
-    return spl.expm(self.hat_3d(xi))
+    return spl.expm(hat_3d(xi))
 
 def inverse_homog_3d(g):
     xi_hat = spl.logm(g)
@@ -200,6 +212,7 @@ def rbt_inv(g):
     p = g[:3, 3]
     g[:3,:3] = R.transpose()
     g[:3, 3] = - np.dot(R.transpose(), p)
+    return g
 
 
 def prod_exp(xi, theta):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import fbl_core.utils as utils
 
 class Dynamics(object):
     def __init__(self, xdim, preprocessed_xdim, udim, ydim, time_step):
@@ -9,6 +10,7 @@ class Dynamics(object):
         self.udim = udim
         self.ydim = ydim
         self.time_step = time_step
+        self.dt = time_step
 
     def __call__(self, x, u):
         """ Compute xdot from x, u. """
@@ -106,4 +108,9 @@ class Dynamics(object):
             x += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
             t += step
 
-        return self.wrap_angles(x)
+        out = self.wrap_angles(x)
+        # if utils.checknaninf(out):
+        #     import pdb
+        #     pdb.set_trace()
+
+        return out

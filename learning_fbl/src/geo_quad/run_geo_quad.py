@@ -58,20 +58,20 @@ def fill_parameters():
     params['nominal_min_us'] = [-1e6, -1e6, -1e6, -1e6]
 
 
-    params['true_m'] = 4.0
-    params['true_J'] = [0.067, 0.063, 1.24]
-    params['true_ls'] = [0.3145, 0.316, 0.315, 0.313]
-    params['true_ctfs'] = [8e-4, 8.2e-4, 7.91e-4, 8.002e-4]
-    params['true_max_us'] = [1e6, 1e6, 1e6, 1e6]
-    params['true_min_us'] = [-1e6, -1e6, -1e6, -1e6]
+    # params['true_m'] = 4.0
+    # params['true_J'] = [0.067, 0.063, 1.24]
+    # params['true_ls'] = [0.3145, 0.316, 0.315, 0.313]
+    # params['true_ctfs'] = [8e-4, 8.2e-4, 7.91e-4, 8.002e-4]
+    # params['true_max_us'] = [1e6, 1e6, 1e6, 1e6]
+    # params['true_min_us'] = [-1e6, -1e6, -1e6, -1e6]
 
 
-    # params['true_m'] = params['nominal_m']
-    # params['true_J'] = params['nominal_J']
-    # params['true_ls'] = params['nominal_ls']
-    # params['true_ctfs'] = params['nominal_ctfs']
-    # params['true_max_us'] = params['nominal_max_us']
-    # params['true_min_us'] = params['nominal_min_us']
+    params['true_m'] = params['nominal_m']
+    params['true_J'] = params['nominal_J']
+    params['true_ls'] = params['nominal_ls']
+    params['true_ctfs'] = params['nominal_ctfs']
+    params['true_max_us'] = params['nominal_max_us']
+    params['true_min_us'] = params['nominal_min_us']
 
     # Controller Params
     params['controller_description'] = 'two PD controllers'

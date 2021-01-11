@@ -4,6 +4,7 @@ import numpy as np
 from fbl_core.dynamics import Dynamics
 import fbl_core.utils as utils
 import se3_utils as se3
+import scipy.linalg as spl
 
 
 class GeoQuadDynamics(Dynamics):
@@ -171,10 +172,10 @@ class GeoQuadDynamics(Dynamics):
             k3 = step * self.__call__(x + 0.5 * k2, u)
             k4 = step * self.__call__(x + k3, u)
 
-            x += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
+            delta_x = (k1 + 2.0*k2 + 2.0*k3 + k4) / 6.0
 
-            p,R,v,W = self.split_state(x, renormalize=True)
-            x = self.unsplit_state(p,R,v,W)
+            # x = self.discrete_step(x, delta_x)
+            x += delta_x
 
             t += step
 
@@ -184,6 +185,28 @@ class GeoQuadDynamics(Dynamics):
         #     pdb.set_trace()
 
         return out
+
+    def discrete_step(self, x, delta_x):
+
+        delta_p, delta_R, delta_v, delta_W = self.split_state(delta_x, renormalize=False)
+        p,R,v,W = self.split_state(x, renormalize=False)
+
+        np = p+delta_p
+        nv = v+delta_v
+        nW = W+delta_W
+
+        w_hat_b = R.T @ delta_R
+        nR = R @ spl.expm(w_hat_b)
+        # nR = se3.renormalize_rotation_3d(nR)
+
+        return self.unsplit_state(np, nR, nv, nW)
+
+
+
+
+
+
+
 
 
 def test_fM_to_u(dynamics):

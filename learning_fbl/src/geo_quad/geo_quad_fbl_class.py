@@ -75,9 +75,17 @@ class TwoControllerQuadFBL(DynamicsFBL):
         # Nominal Control
         v = self._get_v(x, ref)
 
+        vf, vM = self._nominal_dynamics.u_to_fM(v)
+        vfM = np.zeros((4,))
+        vfM[0] = vf
+        vfM[1:] = vM
+
         # Calculate input
         D, h = self._parse_action(a)
-        u = (np.eye(4) + D) @ v + h
+        ufM = (np.eye(4) + D) @ vfM + h
+        uf = ufM[0]
+        uM = ufM[1:]
+        u = self._nominal_dynamics.fM_to_u(uf, uM)
 
         # if (D > 0.1).any():
         #     print("yo")
